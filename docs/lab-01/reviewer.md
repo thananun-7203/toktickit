@@ -6,10 +6,10 @@
 ## Pull Requests I authored (reviewed by my partner)
 | PR | Branch | Reviewer verdict |
 |----|--------|------------------|
-|  #5  | feature/1-project-foundation | Approve and merge |
-|  #6  | feature/2-health-check | Approve and merge |
-|  #7  | feature/3-category-seed | Approve and merge |
-|  #8  | feature/4-category-list | Approve and merge |
+| [#5](https://github.com/thananun-7203/toktickit/pull/5) | feature/1-project-foundation | Approve and merge |
+| [#6](https://github.com/thananun-7203/toktickit/pull/6) | feature/2-health-check | Approve and merge |
+| [#7](https://github.com/thananun-7203/toktickit/pull/7) | feature/3-category-seed | Approve and merge |
+| [#8](https://github.com/thananun-7203/toktickit/pull/8) | feature/4-category-list | Approve and merge |
 
 Reviewer comment I received: ขอไฟล์ tests.md ด้วยครับ จะได้ตรวจสอบว่ารันผ่านจริงมั้ย
 
