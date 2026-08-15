@@ -17,6 +17,10 @@ export async function checkSystem(): Promise<SystemStatus> {
   if (!healthRes.ok) {
     throw new Error(`Health check failed with status ${healthRes.status}`);
   }
+  const health = await healthRes.json();
+  if (health.status !== "ok") {
+    throw new Error("Health check reported a non-ok status");
+  }
 
   const categoriesRes = await fetch(`${API_URL}/api/categories`);
   if (!categoriesRes.ok) {

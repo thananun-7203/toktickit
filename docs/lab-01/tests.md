@@ -15,7 +15,7 @@ Paste your passing terminal output / screenshot below.
 ![Evidence-server](images/evidence-server.png)
 
 ## Evidence-client : Heading renders
-![Evidence-client](images/evidence-client.png)
+![Evidence-client](images/evidence-client_v2.png)
 
 ## Evidence ตัวอย่างหน้าเว็บจาก localhost:5173 
 ![Evidence-Demo](images/messageImage_1786275781790.jpg)
@@ -24,7 +24,7 @@ Paste your passing terminal output / screenshot below.
 ![Evidence-seed-categories](images/evidence-seed-categories.png)
 
 ## Evidence Api Categories
-![Evidence-api-categories](images/evidence-api-categories.png)
+![Evidence-api-categories](images/evidence-api-categories_v2.png)
 
 ## Evidence ui online 
 ![Evidence-ui-online](images/evidence-ui-online.png)
