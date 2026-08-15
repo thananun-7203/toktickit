@@ -7,7 +7,6 @@ type UiState = "idle" | "loading" | "success" | "error";
 export default function App() {
   const [state, setState] = useState<UiState>("idle");
   const [categories, setCategories] = useState<Category[]>([]);
-  void categories; // used from Issue 4 onwards
 
   async function handleCheck() {
     setState("loading");
@@ -39,8 +38,15 @@ export default function App() {
 
       {state === "success" && (
         <div className="mt-3">
-          <p className="fw-semibold text-success mb-1">System Status: Online</p>
-          {/* Issue 4: render the categories list here when available. */}
+          <p className="fw-semibold text-success mb-3">System Status: Online</p>
+          <h2 className="h6 text-uppercase text-secondary mb-2">Supported Request Categories</h2>
+          <ol className="list-group list-group-numbered">
+            {categories.map((category) => (
+              <li key={category.id} className="list-group-item">
+                {category.name}
+              </li>
+            ))}
+          </ol>
         </div>
       )}
 
