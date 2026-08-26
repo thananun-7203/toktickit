@@ -20,6 +20,8 @@ Missing or unknown/inactive requester → `401`.
 | 5 | POST | `/api/v1/tickets/:id/attachments` | Upload attachments (multipart) | 5 |
 | 6 | GET | `/api/v1/attachments/:id/download` | Download an active attachment | 5 |
 | 7 | DELETE | `/api/v1/attachments/:id` | Soft-remove an attachment | 5 |
+| 8 | GET | `/api/v1/categories` | List active categories (dropdown) | 3 |
+| 9 | GET | `/api/v1/related-systems` | List active related systems (dropdown) | 3 |
 
 ---
 
@@ -55,7 +57,7 @@ Header: `X-Dev-Requester-Id`.
 {
   "id": 12,
   "ticketNumber": "TKT-2026-00001",
-  "status": "Open",
+  "status": "New",
   "summary": "...",
   "description": "...",
   "createdAt": "2026-08-24T03:15:00.000Z",
@@ -101,7 +103,7 @@ Header: `X-Dev-Requester-Id`.
 {
   "...": "ticket fields",
   "attachments": [
-    { "id": 3, "fileName": "log.txt", "mimeType": "text/plain",
+    { "id": 3, "fileName": "screenshot.png", "mimeType": "image/png",
       "sizeBytes": 2048, "removedAt": null }
   ]
 }
@@ -134,3 +136,35 @@ Header: `X-Dev-Requester-Id`. Sets `removedAt`; keeps storage object and DB row 
 
 **Response `200`:** attachment object with `removedAt` timestamp.
 **Errors:** `404`; `409` if already removed.
+
+## 8. GET /api/v1/categories
+
+Returns **active** categories for populating the Create Ticket form dropdown (S2).
+No authentication required.
+
+**Response `200`:**
+```json
+[
+  { "id": 1, "name": "Software" },
+  { "id": 2, "name": "Hardware" },
+  { "id": 3, "name": "Network" },
+  { "id": 4, "name": "Access" }
+]
+```
+
+**Errors:** none under normal conditions; returns empty array if seed has not run.
+
+## 9. GET /api/v1/related-systems
+
+Returns **active** related systems for populating the Create Ticket form dropdown (S2).
+No authentication required.
+
+**Response `200`:**
+```json
+[
+  { "id": 1, "name": "CRM" },
+  { "id": 2, "name": "Report Portal" }
+]
+```
+
+**Errors:** none under normal conditions; returns empty array if seed has not run.

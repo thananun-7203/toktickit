@@ -26,7 +26,34 @@
 - Editing or deleting ticket content after creation.
 - Hard deletion of attachments.
 
-## 2. Functional Requirements
+## 2. Sprint Goal
+
+The objective of this sprint is to build the **Requester Ticket MVP** — the minimum viable product that allows a requester to create, list, and manage support tickets with file attachments. The sprint delivers:
+
+- A simulated multi-user identity layer (Development Requester selector) that enables ownership isolation testing without real authentication.
+- A complete ticket lifecycle from creation through listing and detail view, with server-generated ticket numbers and server-side validation.
+- Attachment management backed by object storage (SeaweedFS) with enforced size and type limits.
+- The Zen Green design system and responsive layout foundations that will be reused across subsequent Lab sprints.
+- A fully tested and documented foundation (spec, API contracts, UI spec, test plan) for future Agent-side and workflow features.
+
+Success is measured by passing automated tests (Unit, API, UI, E2E), positive peer review, and working demo across Desktop/Tablet/Mobile viewports.
+
+## 3. Stakeholder Request Interpretation
+
+The Lab 2 handout specifies the following key requirements, interpreted and adopted as-is:
+
+| Handout Requirement | Interpretation | Implementation |
+|---|---|---|
+| Simulated Development Requester identity | No real auth; a dropdown selects the acting requester, stored in app context and sent with every API call | `X-Dev-Requester-Id` header; React context in client |
+| Ticket creation with validation | Required fields enforced both client-side (UI feedback) and server-side (reject invalid payloads) | BR-3 validation limits; 400 error responses with per-field messages |
+| Server-generated Ticket Number | Unique, deterministic format; not editable by user | `TKT-YYYY-NNNNN` per SDS v1.0 D-10; generated on POST only |
+| My Tickets with search/filter/sort/pagination | List scoped to acting requester; UI adapts across breakpoints | Prisma `where` scoped to requesterId; table (desktop) / cards (mobile) |
+| Ticket Detail (read-only) | Metadata + attachments; other requesters' IDs yield not-found | GET `/api/v1/tickets/:id` with ownership enforcement (BR-1) |
+| Attachment handling | Upload, download, soft-remove; enforced limits | SeaweedFS adapter; `removedAt` soft-delete field; max 5 MB × 5 files, jpg/jpeg/png/webp/pdf |
+| Zen Green theme | Consistent colour system across all screens | `#006B3C` / `#0B7A46` / `#EAF6EF`; Bootstrap overrides |
+| Responsive layout | No horizontal scroll on any supported viewport | Desktop (≥992px), Tablet (768–991px), Mobile (<768px) stacked/card |
+
+## 4. Functional Requirements
 
 | ID | Requirement | Priority |
 |---|---|---|
@@ -40,7 +67,7 @@
 | FR-8 | The user can download any non-removed attachment of their own ticket. | Must |
 | FR-9 | The user can soft-remove an attachment of their own ticket; removed items stay visible as metadata but cannot be downloaded. | Must |
 
-## 3. Business Rules
+## 5. Business Rules
 
 | ID | Rule |
 |---|---|
@@ -50,9 +77,56 @@
 | BR-4 | Attachment limits: max **5 MB per file**, max **5 files per ticket**, allowed types: `jpg, jpeg, png, webp, pdf` only. Uploads exceeding limits are rejected with a validation error; no partial persistence of rejected batches. |
 | BR-5 | Attachment removal is **soft**: `removedAt` is set, the record remains listed as metadata (name, size, type), but download returns an error. |
 | BR-6 | Inactive requesters exist in the database for testing but are never returned by the requester list endpoint and cannot act as the acting requester. |
-| BR-7 | Tickets are created in status `Open`; status transitions are out of scope for Lab 2. |
+| BR-7 | Tickets are created in status `New`; status transitions are out of scope for Lab 2. |
 
-## 4. Acceptance Criteria
+## 6. UI Specification Summary
+
+Full details in [`ui-spec.md`](./ui-spec.md).
+
+**Screens:** 4 core screens built with React + TypeScript + Vite + Bootstrap 5:
+- **S1 — Select Development Requester:** Centered card with radio-style list of active requesters; Continue button disabled until selection. Stores choice in React context (`RequesterContext`).
+- **S2 — Create Ticket:** Form with Category, Related System, Summary (≤100), Description (≤2000), attachment dropzone. Responsive: Desktop multi-column, Tablet 2-column, Mobile stacked. Client-side validation with per-field messages below inputs.
+- **S3 — My Tickets:** Searchable, filterable, sortable table (desktop) / card list (mobile) with pagination. Empty state and no-results state handled.
+- **S4 — Ticket Detail:** Read-only definition-list of metadata + attachments section. Active files show Download/Remove buttons; removed files show muted metadata only.
+
+**Zen Green Theme:**
+| Token | Value | Usage |
+|---|---|---|
+| Primary Green | `#006B3C` | Header/nav, primary buttons, active nav item |
+| Secondary Green | `#0B7A46` | Button hover, links, focus rings, table header accents |
+| Pale Green | `#EAF6EF` | Page backgrounds, badges, info alerts |
+
+**Responsive breakpoints:** Desktop ≥992px, Tablet 768–991px, Mobile <768px — stacked/card layout, no horizontal scroll, touch targets ≥44px.
+
+**State conventions:** Every interactive screen handles Loading (spinner) / Success / Error / Empty states; buttons disabled + spinner during busy; validation errors positioned directly below inputs with `.invalid-feedback`.
+
+## 7. API Contract
+
+Full details in [`api-spec.md`](./api-spec.md).
+
+**Base:** `http://localhost:4000` · All routes rooted at **`/api/v1/`**.
+
+| # | Method | Path | Purpose | Issue |
+|---|---|---|---|---|
+| 1 | GET | `/api/v1/requesters` | List active Development Requesters | 2 |
+| 2 | POST | `/api/v1/tickets` | Create a ticket | 3 |
+| 3 | GET | `/api/v1/tickets` | List own tickets (search/filter/sort/pagination) | 4 |
+| 4 | GET | `/api/v1/tickets/:id` | Own ticket detail (enforces ownership) | 5 |
+| 5 | POST | `/api/v1/tickets/:id/attachments` | Upload attachments (multipart, ≤5 files) | 5 |
+| 6 | GET | `/api/v1/attachments/:id/download` | Download an active attachment | 5 |
+| 7 | DELETE | `/api/v1/attachments/:id` | Soft-remove an attachment | 5 |
+
+**Identity:** `X-Dev-Requester-Id` header sent on every ticket-scoped request (simulated, no real auth). Missing or inactive requester → `401`.
+
+**Ownership enforcement (BR-1):** All list/detail/attachment queries filter by `requesterId` from the header. Unknown or other-requester ticket ids return `404` (no existence leak).
+
+**Ticket Number:** Generated server-side on `POST /api/v1/tickets` only, format `TKT-YYYY-NNNNN` (BR-2, SDS v1.0 D-10).
+
+**Attachment constraints (BR-4):** Types `jpg, jpeg, png, webp, pdf` only; ≤5 MB per file; ≤5 active files per ticket; multipart upload; `DELETE` is soft (`removedAt` set, metadata retained, download blocked).
+
+**Error shape:** `{ "error": { "message": string, "fields"?: Record<string, string> } }`.
+
+## 8. Acceptance Criteria
 
 | ID | Criterion | Verified by |
 |---|---|---|
@@ -67,7 +141,45 @@
 | AC-9 | Soft-removed attachments remain visible as metadata; downloading them fails. | A-13, E-5 |
 | AC-10 | Layouts follow Zen Green theme and remain usable at Desktop/Tablet/Mobile widths without horizontal scroll. | Visual checks V-1–V-3 |
 
-## 5. Definition of Done
+## 9. Assumptions & Decisions
+
+| ID | Decision / Assumption | Rationale |
+|---|---|---|
+| D-1 | No real authentication in Lab 2; identity simulated via `X-Dev-Requester-Id` header. | Lab 2 scope explicitly defers login to a later lab; header-based simulation mirrors how auth tokens will be sent, making migration trivial. |
+| D-2 | Ticket Number format `TKT-YYYY-NNNNN` (annual reset). | Required by System-Level SDS v1.0, Decision D-10. Annual reset keeps sequence numbers compact; `NNNNN` supports up to 99,999 tickets per year. |
+| D-3 | Initial ticket status is `New` (not `Open`). | Per Lab 2 labsheet specification — status value is a prescribed business rule, not a team decision. |
+| D-4 | Attachment types restricted to `jpg, jpeg, png, webp, pdf`. | Per SDS v1.0 alignment — these are the most common screenshot/document formats in a support-ticket context; arbitrary file types are blocked to reduce storage and security risk. |
+| D-5 | All API routes rooted at `/api/v1/`. | Provides a versioning convention from the start; future breaking changes can use `/api/v2/` without disrupting existing clients. |
+| D-6 | Ownership violations (accessing another requester's ticket id) return `404` instead of `403`. | Best practice to avoid leaking the existence of tickets belonging to other requesters; a `403` would confirm the id exists. |
+| D-7 | SeaweedFS chosen for local object storage. | Lightweight, single-binary deployment; simple REST API for volume/file operations; sufficient for local development without external cloud dependencies. |
+
+## 10. Database Design Justification
+
+Key schema decisions and their rationale:
+
+**1. Soft-delete for attachments (`removedAt` DateTime? field) instead of hard-delete**
+
+The requirement (FR-9, BR-5) explicitly states that removed attachments must remain visible as metadata (filename, size, type) while blocking download. A hard-delete would destroy the record entirely, violating this requirement. Additionally:
+- Soft-delete preserves an audit trail for future compliance or recovery needs.
+- Active attachment count validation (`BR-4`: max 5 per ticket) correctly counts only non-removed files (`removedAt IS NULL`), while the full history remains queryable for reporting.
+- Matches the established pattern from Lab 1's Category model where data integrity across the application is prioritized.
+
+**2. Separate `RelatedSystem` entity rather than a free-text field**
+
+Tickets reference a shared `RelatedSystem` entity via foreign key instead of storing a text string:
+- Ensures consistent naming across all tickets — no "Report Portal" vs "report portal" mismatches when filtering/searching.
+- Enables future extensions (system owners, SLA definitions, associated categories) without schema migration.
+- Mirrors the `Category` entity pattern established in Lab 1, maintaining design consistency across the data model.
+- Seed data (6+ related systems) provides realistic test data for filter/search validation.
+
+**3. `requesterId` FK on Ticket as the ownership anchor (BR-1)**
+
+Ownership isolation is enforced at the database level via a required foreign key to `DevelopmentRequester`, not via application-level filtering alone:
+- Prisma queries add `where: { requesterId }` to every ticket/attachment query, ensuring isolation at the query level.
+- Enables efficient indexed lookups for the My Tickets list (issue 4) without scanning unrelated records.
+- Provides a clear, auditable ownership chain in the data model that is trivially extended when real authentication replaces the simulated header.
+
+## 11. Definition of Done
 
 - [ ] All Must-priority FRs implemented and demonstrated.
 - [ ] Automated tests written first (TDD) and passing: Unit, API (Supertest), UI (Vitest), E2E (Playwright).
@@ -77,7 +189,7 @@
 - [ ] AI usage recorded in `docs/lab-02/ai-use.md`.
 - [ ] Release PR merged to `main`.
 
-## 6. Data Changes (Prisma)
+## 12. Data Changes (Prisma)
 
 New entities added this lab (Category already exists from Lab 1):
 
@@ -103,7 +215,7 @@ New entities added this lab (Category already exists from Lab 1):
 | ticketNumber | String (unique) | `TKT-YYYY-NNNNN` (BR-2) |
 | summary | String (max 100) | BR-3 |
 | description | String (max 2000) | BR-3 |
-| status | String | Default `Open` (BR-7) |
+| status | String | Default `New` (BR-7) |
 | createdAt | DateTime | Auto |
 | requesterId | FK → DevelopmentRequester | Ownership anchor (BR-1) |
 | categoryId | FK → Category | Required |
