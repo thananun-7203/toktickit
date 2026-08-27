@@ -5,6 +5,13 @@ export interface Category {
   name: string;
 }
 
+export interface Requester {
+  id: number;
+  name: string;
+  email: string;
+  isActive: boolean;
+}
+
 export interface SystemStatus {
   online: boolean;
   categories: Category[];
@@ -30,4 +37,14 @@ export async function checkSystem(): Promise<SystemStatus> {
   const categories: Category[] = await categoriesRes.json();
 
   return { online: true, categories };
+}
+
+// Lab 2 Issue 2 — Development Requester selection.
+// Loads the active requesters used to populate the selector (FR-2, BR-6).
+export async function getRequesters(): Promise<Requester[]> {
+  const res = await fetch(`${API_URL}/api/v1/requesters`);
+  if (!res.ok) {
+    throw new Error(`Requesters request failed with status ${res.status}`);
+  }
+  return res.json();
 }

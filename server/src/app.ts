@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import { getPrisma } from "./prisma.js";
+import { filterActiveRequesters } from "./requesterFilter.js";
 
 // The Express app is exported separately from app.listen() (see index.ts) so
 // Supertest can import `app` without opening a port. Do not merge these files.
@@ -32,6 +33,52 @@ app.get("/api/categories", async (_req: Request, res: Response) => {
     res.json(categories);
   } catch {
     res.status(500).json({ error: "Unable to load categories" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Issue 2 — Development Requester Context
+// Reference-data endpoints under /api/v1/ per api-spec.md.
+// ---------------------------------------------------------------------------
+app.get("/api/v1/requesters", async (_req: Request, res: Response) => {
+  try {
+    const prisma = getPrisma();
+    const requesters = await prisma.developmentRequester.findMany({
+      select: { id: true, name: true, email: true, isActive: true },
+      orderBy: { id: "asc" },
+    });
+    // Only active requesters are returned (BR-6); the inactive one is used for
+    // isolation testing and must not be selectable.
+    const active = filterActiveRequesters(requesters);
+    res.json(active);
+  } catch {
+    res.status(500).json({ error: "Unable to load requesters" });
+  }
+});
+
+app.get("/api/v1/categories", async (_req: Request, res: Response) => {
+  try {
+    const prisma = getPrisma();
+    const categories = await prisma.category.findMany({
+      select: { id: true, name: true },
+      orderBy: { id: "asc" },
+    });
+    res.json(categories);
+  } catch {
+    res.status(500).json({ error: "Unable to load categories" });
+  }
+});
+
+app.get("/api/v1/related-systems", async (_req: Request, res: Response) => {
+  try {
+    const prisma = getPrisma();
+    const systems = await prisma.relatedSystem.findMany({
+      select: { id: true, name: true },
+      orderBy: { id: "asc" },
+    });
+    res.json(systems);
+  } catch {
+    res.status(500).json({ error: "Unable to load related systems" });
   }
 });
 
