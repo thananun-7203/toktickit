@@ -1,5 +1,8 @@
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
+export const DEV_REQUESTER_HEADER = "X-Dev-Requester-Id";
+const DEV_REQUESTER_STORAGE_KEY = "toktickit.dev-requester";
+
 export interface Category {
   id: number;
   name: string;
@@ -39,10 +42,42 @@ export async function checkSystem(): Promise<SystemStatus> {
   return { online: true, categories };
 }
 
+// Returns the currently-selected Development Requester from localStorage, or
+// null when none has been chosen. Centralised here so every ticket-scoped call
+// can attach the X-Dev-Requester-Id header without per-call duplication.
+export function getSelectedRequester(): Requester | null {
+  try {
+    const raw = localStorage.getItem(DEV_REQUESTER_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.id === "number" && typeof parsed.name === "string") {
+      return parsed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// Shared fetch wrapper: attaches the X-Dev-Requester-Id header (simulated
+// identity, api-spec.md FR-1 / BR-1) to every request. Later Issues (Create /
+// My Tickets / Attachments) call this instead of raw fetch.
+export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(init.headers);
+  if (!headers.has("Content-Type") && init.body && !(init.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
+  const requester = getSelectedRequester();
+  if (requester) {
+    headers.set(DEV_REQUESTER_HEADER, String(requester.id));
+  }
+  return fetch(`${API_URL}${path}`, { ...init, headers });
+}
+
 // Lab 2 Issue 2 — Development Requester selection.
 // Loads the active requesters used to populate the selector (FR-2, BR-6).
 export async function getRequesters(): Promise<Requester[]> {
-  const res = await fetch(`${API_URL}/api/v1/requesters`);
+  const res = await apiFetch("/api/v1/requesters");
   if (!res.ok) {
     throw new Error(`Requesters request failed with status ${res.status}`);
   }
