@@ -20,6 +20,30 @@ export interface SystemStatus {
   categories: Category[];
 }
 
+export interface RelatedSystem {
+  id: number;
+  name: string;
+}
+
+export interface Ticket {
+  id: number;
+  ticketNumber: string;
+  summary: string;
+  description: string;
+  status: string;
+  createdAt: string;
+  requester: { id: number; name: string };
+  category: { id: number; name: string };
+  relatedSystem: { id: number; name: string };
+}
+
+export interface NewTicketInput {
+  categoryId: number;
+  relatedSystemId: number;
+  summary: string;
+  description: string;
+}
+
 // Issue 2 + Issue 4 — call the backend.
 // Loads the health check first, then the categories.
 export async function checkSystem(): Promise<SystemStatus> {
@@ -82,4 +106,35 @@ export async function getRequesters(): Promise<Requester[]> {
     throw new Error(`Requesters request failed with status ${res.status}`);
   }
   return res.json();
+}
+
+// Lab 2 Issue 3 — dropdown reference data for the Create Ticket form.
+export async function getCategories(): Promise<Category[]> {
+  const res = await apiFetch("/api/v1/categories");
+  if (!res.ok) {
+    throw new Error(`Categories request failed with status ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function getRelatedSystems(): Promise<RelatedSystem[]> {
+  const res = await apiFetch("/api/v1/related-systems");
+  if (!res.ok) {
+    throw new Error(`Related systems request failed with status ${res.status}`);
+  }
+  return res.json();
+}
+
+// Lab 2 Issue 3 — create a new ticket (POST /api/v1/tickets).
+export async function createTicket(input: NewTicketInput): Promise<Ticket> {
+  const res = await apiFetch("/api/v1/tickets", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const fields = data?.error?.fields;
+    throw new Error(fields ? JSON.stringify(fields) : data?.error?.message ?? "Unable to create ticket");
+  }
+  return data as Ticket;
 }
