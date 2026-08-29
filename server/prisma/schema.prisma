@@ -22,4 +22,58 @@ model Category {
   id        Int      @id @default(autoincrement())
   name      String   @unique
   createdAt DateTime @default(now())
+  tickets   Ticket[]
+}
+
+// ---------------------------------------------------------------------------
+// Issue 2 — Development Requester Context & Database Seed
+// ---------------------------------------------------------------------------
+model DevelopmentRequester {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  tickets   Ticket[]
+}
+
+model RelatedSystem {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  tickets     Ticket[]
+}
+
+model Ticket {
+  id              Int       @id @default(autoincrement())
+  ticketNumber    String    @unique
+  summary         String
+  description     String
+  status          String    @default("New")
+  createdAt       DateTime  @default(now())
+  requesterId     Int
+  requester       DevelopmentRequester @relation(fields: [requesterId], references: [id])
+  categoryId      Int
+  category        Category  @relation(fields: [categoryId], references: [id])
+  relatedSystemId Int
+  relatedSystem   RelatedSystem @relation(fields: [relatedSystemId], references: [id])
+  attachments     Attachment[]
+
+  @@index([requesterId])
+  @@index([categoryId])
+  @@index([relatedSystemId])
+}
+
+model Attachment {
+  id         Int       @id @default(autoincrement())
+  fileName   String
+  mimeType   String
+  sizeBytes  Int
+  storageKey String
+  removedAt  DateTime?
+  ticketId   Int
+  ticket     Ticket    @relation(fields: [ticketId], references: [id])
+
+  @@index([ticketId])
 }
