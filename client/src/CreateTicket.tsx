@@ -32,11 +32,15 @@ function validate(fields: FormFields): Partial<Record<keyof FormFields, string>>
   const errors: Partial<Record<keyof FormFields, string>> = {};
   if (!fields.categoryId) errors.categoryId = "Please select a category";
   if (!fields.relatedSystemId) errors.relatedSystemId = "Please select a related system";
-  if (!fields.summary.trim()) errors.summary = "Summary is required";
-  else if (fields.summary.length > SUMMARY_MAX)
+  // Length is validated against the trimmed value so the client matches the
+  // server and the persisted value stays consistent.
+  const summary = fields.summary.trim();
+  const description = fields.description.trim();
+  if (!summary) errors.summary = "Summary is required";
+  else if (summary.length > SUMMARY_MAX)
     errors.summary = `Summary must be at most ${SUMMARY_MAX} characters`;
-  if (!fields.description.trim()) errors.description = "Description is required";
-  else if (fields.description.length > DESCRIPTION_MAX)
+  if (!description) errors.description = "Description is required";
+  else if (description.length > DESCRIPTION_MAX)
     errors.description = `Description must be at most ${DESCRIPTION_MAX} characters`;
   return errors;
 }
@@ -94,6 +98,19 @@ export default function CreateTicket() {
       setSubmitState("success");
     } catch (err) {
       setServerError(err instanceof Error ? err.message : "Unable to create ticket");
+      // Map server-side per-field errors below their inputs (e.g. stale
+      // dropdown values may arrive as positive-integer validation failures).
+      if (err instanceof Error && "fields" in err) {
+        const serverFields = (err as unknown as { fields?: Record<string, string> }).fields;
+        if (serverFields) {
+          const mapped: Partial<Record<keyof FormFields, string>> = {};
+          if (serverFields.categoryId) mapped.categoryId = serverFields.categoryId;
+          if (serverFields.relatedSystemId) mapped.relatedSystemId = serverFields.relatedSystemId;
+          if (serverFields.summary) mapped.summary = serverFields.summary;
+          if (serverFields.description) mapped.description = serverFields.description;
+          setErrors((e) => ({ ...e, ...mapped }));
+        }
+      }
       setSubmitState("error");
     }
   }

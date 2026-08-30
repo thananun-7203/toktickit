@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import request from "supertest";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
@@ -14,6 +14,18 @@ const validPayload = {
   summary: "Cannot export monthly report",
   description: "Export button spins forever after clicking.",
 };
+
+// Tracks ticket ids created during a test so every test is isolated: cleanup
+// runs even if an assertion fails mid-test, keeping re-runs reproducible.
+let createdTicketIds: number[] = [];
+
+afterEach(async () => {
+  const ids = createdTicketIds;
+  createdTicketIds = [];
+  if (ids.length === 0) return;
+  const prisma = getPrisma();
+  await prisma.ticket.deleteMany({ where: { id: { in: ids } } });
+});
 
 describe("POST /api/v1/tickets", () => {
   it("A-4: returns 401 when the X-Dev-Requester-Id header is missing", async () => {
@@ -54,6 +66,17 @@ describe("POST /api/v1/tickets", () => {
     expect(res.body.error.fields.summary).toMatch(/100 characters/);
   });
 
+  it("A-3: returns 400 with per-field messages when ids are not positive integers", async () => {
+    for (const bad of [0, -1, 1.5, "1"]) {
+      const res = await request(app)
+        .post("/api/v1/tickets")
+        .set("X-Dev-Requester-Id", String(ACTIVE_REQUESTER_ID))
+        .send({ ...validPayload, categoryId: bad });
+      expect(res.status).toBe(400);
+      expect(res.body.error.fields.categoryId).toMatch(/positive integer/);
+    }
+  });
+
   it("A-2: creates a ticket with a generated Ticket Number and status New", async () => {
     const res = await request(app)
       .post("/api/v1/tickets")
@@ -68,7 +91,6 @@ describe("POST /api/v1/tickets", () => {
     expect(res.body.category.id).toBe(1);
     expect(res.body.relatedSystem.id).toBe(1);
 
-    // Clean up so the test can be re-run without unique-constraint conflicts.
-    await getPrisma().ticket.delete({ where: { id: res.body.id } });
+    createdTicketIds.push(res.body.id);
   });
 });

@@ -107,4 +107,29 @@ describe("CreateTicket", () => {
     expect(await screen.findByText("Ticket created successfully")).toBeInTheDocument();
     expect(await screen.findByText(/TKT-2026-00001/)).toBeInTheDocument();
   });
+
+  it("UI-5: maps server-side field errors below their inputs", async () => {
+    const user = userEvent.setup();
+    const createSpy = vi.spyOn(api, "createTicket").mockRejectedValue(
+      Object.assign(new Error("Validation failed"), {
+        fields: { relatedSystemId: "Related System must be a positive integer" },
+      }),
+    );
+
+    renderForm();
+    await waitFor(() => expect(screen.queryByText(/Loading form data/)).not.toBeInTheDocument());
+
+    await user.selectOptions(screen.getByLabelText(/Category/), "1");
+    await user.selectOptions(screen.getByLabelText(/Related System/), "1");
+    await user.type(screen.getByLabelText(/Summary/), "Server error ticket");
+    await user.type(screen.getByLabelText(/Description/), "Checking per-field error mapping.");
+
+    await user.click(screen.getByRole("button", { name: /Create Ticket/i }));
+
+    expect(await screen.findByText(/Related System must be a positive integer/i)).toBeInTheDocument();
+    expect(createSpy).toHaveBeenCalled();
+    // Top-level server message still surfaces, but not as a raw JSON blob.
+    expect(screen.getByText("Validation failed")).toBeInTheDocument();
+    expect(screen.queryByText(/"relatedSystemId"/)).not.toBeInTheDocument();
+  });
 });

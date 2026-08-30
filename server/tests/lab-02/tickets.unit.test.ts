@@ -76,4 +76,18 @@ describe("validateTicketInput (U-2, U-4)", () => {
       description: expect.any(String),
     });
   });
+
+  it("rejects non-positive / non-integer category being 400", () => {
+    for (const bad of [0, -1, 1.5, "1"]) {
+      const errors = validateTicketInput({ ...valid, categoryId: bad });
+      expect(errors.categoryId).toContain("positive integer");
+    }
+  });
+
+  it("validates length against the trimmed value", () => {
+    // The raw value is over the limit only because of surrounding whitespace;
+    // after trim it is within limits, so it must pass.
+    const ok = `  ${"a".repeat(SUMMARY_MAX)}  `;
+    expect(validateTicketInput({ ...valid, summary: ok })).toEqual({});
+  });
 });

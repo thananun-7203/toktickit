@@ -16,22 +16,34 @@ export interface TicketInput {
 export function validateTicketInput(body: TicketInput): Record<string, string> {
   const errors: Record<string, string> = {};
 
-  if (typeof body.categoryId !== "number" || !Number.isInteger(body.categoryId)) {
-    errors.categoryId = "Category is required";
+  // Referenced ids must be positive integers; values like 0 or negatives are
+  // malformed payloads (400 per api-spec.md). The 404 "not found" path is meant
+  // only for well-formed ids that do not exist (handled in app.ts).
+  if (typeof body.categoryId !== "number" || !Number.isInteger(body.categoryId) || body.categoryId <= 0) {
+    errors.categoryId = "Category must be a positive integer";
   }
-  if (typeof body.relatedSystemId !== "number" || !Number.isInteger(body.relatedSystemId)) {
-    errors.relatedSystemId = "Related System is required";
+  if (
+    typeof body.relatedSystemId !== "number" ||
+    !Number.isInteger(body.relatedSystemId) ||
+    body.relatedSystemId <= 0
+  ) {
+    errors.relatedSystemId = "Related System must be a positive integer";
   }
 
-  if (typeof body.summary !== "string" || body.summary.trim().length === 0) {
+  // Lengths are validated on the trimmed value so validation and the persisted
+  // value stay consistent, matching the client's normalize-before-check.
+  const summary = typeof body.summary === "string" ? body.summary.trim() : "";
+  const description = typeof body.description === "string" ? body.description.trim() : "";
+
+  if (summary.length === 0) {
     errors.summary = "Summary is required";
-  } else if (body.summary.length > SUMMARY_MAX) {
+  } else if (summary.length > SUMMARY_MAX) {
     errors.summary = `Summary must be at most ${SUMMARY_MAX} characters`;
   }
 
-  if (typeof body.description !== "string" || body.description.trim().length === 0) {
+  if (description.length === 0) {
     errors.description = "Description is required";
-  } else if (body.description.length > DESCRIPTION_MAX) {
+  } else if (description.length > DESCRIPTION_MAX) {
     errors.description = `Description must be at most ${DESCRIPTION_MAX} characters`;
   }
 

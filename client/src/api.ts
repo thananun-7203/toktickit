@@ -133,8 +133,18 @@ export async function createTicket(input: NewTicketInput): Promise<Ticket> {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const fields = data?.error?.fields;
-    throw new Error(fields ? JSON.stringify(fields) : data?.error?.message ?? "Unable to create ticket");
+    // Carry both the top-level message and any per-field validation errors so
+    // the UI can render field errors below the matching inputs.
+    const err = new Error(
+      (data?.error?.message as string) ?? "Unable to create ticket",
+    ) as TicketError;
+    err.fields = data?.error?.fields as Record<string, string> | undefined;
+    throw err;
   }
   return data as Ticket;
+}
+
+// Error thrown by createTicket; carries optional per-field validation messages.
+export interface TicketError extends Error {
+  fields?: Record<string, string>;
 }
