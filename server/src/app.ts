@@ -3,7 +3,7 @@ import cors from "cors";
 import { getPrisma } from "./prisma.js";
 import { filterActiveRequesters } from "./requesterFilter.js";
 import { requireDevRequester } from "./devRequester.js";
-import { generateTicketNumber } from "./ticketNumber.js";
+import { generateTicketNumber, isTicketNumberConflict } from "./ticketNumber.js";
 import { validateTicketInput } from "./ticketValidation.js";
 
 type DevRequester = {
@@ -139,22 +139,39 @@ app.post(
 
       const requester = res.locals.devRequester!;
 
-      const ticket = await prisma.ticket.create({
-        data: {
-          ticketNumber: await generateTicketNumber(),
-          summary: summary.trim(),
-          description: description.trim(),
-          status: "New",
-          requesterId: requester.id,
-          categoryId,
-          relatedSystemId,
-        },
-        include: {
-          requester: { select: { id: true, name: true } },
-          category: { select: { id: true, name: true } },
-          relatedSystem: { select: { id: true, name: true } },
-        },
-      });
+      // Race-safe create: if two concurrent requests allocate the same
+      // TKT-YYYY-NNNNN, the unique constraint (P2002) will reject the second.
+      // Retry with a fresh ticketNumber up to 3 attempts before surfacing 500.
+      const MAX_RETRIES = 3;
+      let ticket: Awaited<ReturnType<typeof prisma.ticket.create>> | null = null;
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        const ticketNumber = await generateTicketNumber();
+        try {
+          ticket = await prisma.ticket.create({
+            data: {
+              ticketNumber,
+              summary: summary.trim(),
+              description: description.trim(),
+              status: "New",
+              requesterId: requester.id,
+              categoryId,
+              relatedSystemId,
+            },
+            include: {
+              requester: { select: { id: true, name: true } },
+              category: { select: { id: true, name: true } },
+              relatedSystem: { select: { id: true, name: true } },
+            },
+          });
+          break;
+        } catch (err: unknown) {
+          if (isTicketNumberConflict(err) && attempt < MAX_RETRIES - 1) {
+            continue;
+          }
+          throw err;
+        }
+      }
+      if (!ticket) throw new Error("Unable to create ticket after retries");
 
       res.status(201).json(ticket);
     } catch {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { filterActiveRequesters } from "../../src/requesterFilter.js";
-import { buildTicketNumber } from "../../src/ticketNumber.js";
+import { buildTicketNumber, isTicketNumberConflict } from "../../src/ticketNumber.js";
 import { validateTicketInput, SUMMARY_MAX, DESCRIPTION_MAX } from "../../src/ticketValidation.js";
 
 // Lab 2 Issue 2 — Unit tests (U-3) for the requester activity filter (BR-6).
@@ -89,5 +89,20 @@ describe("validateTicketInput (U-2, U-4)", () => {
     // after trim it is within limits, so it must pass.
     const ok = `  ${"a".repeat(SUMMARY_MAX)}  `;
     expect(validateTicketInput({ ...valid, summary: ok })).toEqual({});
+  });
+});
+
+describe("isTicketNumberConflict (retry helper)", () => {
+  it("returns true for a P2002 ticketNumber unique violation", () => {
+    expect(isTicketNumberConflict({ code: "P2002", meta: { target: ["ticketNumber"] } })).toBe(true);
+    expect(isTicketNumberConflict({ code: "P2002", meta: { target: "ticketNumber" } })).toBe(true);
+    expect(isTicketNumberConflict({ code: "P2002" })).toBe(true); // no target => conservative
+  });
+
+  it("returns false for non-P2002 or non-ticketNumber violations", () => {
+    expect(isTicketNumberConflict({ code: "P2002", meta: { target: ["email"] } })).toBe(false);
+    expect(isTicketNumberConflict({ code: "P2003" })).toBe(false);
+    expect(isTicketNumberConflict(new Error("other"))).toBe(false);
+    expect(isTicketNumberConflict(null)).toBe(false);
   });
 });
