@@ -3,10 +3,11 @@ import { checkSystem, Category } from "./api.js";
 import { useRequester } from "./RequesterContext.js";
 import SelectRequester from "./SelectRequester.js";
 import CreateTicket from "./CreateTicket.js";
+import MyTickets from "./MyTickets.js";
 
 // UI states you must handle for Issue 4: idle, loading, success, error.
 type UiState = "idle" | "loading" | "success" | "error";
-type View = "home" | "create";
+type View = "home" | "create" | "my-tickets";
 
 export default function App() {
   const { requester, clearRequester } = useRequester();
@@ -64,10 +65,18 @@ export default function App() {
         >
           Create Ticket
         </button>
+        <button
+          className={`btn btn-sm ${view === "my-tickets" ? "btn-success" : "btn-outline-success"}`}
+          onClick={() => setView("my-tickets")}
+        >
+          My Tickets
+        </button>
       </div>
 
       {view === "create" ? (
         <CreateTicket />
+      ) : view === "my-tickets" ? (
+        <MyTickets />
       ) : (
         <>
           <button

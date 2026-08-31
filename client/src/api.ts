@@ -144,6 +144,41 @@ export async function createTicket(input: NewTicketInput): Promise<Ticket> {
   return data as Ticket;
 }
 
+// Lab 2 Issue 4 — My Tickets list (GET /api/v1/tickets).
+export interface GetTicketsParams {
+  search?: string;
+  categoryId?: number;
+  relatedSystemId?: number;
+  sort?: "newest" | "oldest" | "summary_asc";
+  page?: number;
+  pageSize?: number;
+}
+
+export interface GetTicketsResponse {
+  items: Ticket[];
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export async function getTickets(params: GetTicketsParams = {}): Promise<GetTicketsResponse> {
+  const qs = new URLSearchParams();
+  if (params.search) qs.set("search", params.search);
+  if (params.categoryId) qs.set("categoryId", String(params.categoryId));
+  if (params.relatedSystemId) qs.set("relatedSystemId", String(params.relatedSystemId));
+  if (params.sort) qs.set("sort", params.sort);
+  if (params.page) qs.set("page", String(params.page));
+  if (params.pageSize) qs.set("pageSize", String(params.pageSize));
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
+  const res = await apiFetch(`/api/v1/tickets${suffix}`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.error?.message ?? `Failed to load tickets (${res.status})`);
+  }
+  return res.json();
+}
+
 // Error thrown by createTicket; carries optional per-field validation messages.
 export interface TicketError extends Error {
   fields?: Record<string, string>;
