@@ -15,7 +15,12 @@ import {
 
 type LoadState = "idle" | "loading" | "success" | "error";
 
-export default function MyTickets() {
+interface MyTicketsProps {
+  requesterId: number;
+  onCreateTicket?: () => void;
+}
+
+export default function MyTickets({ requesterId, onCreateTicket }: MyTicketsProps) {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [totalItems, setTotalItems] = useState(0);
@@ -73,7 +78,7 @@ export default function MyTickets() {
     if (filterCategory) params.categoryId = Number(filterCategory);
     if (filterSystem) params.relatedSystemId = Number(filterSystem);
     try {
-      const res = await getTickets(params);
+      const res = await getTickets(params, requesterId);
       setTickets(res.items);
       setTotalItems(res.totalItems);
       setTotalPages(res.totalPages);
@@ -82,7 +87,7 @@ export default function MyTickets() {
       setErrorMsg(err instanceof Error ? err.message : "Unable to load tickets");
       setLoadState("error");
     }
-  }, [debouncedSearch, filterCategory, filterSystem, sort, page, pageSize]);
+  }, [debouncedSearch, filterCategory, filterSystem, sort, page, pageSize, requesterId]);
 
   useEffect(() => {
     fetchTickets();
@@ -209,7 +214,12 @@ export default function MyTickets() {
       {loadState === "success" && totalItems === 0 && !hasActiveFilter && (
         <div className="text-center py-5">
           <p className="text-secondary mb-2">No tickets yet</p>
-          <p className="small text-secondary">Create your first ticket to get started.</p>
+          <p className="small text-secondary mb-3">Create your first ticket to get started.</p>
+          {onCreateTicket && (
+            <button className="btn btn-success btn-sm" onClick={onCreateTicket}>
+              Create Ticket
+            </button>
+          )}
         </div>
       )}
 

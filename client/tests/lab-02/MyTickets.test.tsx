@@ -53,7 +53,7 @@ describe("MyTickets (UI-5)", () => {
       totalItems: 2,
       totalPages: 1,
     });
-    render(<MyTickets />);
+    render(<MyTickets requesterId={1} />);
 
     expect(await screen.findAllByText("TKT-2026-00001")).toHaveLength(2); // table + card (both in DOM, CSS hidden)
     expect(screen.getAllByText("Cannot export report").length).toBeGreaterThanOrEqual(1);
@@ -67,7 +67,9 @@ describe("MyTickets (UI-5)", () => {
     expect(badges[0].style.backgroundColor).toBeTruthy();
   });
 
-  it("UI-5: shows empty state when no tickets and no filter", async () => {
+  it("UI-5: shows empty state with actionable Create Ticket CTA", async () => {
+    const user = userEvent.setup();
+    const onCreateTicket = vi.fn();
     vi.spyOn(api, "getTickets").mockResolvedValue({
       items: [],
       page: 1,
@@ -75,9 +77,13 @@ describe("MyTickets (UI-5)", () => {
       totalItems: 0,
       totalPages: 0,
     });
-    render(<MyTickets />);
+    render(<MyTickets requesterId={1} onCreateTicket={onCreateTicket} />);
     await waitFor(() => expect(screen.queryByText("Loading tickets…")).not.toBeInTheDocument());
     expect(await screen.findByText("No tickets yet")).toBeInTheDocument();
+    const createButton = screen.getByRole("button", { name: /Create Ticket/i });
+    expect(createButton).toBeInTheDocument();
+    await user.click(createButton);
+    expect(onCreateTicket).toHaveBeenCalledTimes(1);
   });
 
   it("UI-5: shows no-results when filter yields no items", async () => {
@@ -88,7 +94,7 @@ describe("MyTickets (UI-5)", () => {
       totalItems: 0,
       totalPages: 0,
     });
-    render(<MyTickets />);
+    render(<MyTickets requesterId={1} />);
     await waitFor(() => expect(spy).toHaveBeenCalled());
 
     // Initially empty, then type search to trigger no-results with filter
@@ -116,13 +122,13 @@ describe("MyTickets (UI-5)", () => {
       totalItems: 2,
       totalPages: 1,
     });
-    render(<MyTickets />);
+    render(<MyTickets requesterId={1} />);
     await waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
-    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ sort: "newest", page: 1 }));
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ sort: "newest", page: 1 }), 1);
 
     // change page size
     const user = userEvent.setup();
     await user.selectOptions(screen.getByLabelText(/Page size/), "5");
-    await waitFor(() => expect(spy).toHaveBeenCalledWith(expect.objectContaining({ pageSize: 5 })));
+    await waitFor(() => expect(spy).toHaveBeenCalledWith(expect.objectContaining({ pageSize: 5 }), 1));
   });
 });

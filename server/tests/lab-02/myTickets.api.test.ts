@@ -88,28 +88,33 @@ describe("GET /api/v1/tickets", () => {
     expect(resUpper.body.items.map((t: { id: number }) => t.id)).toContain(tMatch.id);
   });
 
-  it("A-8: filters by categoryId and sorts correctly", async () => {
-    // Create tickets with distinct categories and summaries for sort check.
-    const tA = await createTicket(R1, { summary: "aaa sort", categoryId: 1 });
-    const tB = await createTicket(R1, { summary: "zzz sort", categoryId: 2 });
-    // Ensure at least these two exist; filter by category 1 should return tA but not tB
+  it("A-8: filters by categoryId and sorts oldest/newest correctly", async () => {
+    const uniq = `a8-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    // Two matching category-1 tickets plus one category-2 ticket let this test
+    // prove both the subset and chronological order without depending on seed data.
+    const older = await createTicket(R1, { summary: `${uniq} older`, categoryId: 1 });
+    const newer = await createTicket(R1, { summary: `${uniq} newer`, categoryId: 1 });
+    const otherCategory = await createTicket(R1, { summary: `${uniq} excluded`, categoryId: 2 });
+
     const filtered = await request(app)
-      .get("/api/v1/tickets?categoryId=1")
+      .get(`/api/v1/tickets?search=${encodeURIComponent(uniq)}&categoryId=1&pageSize=50`)
       .set("X-Dev-Requester-Id", String(R1));
     expect(filtered.status).toBe(200);
     const fIds = filtered.body.items.map((t: { id: number }) => t.id);
-    expect(fIds).toContain(tA.id);
-    expect(fIds).not.toContain(tB.id);
+    expect(fIds).toEqual(expect.arrayContaining([older.id, newer.id]));
+    expect(fIds).not.toContain(otherCategory.id);
 
-    // sort summary_asc: aaa should come before zzz among our two tickets when filtering broadly
-    const sorted = await request(app)
-      .get("/api/v1/tickets?sort=summary_asc&pageSize=50")
+    const oldest = await request(app)
+      .get(`/api/v1/tickets?search=${encodeURIComponent(uniq)}&categoryId=1&sort=oldest&pageSize=50`)
       .set("X-Dev-Requester-Id", String(R1));
-    expect(sorted.status).toBe(200);
-    const summaries = sorted.body.items.map((t: { summary: string }) => t.summary);
-    const idxA = summaries.indexOf("aaa sort");
-    const idxB = summaries.indexOf("zzz sort");
-    expect(idxA).toBeLessThan(idxB);
+    expect(oldest.status).toBe(200);
+    expect(oldest.body.items.map((t: { id: number }) => t.id)).toEqual([older.id, newer.id]);
+
+    const newest = await request(app)
+      .get(`/api/v1/tickets?search=${encodeURIComponent(uniq)}&categoryId=1&sort=newest&pageSize=50`)
+      .set("X-Dev-Requester-Id", String(R1));
+    expect(newest.status).toBe(200);
+    expect(newest.body.items.map((t: { id: number }) => t.id)).toEqual([newer.id, older.id]);
   });
 
   it("A-9: pagination returns consistent page/pageSize/totalItems/totalPages", async () => {

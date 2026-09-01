@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { checkSystem, Category } from "./api.js";
 import { useRequester } from "./RequesterContext.js";
 import SelectRequester from "./SelectRequester.js";
@@ -13,7 +13,16 @@ export default function App() {
   const { requester, clearRequester } = useRequester();
   const [state, setState] = useState<UiState>("idle");
   const [categories, setCategories] = useState<Category[]>([]);
-  const [view, setView] = useState<View>("home");
+  // ui-spec S1: after a Development Requester is selected, the requester
+  // workflow lands on S3 (My Tickets), not the legacy Lab 1 home screen.
+  const [view, setView] = useState<View>("my-tickets");
+
+  // App stays mounted while the selector is shown, so resetting only the
+  // initial state is not enough: Switch -> select another requester must also
+  // land on My Tickets instead of preserving the previous requester's view.
+  useEffect(() => {
+    if (requester) setView("my-tickets");
+  }, [requester?.id]);
 
   if (!requester) {
     return <SelectRequester />;
@@ -76,7 +85,7 @@ export default function App() {
       {view === "create" ? (
         <CreateTicket />
       ) : view === "my-tickets" ? (
-        <MyTickets />
+        <MyTickets requesterId={requester.id} onCreateTicket={() => setView("create")} />
       ) : (
         <>
           <button
