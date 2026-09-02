@@ -22,15 +22,15 @@ Test-first workflow: failing tests for each issue are committed before its imple
 | A-2 | `server/tests/lab-02/tickets.api.test.ts` | FR-3, FR-4 | POST valid ticket | 201; persisted; ticketNumber format BR-2; status New | Planned |
 | A-3 | `server/tests/lab-02/tickets.api.test.ts` | BR-3 | POST over-length summary/description | 400 + `fields` map; nothing persisted | Planned |
 | A-4 | `server/tests/lab-02/tickets.api.test.ts` | BR-3 | POST missing required fields | 400 + per-field messages | Planned |
-| A-5 | `server/tests/lab-02/tickets.api.test.ts` | FR-6, BR-1 | GET other requester's ticket id | 404 (no existence leak) | Planned |
+| A-5 | `server/tests/lab-02/ticketDetail.api.test.ts` | FR-6, BR-1 | GET other requester's ticket id | 404 (no existence leak) | Pass |
 | A-6 | `server/tests/lab-02/tickets.api.test.ts` | FR-5, BR-1 | List isolation (requesters R1 vs R2) | Each sees only own tickets | Planned |
 | A-7 | `server/tests/lab-02/tickets.api.test.ts` | FR-5 | Search by summary substring | Only matching items returned | Planned |
 | A-8 | `server/tests/lab-02/tickets.api.test.ts` | FR-5 | Filter by category + sort oldest/newest | Correct order/subset | Planned |
 | A-9 | `server/tests/lab-02/tickets.api.test.ts` | FR-5 | Pagination | page/pageSize/totalItems/totalPages consistent | Planned |
-| A-10 | `server/tests/lab-02/tickets.api.test.ts` | FR-7, BR-4 | Upload 1 valid file | 201; appears in detail attachments | Planned |
-| A-11 | `server/tests/lab-02/tickets.api.test.ts` | BR-4 | Upload >5 MB or disallowed type | 400 naming offending file | Planned |
-| A-12 | `server/tests/lab-02/tickets.api.test.ts` | BR-4 | Upload beyond 5 active files | 400; count stays ≤5 | Planned |
-| A-13 | `server/tests/lab-02/tickets.api.test.ts` | FR-9, BR-5 | DELETE attachment then download it | Remove → 200 w/ timestamp; download then fails; metadata still listed | Planned |
+| A-10 | `server/tests/lab-02/ticketDetail.api.test.ts` | FR-7, BR-4 | Upload 1 valid file | 201; appears in detail attachments | Pass |
+| A-11 | `server/tests/lab-02/ticketDetail.api.test.ts` | BR-4 | Upload >5 MB or disallowed type | 400 naming offending file | Pass |
+| A-12 | `server/tests/lab-02/ticketDetail.api.test.ts` | BR-4 | Upload beyond 5 active files | 400; count stays ≤5 | Pass |
+| A-13 | `server/tests/lab-02/ticketDetail.api.test.ts` | FR-9, BR-5 | DELETE attachment then download it | Remove → 200 w/ timestamp; download then fails; metadata still listed | Pass |
 | A-14 | `server/tests/lab-02/reference-data.api.test.ts` | FR-3 | GET /api/v1/categories | 200; returns 4 active seeded categories | Planned |
 | A-15 | `server/tests/lab-02/reference-data.api.test.ts` | FR-3 | GET /api/v1/related-systems | 200; returns ≥6 active seeded related systems | Planned |
 
@@ -62,18 +62,18 @@ Test-first workflow: failing tests for each issue are committed before its imple
 
 | ID | File Path | Target | Scenario | Expected | Final |
 |---|---|---|---|---|---|
-| UI-6 | `client/tests/lab-02/TicketDetail.test.tsx` | FR-9 | Active attachment shows Download + Remove buttons | Two action buttons visible per active attachment row | Planned |
-| UI-9 | `client/tests/lab-02/TicketDetail.test.tsx` | FR-9, AC-9 | Removed attachment shows muted metadata only — no download/remove actions | `removedAt` non-null row: muted style, no action buttons; metadata fields (name, size, type) still present | Planned |
+| UI-6 | `client/tests/lab-02/TicketDetail.test.tsx` | FR-9 | Active attachment shows Download + Remove buttons | Two action buttons visible per active attachment row | Pass |
+| UI-9 | `client/tests/lab-02/TicketDetail.test.tsx` | FR-9, AC-9 | Removed attachment shows muted metadata only — no download/remove actions | `removedAt` non-null row: muted style, no action buttons; metadata fields (name, size, type) still present | Pass |
 
 ## 4. E2E Tests (Playwright)
 
 | ID | File Path | Scenario | Expected | Final |
 |---|---|---|---|---|
-| E-1 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Select requester → identity chip appears | Context stored; subsequent pages scoped to selected requester | Planned |
-| E-2 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Create ticket via form | Success view shows TKT-number; ticket appears in My Tickets | Planned |
-| E-3 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Open own ticket detail | Fields + attachments section rendered correctly | Planned |
-| E-4 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Switch requester → list changes | Isolation proven end-to-end (AC-5) | Planned |
-| E-5 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Upload file → remove it → download attempt blocked | Soft-remove behaviour visible (AC-9) | Planned |
+| E-1 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Select requester → identity chip appears | Context stored; subsequent pages scoped to selected requester | Pass |
+| E-2 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Create ticket via form | Success view shows TKT-number; ticket appears in My Tickets | Pass |
+| E-3 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Open own ticket detail | Fields + attachments section rendered correctly | Pass |
+| E-4 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Switch requester → list changes | Isolation proven end-to-end (AC-5) | Pass |
+| E-5 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Upload file → remove it → download attempt blocked | Soft-remove behaviour visible (AC-9) | Pass |
 
 ## 5. Visual Checks (manual screenshots)
 

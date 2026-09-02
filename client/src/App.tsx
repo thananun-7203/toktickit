@@ -4,10 +4,11 @@ import { useRequester } from "./RequesterContext.js";
 import SelectRequester from "./SelectRequester.js";
 import CreateTicket from "./CreateTicket.js";
 import MyTickets from "./MyTickets.js";
+import TicketDetail from "./TicketDetail.js";
 
 // UI states you must handle for Issue 4: idle, loading, success, error.
 type UiState = "idle" | "loading" | "success" | "error";
-type View = "home" | "create" | "my-tickets";
+type View = "home" | "create" | "my-tickets" | "ticket-detail";
 
 export default function App() {
   const { requester, clearRequester } = useRequester();
@@ -16,13 +17,27 @@ export default function App() {
   // ui-spec S1: after a Development Requester is selected, the requester
   // workflow lands on S3 (My Tickets), not the legacy Lab 1 home screen.
   const [view, setView] = useState<View>("my-tickets");
+  const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
 
   // App stays mounted while the selector is shown, so resetting only the
   // initial state is not enough: Switch -> select another requester must also
   // land on My Tickets instead of preserving the previous requester's view.
   useEffect(() => {
-    if (requester) setView("my-tickets");
+    if (requester) {
+      setSelectedTicketId(null);
+      setView("my-tickets");
+    }
   }, [requester?.id]);
+
+  function openTicket(ticketId: number) {
+    setSelectedTicketId(ticketId);
+    setView("ticket-detail");
+  }
+
+  function showMyTickets() {
+    setSelectedTicketId(null);
+    setView("my-tickets");
+  }
 
   if (!requester) {
     return <SelectRequester />;
@@ -76,16 +91,26 @@ export default function App() {
         </button>
         <button
           className={`btn btn-sm ${view === "my-tickets" ? "btn-success" : "btn-outline-success"}`}
-          onClick={() => setView("my-tickets")}
+          onClick={showMyTickets}
         >
           My Tickets
         </button>
       </div>
 
       {view === "create" ? (
-        <CreateTicket />
+        <CreateTicket onOpenTicket={openTicket} onGoToTickets={showMyTickets} />
+      ) : view === "ticket-detail" && selectedTicketId !== null ? (
+        <TicketDetail
+          ticketId={selectedTicketId}
+          requesterId={requester.id}
+          onBack={showMyTickets}
+        />
       ) : view === "my-tickets" ? (
-        <MyTickets requesterId={requester.id} onCreateTicket={() => setView("create")} />
+        <MyTickets
+          requesterId={requester.id}
+          onCreateTicket={() => setView("create")}
+          onOpenTicket={openTicket}
+        />
       ) : (
         <>
           <button

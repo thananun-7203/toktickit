@@ -52,6 +52,7 @@ describe("CreateTicket", () => {
     expect(screen.getByLabelText(/Related System/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Summary/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Description/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Attachments/i)).toBeInTheDocument();
 
     // Zen Green primary action button.
     const submit = screen.getByRole("button", { name: /Create Ticket/i });
@@ -135,5 +136,56 @@ describe("CreateTicket", () => {
     // Top-level server message still surfaces, but not as a raw JSON blob.
     expect(screen.getByText("Validation failed")).toBeInTheDocument();
     expect(screen.queryByText(/"relatedSystemId"/)).not.toBeInTheDocument();
+  });
+
+  it("validates attachment type/size before creating the ticket", async () => {
+    // Bypass the browser accept= filter in this test so we can exercise our
+    // own validation branch for a deliberately disallowed file type.
+    const user = userEvent.setup({ applyAccept: false });
+    const createSpy = vi.spyOn(api, "createTicket");
+    renderForm();
+    await waitFor(() => expect(screen.queryByText(/Loading form data/)).not.toBeInTheDocument());
+
+    const bad = new File(["bad"], "malware.exe", { type: "application/octet-stream" });
+    await user.upload(screen.getByLabelText(/Attachments/i), bad);
+    expect(screen.getByText(/malware\.exe.*not an allowed type/i)).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText(/Category/), "1");
+    await user.selectOptions(screen.getByLabelText(/Related System/), "1");
+    await user.type(screen.getByLabelText(/Summary/), "Attachment validation");
+    await user.type(screen.getByLabelText(/Description/), "Should not submit with invalid attachment.");
+    await user.click(screen.getByRole("button", { name: /Create Ticket/i }));
+
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
+  it("uploads selected attachments after ticket creation", async () => {
+    const user = userEvent.setup();
+    const createdTicket: api.Ticket = {
+      id: 42,
+      ticketNumber: "TKT-2026-00042",
+      summary: "Create with attachment",
+      description: "description",
+      status: "New",
+      createdAt: new Date().toISOString(),
+      requester: { id: 1, name: "Somchai Jaidee" },
+      category: { id: 1, name: "Account and Access" },
+      relatedSystem: { id: 1, name: "CRM" },
+    };
+    vi.spyOn(api, "createTicket").mockResolvedValue(createdTicket);
+    const uploadSpy = vi.spyOn(api, "uploadAttachments").mockResolvedValue([]);
+    renderForm();
+    await waitFor(() => expect(screen.queryByText(/Loading form data/)).not.toBeInTheDocument());
+
+    await user.selectOptions(screen.getByLabelText(/Category/), "1");
+    await user.selectOptions(screen.getByLabelText(/Related System/), "1");
+    await user.type(screen.getByLabelText(/Summary/), "Create with attachment");
+    await user.type(screen.getByLabelText(/Description/), "description");
+    const file = new File(["pdf"], "evidence.pdf", { type: "application/pdf" });
+    await user.upload(screen.getByLabelText(/Attachments/i), file);
+    await user.click(screen.getByRole("button", { name: /Create Ticket/i }));
+
+    expect(uploadSpy).toHaveBeenCalledWith(42, [file], TEST_REQUESTER.id);
+    expect(await screen.findByText(/Ticket created successfully/i)).toBeInTheDocument();
   });
 });

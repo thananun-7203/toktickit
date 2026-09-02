@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: toktickit
+      POSTGRES_PASSWORD: toktickit
+      POSTGRES_DB: toktickit
+    ports:
+      - "${TOKTICKIT_POSTGRES_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U toktickit -d toktickit"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - lab2-postgres-data:/var/lib/postgresql/data
+
+  seaweed-master:
+    image: chrislusf/seaweedfs:latest
+    command: "master -ip=seaweed-master -mdir=/data"
+    ports:
+      - "9333:9333"
+    volumes:
+      - lab2-seaweed-master:/data
+
+  seaweed-volume:
+    image: chrislusf/seaweedfs:latest
+    command: "volume -mserver=seaweed-master:9333 -ip=seaweed-volume -port=8080 -dir=/data"
+    depends_on:
+      - seaweed-master
+    volumes:
+      - lab2-seaweed-volume:/data
+
+  seaweed-filer:
+    image: chrislusf/seaweedfs:latest
+    command: "filer -master=seaweed-master:9333 -ip=seaweed-filer"
+    depends_on:
+      - seaweed-master
+      - seaweed-volume
+    ports:
+      - "8888:8888"
+    volumes:
+      - lab2-seaweed-filer:/data
+
+volumes:
+  lab2-postgres-data:
+  lab2-seaweed-master:
+  lab2-seaweed-volume:
+  lab2-seaweed-filer:

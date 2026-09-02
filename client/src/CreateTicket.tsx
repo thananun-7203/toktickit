@@ -6,6 +6,7 @@ import {
   Category,
   RelatedSystem,
   Ticket,
+  uploadAttachments,
 } from "./api.js";
 import { useRequester } from "./RequesterContext.js";
 
@@ -15,6 +16,10 @@ import { useRequester } from "./RequesterContext.js";
 
 const SUMMARY_MAX = 100;
 const DESCRIPTION_MAX = 2000;
+const ATTACHMENT_MAX_BYTES = 5 * 1024 * 1024;
+const ATTACHMENT_MAX_FILES = 5;
+const ATTACHMENT_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".pdf"];
+const ATTACHMENT_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 
 type LoadState = "loading" | "success" | "error";
 type SubmitState = "idle" | "busy" | "success" | "error";
@@ -27,6 +32,28 @@ interface FormFields {
 }
 
 const EMPTY: FormFields = { categoryId: "", relatedSystemId: "", summary: "", description: "" };
+
+interface CreateTicketProps {
+  onOpenTicket?: (ticketId: number) => void;
+  onGoToTickets?: () => void;
+}
+
+function validateAttachments(files: File[]): Record<string, string> {
+  const errors: Record<string, string> = {};
+  if (files.length > ATTACHMENT_MAX_FILES) {
+    errors.__count = `You can attach at most ${ATTACHMENT_MAX_FILES} files`;
+  }
+  for (const file of files) {
+    const lower = file.name.toLowerCase();
+    const extensionAllowed = ATTACHMENT_EXTENSIONS.some((ext) => lower.endsWith(ext));
+    if (!extensionAllowed || !ATTACHMENT_TYPES.includes(file.type)) {
+      errors[file.name] = `${file.name} — not an allowed type`;
+    } else if (file.size > ATTACHMENT_MAX_BYTES) {
+      errors[file.name] = `${file.name} — file must be 5 MB or smaller`;
+    }
+  }
+  return errors;
+}
 
 function validate(fields: FormFields): Partial<Record<keyof FormFields, string>> {
   const errors: Partial<Record<keyof FormFields, string>> = {};
@@ -45,7 +72,7 @@ function validate(fields: FormFields): Partial<Record<keyof FormFields, string>>
   return errors;
 }
 
-export default function CreateTicket() {
+export default function CreateTicket({ onOpenTicket, onGoToTickets }: CreateTicketProps) {
   const { requester } = useRequester();
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [categories, setCategories] = useState<Category[]>([]);
@@ -55,6 +82,9 @@ export default function CreateTicket() {
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [serverError, setServerError] = useState<string | null>(null);
   const [created, setCreated] = useState<Ticket | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [attachmentErrors, setAttachmentErrors] = useState<Record<string, string>>({});
+  const [postCreateWarning, setPostCreateWarning] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,9 +114,12 @@ export default function CreateTicket() {
     if (!requester) return;
     const nextErrors = validate(fields);
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
+    const nextAttachmentErrors = validateAttachments(selectedFiles);
+    setAttachmentErrors(nextAttachmentErrors);
+    if (Object.keys(nextErrors).length > 0 || Object.keys(nextAttachmentErrors).length > 0) return;
 
     setSubmitState("busy");
+    setPostCreateWarning(null);
     try {
       const ticket = await createTicket(
         {
@@ -98,7 +131,20 @@ export default function CreateTicket() {
         requester.id,
       );
       setCreated(ticket);
+      if (selectedFiles.length > 0) {
+        try {
+          await uploadAttachments(ticket.id, selectedFiles, requester.id);
+        } catch (err) {
+          setPostCreateWarning(
+            `Ticket was created, but attachments could not be uploaded: ${
+              err instanceof Error ? err.message : "unknown upload error"
+            }`,
+          );
+        }
+      }
       setFields(EMPTY);
+      setSelectedFiles([]);
+      setAttachmentErrors({});
       setSubmitState("success");
     } catch (err) {
       setServerError(err instanceof Error ? err.message : "Unable to create ticket");
@@ -134,15 +180,29 @@ export default function CreateTicket() {
             {created.summary} — Status: {created.status}
           </p>
         </div>
-        <button
-          className="btn btn-outline-success"
-          onClick={() => {
-            setCreated(null);
-            setSubmitState("idle");
-          }}
-        >
-          Create another ticket
-        </button>
+        {postCreateWarning && <div className="alert alert-warning">{postCreateWarning}</div>}
+        <div className="d-flex flex-wrap gap-2">
+          {onOpenTicket && (
+            <button className="btn btn-success" onClick={() => onOpenTicket(created.id)}>
+              View ticket
+            </button>
+          )}
+          {onGoToTickets && (
+            <button className="btn btn-outline-success" onClick={onGoToTickets}>
+              My Tickets
+            </button>
+          )}
+          <button
+            className="btn btn-outline-secondary"
+            onClick={() => {
+              setCreated(null);
+              setPostCreateWarning(null);
+              setSubmitState("idle");
+            }}
+          >
+            Create another ticket
+          </button>
+        </div>
       </div>
     );
   }
@@ -244,6 +304,39 @@ export default function CreateTicket() {
               <div className="form-text text-end">{fields.description.length}/{DESCRIPTION_MAX}</div>
               {errors.description && (
                 <div className="invalid-feedback d-block">{errors.description}</div>
+              )}
+            </div>
+
+            <div className="col-12">
+              <label htmlFor="attachments" className="form-label">Attachments</label>
+              <input
+                id="attachments"
+                type="file"
+                className={`form-control ${Object.keys(attachmentErrors).length > 0 ? "is-invalid" : ""}`}
+                multiple
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files ?? []);
+                  setSelectedFiles(files);
+                  setAttachmentErrors(validateAttachments(files));
+                  setServerError(null);
+                }}
+              />
+              <div className="form-text">Optional · up to 5 files · 5 MB each · JPG, JPEG, PNG, WEBP or PDF.</div>
+              {selectedFiles.length > 0 && (
+                <div className="mt-2 d-flex flex-column gap-1">
+                  {selectedFiles.map((file) => (
+                    <div key={`${file.name}-${file.size}`} className="small">
+                      <span>{file.name}</span>
+                      {attachmentErrors[file.name] ? (
+                        <div className="text-danger">{attachmentErrors[file.name]}</div>
+                      ) : (
+                        <span className="text-secondary"> · {(file.size / 1024).toFixed(1)} KB</span>
+                      )}
+                    </div>
+                  ))}
+                  {attachmentErrors.__count && <div className="text-danger small">{attachmentErrors.__count}</div>}
+                </div>
               )}
             </div>
           </div>
