@@ -106,3 +106,55 @@ describe("isTicketNumberConflict (retry helper)", () => {
     expect(isTicketNumberConflict(null)).toBe(false);
   });
 });
+
+describe("validateTicketQuery (U-5/U-6)", () => {
+  // Import dynamically to avoid circular init issues in this file.
+  it("applies defaults when query is empty", async () => {
+    const { validateTicketQuery } = await import("../../src/ticketQuery.js");
+    const { errors, parsed } = validateTicketQuery({});
+    expect(errors).toEqual({});
+    expect(parsed).toMatchObject({ sort: "newest", page: 1, pageSize: 10 });
+    expect(parsed?.search).toBeUndefined();
+  });
+
+  it("parses search/category/sort/page correctly", async () => {
+    const { validateTicketQuery } = await import("../../src/ticketQuery.js");
+    const { errors, parsed } = validateTicketQuery({
+      search: "  report  ",
+      categoryId: "2",
+      sort: "summary_asc",
+      page: "2",
+      pageSize: "5",
+    });
+    expect(errors).toEqual({});
+    expect(parsed).toMatchObject({
+      search: "report",
+      categoryId: 2,
+      sort: "summary_asc",
+      page: 2,
+      pageSize: 5,
+    });
+  });
+
+  it("rejects invalid page/sort/ids with per-field errors", async () => {
+    const { validateTicketQuery } = await import("../../src/ticketQuery.js");
+    const { errors, parsed } = validateTicketQuery({
+      page: "0",
+      pageSize: "100",
+      sort: "bad",
+      categoryId: "-1",
+    });
+    expect(parsed).toBeNull();
+    expect(errors.page).toMatch(/page/);
+    expect(errors.pageSize).toMatch(/pageSize/);
+    expect(errors.sort).toMatch(/sort/);
+    expect(errors.categoryId).toMatch(/positive integer/);
+  });
+
+  it("treats blank search as no filter", async () => {
+    const { validateTicketQuery } = await import("../../src/ticketQuery.js");
+    const { errors, parsed } = validateTicketQuery({ search: "   " });
+    expect(errors).toEqual({});
+    expect(parsed?.search).toBeUndefined();
+  });
+});

@@ -5,6 +5,7 @@ import { filterActiveRequesters } from "./requesterFilter.js";
 import { requireDevRequester } from "./devRequester.js";
 import { generateTicketNumber, isTicketNumberConflict } from "./ticketNumber.js";
 import { validateTicketInput } from "./ticketValidation.js";
+import { toPrismaOrderBy, validateTicketQuery } from "./ticketQuery.js";
 
 type DevRequester = {
   id: number;
@@ -179,5 +180,62 @@ app.post(
     }
   }
 );
+
+// ---------------------------------------------------------------------------
+// Issue 4 — My Tickets (list own tickets with search/filter/sort/pagination)
+// GET /api/v1/tickets returns only the acting requester's tickets (BR-1).
+// Query: search (summary contains, case-insensitive), categoryId,
+// relatedSystemId, sort (newest|oldest|summary_asc), page, pageSize.
+// ---------------------------------------------------------------------------
+app.get("/api/v1/tickets", requireDevRequester, async (req: Request, res: Response) => {
+  try {
+    const { errors, parsed } = validateTicketQuery(req.query as Record<string, unknown>);
+    if (Object.keys(errors).length > 0) {
+      res.status(400).json({ error: { message: "Validation failed", fields: errors } });
+      return;
+    }
+    const q = parsed!;
+    const prisma = getPrisma();
+    const requester = res.locals.devRequester!;
+
+    const where: Record<string, unknown> = { requesterId: requester.id };
+    if (q.search) {
+      (where as Record<string, unknown>).summary = { contains: q.search, mode: "insensitive" };
+    }
+    if (q.categoryId) where.categoryId = q.categoryId;
+    if (q.relatedSystemId) where.relatedSystemId = q.relatedSystemId;
+
+    const orderBy = toPrismaOrderBy(q.sort);
+    const skip = (q.page - 1) * q.pageSize;
+    const take = q.pageSize;
+
+    const [totalItems, items] = await Promise.all([
+      prisma.ticket.count({ where: where as never }),
+      prisma.ticket.findMany({
+        where: where as never,
+        orderBy: orderBy as never,
+        skip,
+        take,
+        include: {
+          requester: { select: { id: true, name: true } },
+          category: { select: { id: true, name: true } },
+          relatedSystem: { select: { id: true, name: true } },
+        },
+      }),
+    ]);
+
+    const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / q.pageSize);
+
+    res.json({
+      items,
+      page: q.page,
+      pageSize: q.pageSize,
+      totalItems,
+      totalPages,
+    });
+  } catch {
+    res.status(500).json({ error: { message: "Unable to load tickets" } });
+  }
+});
 
 export default app;

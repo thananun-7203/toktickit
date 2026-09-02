@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useEffect } from "react";
 import App from "../../src/App.js";
@@ -33,14 +33,41 @@ const TEST_REQUESTER: api.Requester = {
 };
 
 describe("App", () => {
-  // WORKED EXAMPLE — provided for you.
-  it("renders the TokTickIT heading", () => {
-    renderWithRequester(TEST_REQUESTER);
-    expect(screen.getByText(/TokTickIT/i)).toBeInTheDocument();
-  });
-
   beforeEach(() => {
     vi.restoreAllMocks();
+    localStorage.clear();
+    // App now lands on My Tickets per Lab 2 S1. Keep its initial data loading
+    // deterministic in these legacy Lab 1 tests before navigating to Home.
+    vi.spyOn(api, "getCategories").mockResolvedValue([]);
+    vi.spyOn(api, "getRelatedSystems").mockResolvedValue([]);
+    vi.spyOn(api, "getTickets").mockResolvedValue({
+      items: [],
+      page: 1,
+      pageSize: 10,
+      totalItems: 0,
+      totalPages: 0,
+    });
+  });
+
+  it("shows requester selection on a fresh app entry", async () => {
+    vi.spyOn(api, "getRequesters").mockResolvedValue([TEST_REQUESTER]);
+
+    render(
+      <RequesterProvider>
+        <App />
+      </RequesterProvider>
+    );
+
+    expect(await screen.findByText("Somchai Jaidee")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Continue/i })).toBeDisabled();
+    expect(screen.queryByRole("heading", { name: /My Tickets/i })).not.toBeInTheDocument();
+  });
+
+  // WORKED EXAMPLE — provided for you.
+  it("renders the TokTickIT heading and lands on My Tickets", async () => {
+    renderWithRequester(TEST_REQUESTER);
+    expect(screen.getByText(/TokTickIT/i)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /My Tickets/i })).toBeInTheDocument();
   });
 
   it("shows Online and the seeded categories on success", async () => {
@@ -56,6 +83,7 @@ describe("App", () => {
     });
 
     renderWithRequester(TEST_REQUESTER);
+    await user.click(screen.getByRole("button", { name: /^Home$/i }));
     await user.click(screen.getByRole("button", { name: /Check System/i }));
 
     expect(await screen.findByText("System Status: Online")).toBeInTheDocument();
@@ -70,6 +98,8 @@ describe("App", () => {
     vi.spyOn(api, "checkSystem").mockRejectedValue(new Error("network error"));
 
     renderWithRequester(TEST_REQUESTER);
+    await waitFor(() => expect(screen.getByRole("button", { name: /^Home$/i })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: /^Home$/i }));
     await user.click(screen.getByRole("button", { name: /Check System/i }));
 
     expect(await screen.findByText("System Status: Offline")).toBeInTheDocument();

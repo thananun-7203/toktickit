@@ -81,18 +81,22 @@ export default function CreateTicket() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!requester) return;
     const nextErrors = validate(fields);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
     setSubmitState("busy");
     try {
-      const ticket = await createTicket({
-        categoryId: Number(fields.categoryId),
-        relatedSystemId: Number(fields.relatedSystemId),
-        summary: fields.summary.trim(),
-        description: fields.description.trim(),
-      });
+      const ticket = await createTicket(
+        {
+          categoryId: Number(fields.categoryId),
+          relatedSystemId: Number(fields.relatedSystemId),
+          summary: fields.summary.trim(),
+          description: fields.description.trim(),
+        },
+        requester.id,
+      );
       setCreated(ticket);
       setFields(EMPTY);
       setSubmitState("success");

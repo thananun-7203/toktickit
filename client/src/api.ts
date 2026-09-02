@@ -1,7 +1,6 @@
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 export const DEV_REQUESTER_HEADER = "X-Dev-Requester-Id";
-const DEV_REQUESTER_STORAGE_KEY = "toktickit.dev-requester";
 
 export interface Category {
   id: number;
@@ -66,34 +65,20 @@ export async function checkSystem(): Promise<SystemStatus> {
   return { online: true, categories };
 }
 
-// Returns the currently-selected Development Requester from localStorage, or
-// null when none has been chosen. Centralised here so every ticket-scoped call
-// can attach the X-Dev-Requester-Id header without per-call duplication.
-export function getSelectedRequester(): Requester | null {
-  try {
-    const raw = localStorage.getItem(DEV_REQUESTER_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed.id === "number" && typeof parsed.name === "string") {
-      return parsed;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
 // Shared fetch wrapper: attaches the X-Dev-Requester-Id header (simulated
-// identity, api-spec.md FR-1 / BR-1) to every request. Later Issues (Create /
-// My Tickets / Attachments) call this instead of raw fetch.
-export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+// identity, api-spec.md FR-1 / BR-1) when a requester id is supplied by the
+// React context owner. Public/reference-data requests can omit requesterId.
+export async function apiFetch(
+  path: string,
+  init: RequestInit = {},
+  requesterId?: number,
+): Promise<Response> {
   const headers = new Headers(init.headers);
   if (!headers.has("Content-Type") && init.body && !(init.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
-  const requester = getSelectedRequester();
-  if (requester) {
-    headers.set(DEV_REQUESTER_HEADER, String(requester.id));
+  if (requesterId !== undefined) {
+    headers.set(DEV_REQUESTER_HEADER, String(requesterId));
   }
   return fetch(`${API_URL}${path}`, { ...init, headers });
 }
@@ -126,11 +111,11 @@ export async function getRelatedSystems(): Promise<RelatedSystem[]> {
 }
 
 // Lab 2 Issue 3 — create a new ticket (POST /api/v1/tickets).
-export async function createTicket(input: NewTicketInput): Promise<Ticket> {
+export async function createTicket(input: NewTicketInput, requesterId: number): Promise<Ticket> {
   const res = await apiFetch("/api/v1/tickets", {
     method: "POST",
     body: JSON.stringify(input),
-  });
+  }, requesterId);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     // Carry both the top-level message and any per-field validation errors so
@@ -142,6 +127,44 @@ export async function createTicket(input: NewTicketInput): Promise<Ticket> {
     throw err;
   }
   return data as Ticket;
+}
+
+// Lab 2 Issue 4 — My Tickets list (GET /api/v1/tickets).
+export interface GetTicketsParams {
+  search?: string;
+  categoryId?: number;
+  relatedSystemId?: number;
+  sort?: "newest" | "oldest" | "summary_asc";
+  page?: number;
+  pageSize?: number;
+}
+
+export interface GetTicketsResponse {
+  items: Ticket[];
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export async function getTickets(
+  params: GetTicketsParams = {},
+  requesterId: number,
+): Promise<GetTicketsResponse> {
+  const qs = new URLSearchParams();
+  if (params.search) qs.set("search", params.search);
+  if (params.categoryId) qs.set("categoryId", String(params.categoryId));
+  if (params.relatedSystemId) qs.set("relatedSystemId", String(params.relatedSystemId));
+  if (params.sort) qs.set("sort", params.sort);
+  if (params.page) qs.set("page", String(params.page));
+  if (params.pageSize) qs.set("pageSize", String(params.pageSize));
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
+  const res = await apiFetch(`/api/v1/tickets${suffix}`, {}, requesterId);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.error?.message ?? `Failed to load tickets (${res.status})`);
+  }
+  return res.json();
 }
 
 // Error thrown by createTicket; carries optional per-field validation messages.

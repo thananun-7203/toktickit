@@ -91,6 +91,10 @@ describe("CreateTicket", () => {
 
     await user.click(screen.getByRole("button", { name: /Create Ticket/i }));
     expect(screen.getByRole("button", { name: /Creating/ })).toBeDisabled();
+    expect(api.createTicket).toHaveBeenCalledWith(
+      expect.objectContaining({ summary: "Unit test ticket" }),
+      TEST_REQUESTER.id,
+    );
 
     resolveCreate({
       id: 1,

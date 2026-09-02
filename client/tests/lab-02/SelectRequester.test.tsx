@@ -56,6 +56,16 @@ describe("SelectRequester (UI-1)", () => {
     expect(screen.getByTestId("selected")).toHaveTextContent("Somchai Jaidee");
   });
 
+  it("starts with no selected requester even if stale localStorage data exists", async () => {
+    localStorage.setItem("toktickit.dev-requester", JSON.stringify(REQUESTERS[0]));
+    vi.spyOn(api, "getRequesters").mockResolvedValue(REQUESTERS);
+
+    renderWithProvider();
+
+    expect(await screen.findByRole("button", { name: /Continue/i })).toBeDisabled();
+    expect(screen.queryByTestId("selected")).not.toBeInTheDocument();
+  });
+
   it("shows an error alert when the requesters API fails", async () => {
     vi.spyOn(api, "getRequesters").mockRejectedValue(new Error("network error"));
     renderWithProvider();
