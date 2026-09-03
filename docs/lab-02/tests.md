@@ -1,7 +1,7 @@
 # TokTickIT Lab 2 — Test Plan & Traceability
 
 Tools: **Vitest** (Unit + UI), **Supertest** (API), **Playwright** (E2E), manual screenshots (Visual).
-Test-first workflow: failing tests for each issue are committed before its implementation.
+Test-first workflow: failing-first tests are run locally before implementation where practical, then rerun after the implementation and during regression. For Issue 5, the Red/Green runs happened locally; the feature's Git history combines tests, implementation, and documentation in the same feature commit rather than providing separate committed Red and Green snapshots.
 
 ---
 
@@ -30,6 +30,7 @@ Test-first workflow: failing tests for each issue are committed before its imple
 | A-10 | `server/tests/lab-02/ticketDetail.api.test.ts` | FR-7, BR-4 | Upload 1 valid file | 201; appears in detail attachments | Pass |
 | A-11 | `server/tests/lab-02/ticketDetail.api.test.ts` | BR-4 | Upload >5 MB or disallowed type | 400 naming offending file | Pass |
 | A-12 | `server/tests/lab-02/ticketDetail.api.test.ts` | BR-4 | Upload beyond 5 active files | 400; count stays ≤5 | Pass |
+| A-12C | `server/tests/lab-02/ticketDetail.api.test.ts` | BR-4 | 4 active files + 2 simultaneous one-file uploads | Exactly one upload succeeds; active metadata/storage stays at 5 with no orphan from the rejected request | Pass |
 | A-13 | `server/tests/lab-02/ticketDetail.api.test.ts` | FR-9, BR-5 | DELETE attachment then download it | Remove → 200 w/ timestamp; download then fails; metadata still listed | Pass |
 | A-14 | `server/tests/lab-02/reference-data.api.test.ts` | FR-3 | GET /api/v1/categories | 200; returns 4 active seeded categories | Planned |
 | A-15 | `server/tests/lab-02/reference-data.api.test.ts` | FR-3 | GET /api/v1/related-systems | 200; returns ≥6 active seeded related systems | Planned |
@@ -96,7 +97,7 @@ Every Acceptance Criterion must map to at least one planned test.
 | AC-5 | My Tickets shows only tickets for the acting requester (isolation proof) | A-6, E-4 |
 | AC-6 | Search/filter/sort/pagination return correct subsets | A-7, A-8, A-9 |
 | AC-7 | Detail shows ticket metadata + attachments; other requester's id = 404 | A-5, E-3 |
-| AC-8 | Upload within limits succeeds; exceeding limits fails clearly | A-10, A-11, A-12 |
+| AC-8 | Upload within limits succeeds; exceeding limits fails clearly, including concurrent uploads | A-10, A-11, A-12, A-12C |
 | AC-9 | Soft-removed attachments visible as metadata; download blocked | A-13, UI-6, UI-9, E-5 |
 | AC-10 | Zen Green theme + responsive Desktop/Tablet/Mobile | V-1, V-2, V-3 |
 
@@ -112,7 +113,7 @@ Every AC has ≥1 automated or manual test mapped.
 | FR-4 | U-1 | A-2 | — | E-2 |
 | FR-5 | — | A-6–A-9 | UI-5 | E-2, E-4 |
 | FR-6 | — | A-5 | — | E-3 |
-| FR-7 | — | A-10–A-12 | — | E-5 |
+| FR-7 | — | A-10–A-12, A-12C | — | E-5 |
 | FR-8 | — | A-13 (download path) | — | E-5 |
 | FR-9 | — | A-13 | UI-6, UI-9 | E-5 |
 

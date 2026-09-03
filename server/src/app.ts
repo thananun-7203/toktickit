@@ -64,6 +64,9 @@ const parseAttachmentUpload = (req: Request, res: Response, next: express.NextFu
   });
 };
 
+class AttachmentLimitError extends Error {}
+class TicketNotFoundError extends Error {}
+
 // ---------------------------------------------------------------------------
 // Issue 2 — API health check
 // Returns the required JSON so the Supertest test in tests/lab-01 can pass.
@@ -349,6 +352,10 @@ app.post(
         return;
       }
 
+      // Fast pre-check avoids writing to object storage when the ticket is
+      // already known to be full. This is intentionally NOT the authoritative
+      // concurrency check; a second check runs while holding a PostgreSQL row
+      // lock below so simultaneous requests cannot both reserve the fifth slot.
       const activeCount = await prisma.attachment.count({
         where: { ticketId, removedAt: null },
       });
@@ -377,20 +384,48 @@ app.post(
         });
       }
 
-      const created = await prisma.$transaction(
-        pending.map((file) =>
-          prisma.attachment.create({
-            data: { ...file, ticketId },
-            select: {
-              id: true,
-              fileName: true,
-              mimeType: true,
-              sizeBytes: true,
-              removedAt: true,
-            },
-          }),
-        ),
-      );
+      const created = await prisma.$transaction(async (tx) => {
+        // Serialize attachment reservations for this ticket. The lock is held
+        // until the transaction commits, so a concurrent uploader must wait,
+        // then sees the first request's newly-created metadata in the count.
+        const locked = await tx.$queryRaw<Array<{ id: number }>>`
+          SELECT "id"
+          FROM "Ticket"
+          WHERE "id" = ${ticketId} AND "requesterId" = ${requester.id}
+          FOR UPDATE
+        `;
+        if (locked.length === 0) throw new TicketNotFoundError();
+
+        const lockedActiveCount = await tx.attachment.count({
+          where: { ticketId, removedAt: null },
+        });
+        if (lockedActiveCount + files.length > MAX_ACTIVE_ATTACHMENTS) {
+          throw new AttachmentLimitError();
+        }
+
+        const rows = [] as Array<{
+          id: number;
+          fileName: string;
+          mimeType: string;
+          sizeBytes: number;
+          removedAt: Date | null;
+        }>;
+        for (const file of pending) {
+          rows.push(
+            await tx.attachment.create({
+              data: { ...file, ticketId },
+              select: {
+                id: true,
+                fileName: true,
+                mimeType: true,
+                sizeBytes: true,
+                removedAt: true,
+              },
+            }),
+          );
+        }
+        return rows;
+      });
 
       res.status(201).json(created);
     } catch (err) {
@@ -398,6 +433,14 @@ app.post(
       await Promise.allSettled(writtenKeys.map((key) => storage.delete(key)));
       if (err instanceof multer.MulterError) {
         res.status(400).json({ error: { message: "Attachment upload exceeds allowed limits" } });
+        return;
+      }
+      if (err instanceof AttachmentLimitError) {
+        res.status(400).json({ error: { message: "A ticket can have at most 5 active attachments" } });
+        return;
+      }
+      if (err instanceof TicketNotFoundError) {
+        res.status(404).json({ error: { message: "Ticket not found" } });
         return;
       }
       res.status(500).json({ error: { message: "Unable to upload attachments" } });

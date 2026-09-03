@@ -7,7 +7,7 @@ This file records peer-review evidence for the Lab 2 feature workflow.
 | Feature / PR | Reviewer | Initial result | Follow-up | Final status |
 |---|---|---|---|---|
 | Issue 4 — My Tickets, PR #24 | Peepipat-Suesoongnuen | Changes requested: requester landing flow, empty-state Create Ticket CTA, and missing A-8 oldest/newest assertions | All three points fixed; regression tests added and CI passed | Approved and merged into `lab2-staging` |
-| Issue 5 — Ticket Detail & Attachments | — | Not reviewed yet | Feature is currently on `feature/5-ticket-detail-and-attachments`; review will be recorded after the PR is opened | Pending |
+| Issue 5 — Ticket Detail & Attachments, PR #25 | Peepipat-Suesoongnuen | Changes requested: concurrent uploads could exceed five active attachments; TDD wording overstated what Git history proves | Both fixes implemented and verified locally; commit/push and re-review are still pending | Changes requested |
 
 ## Issue 5 Reviewer Checklist
 
@@ -27,4 +27,11 @@ The Issue 5 reviewer should verify the following before approval:
 
 ## Review Notes for Issue 5
 
-To be completed after the Issue 5 PR is opened and reviewed.
+Initial review of PR #25 confirmed that requester ownership, soft removal, download/remove behavior, storage cleanup, Create Ticket attachment flow, and hosted client/server/E2E CI were otherwise in good shape.
+
+Two blockers were requested before approval:
+
+1. Make the max-five-active-attachments rule concurrency-safe and add a regression test proving that `4 active + 2 simultaneous uploads` never produces more than five active attachments or orphan storage/metadata.
+2. Correct the TDD documentation so it states what can actually be proven: failing-first tests were run locally, while the Issue 5 feature commit bundled tests and implementation rather than committing a separate Red snapshot.
+
+Local follow-up verification after addressing the blockers: server `45/45`, client `23/23`, TypeScript checks passed, and Playwright E2E `1/1` passed. Hosted CI/re-review evidence will be recorded after the fixes are pushed.

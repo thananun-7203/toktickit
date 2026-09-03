@@ -8,7 +8,7 @@ The implementation workflow followed these rules:
 
 - Work one GitHub Issue / feature branch at a time.
 - Read the existing specification, API spec, UI spec, and test plan before changing code.
-- Prefer a test-first (Red → Green → Regression) workflow.
+- Prefer a test-first (Red → Green → Regression) workflow, with Red/Green runs performed locally unless the Git history explicitly shows separate test-only and implementation commits.
 - Do not treat a feature as complete while required tests are missing or failing.
 - Do not commit, push, or merge changes until the student has reviewed and explicitly approved that action.
 - Keep `Lab_02_Implementation_Plan.md` untracked because it is a local planning file.
@@ -37,7 +37,7 @@ The implementation workflow followed these rules:
 **AI assistance:**
 
 - Created `feature/5-ticket-detail-and-attachments` from the updated `lab2-staging` branch.
-- Added test-first API coverage for ticket detail ownership and attachment lifecycle behavior.
+- Ran failing-first API coverage locally for ticket detail ownership and attachment lifecycle behavior before implementing the corresponding behavior.
 - Implemented owned ticket detail retrieval.
 - Implemented upload validation (allowed types, 5 MB/file, maximum five active files, and no partial DB persistence for a rejected batch).
 - Added a storage abstraction with a SeaweedFS filer implementation and test override.
@@ -48,6 +48,8 @@ The implementation workflow followed these rules:
 - Added Playwright E2E coverage for requester selection → create → list → detail → download → soft remove → ownership isolation.
 - Added a Docker Compose environment for isolated PostgreSQL + SeaweedFS E2E execution.
 - Added a GitHub Actions E2E job.
+
+**TDD evidence note:** For Issue 5, the failing-first (Red) tests and later Green/regression runs were executed locally during development. Commit `a74694c` intentionally bundled the Issue 5 tests, implementation, and documentation, so the Git history does **not** demonstrate a separate committed Red snapshot. The evidence claimed here is the local test-first execution, not a test-only commit.
 
 ## Example of AI-assisted debugging
 

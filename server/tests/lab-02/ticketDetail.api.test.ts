@@ -183,6 +183,54 @@ describe("Ticket attachments", () => {
     expect(detail.body.attachments).toHaveLength(5);
   });
 
+  it("A-12C: 4 active + 2 simultaneous uploads never exceeds five and leaves no orphan storage", async () => {
+    const ticket = await createTicket(R1);
+    const initial = request(app)
+      .post(`/api/v1/tickets/${ticket.id}/attachments`)
+      .set("X-Dev-Requester-Id", String(R1));
+    for (let i = 1; i <= 4; i++) {
+      initial.attach("files", Buffer.from(`initial-${i}`), {
+        filename: `initial-${i}.pdf`,
+        contentType: "application/pdf",
+      });
+    }
+    expect((await initial).status).toBe(201);
+    expect(storage.objects.size).toBe(4);
+
+    const [uploadA, uploadB] = await Promise.all([
+      request(app)
+        .post(`/api/v1/tickets/${ticket.id}/attachments`)
+        .set("X-Dev-Requester-Id", String(R1))
+        .attach("files", Buffer.from("concurrent-a"), {
+          filename: "concurrent-a.pdf",
+          contentType: "application/pdf",
+        }),
+      request(app)
+        .post(`/api/v1/tickets/${ticket.id}/attachments`)
+        .set("X-Dev-Requester-Id", String(R1))
+        .attach("files", Buffer.from("concurrent-b"), {
+          filename: "concurrent-b.pdf",
+          contentType: "application/pdf",
+        }),
+    ]);
+
+    expect([uploadA.status, uploadB.status].sort()).toEqual([201, 400]);
+
+    const detail = await request(app)
+      .get(`/api/v1/tickets/${ticket.id}`)
+      .set("X-Dev-Requester-Id", String(R1));
+    const active = detail.body.attachments.filter(
+      (attachment: { removedAt: string | null }) => attachment.removedAt === null,
+    );
+    expect(active).toHaveLength(5);
+
+    const persistedCount = await getPrisma().attachment.count({
+      where: { ticketId: ticket.id, removedAt: null },
+    });
+    expect(persistedCount).toBe(5);
+    expect(storage.objects.size).toBe(5);
+  });
+
   it("returns a JSON 400 when one multipart request contains more than five files", async () => {
     const ticket = await createTicket(R1);
     const upload = request(app)
