@@ -19,17 +19,21 @@ Rules:
 - All primary actions use Primary Green; hover state shifts to Secondary Green.
 - Required fields show a red asterisk (*) after the label; validation messages render **directly below** the input in danger color with `.invalid-feedback`.
 - Status badges on lists use Pale Green background with Secondary Green text.
+- Requested Priority uses labelled pill badges: `Low` (green), `Medium` (amber), `High` (red). Colour supplements the text and is never the only signal.
+- Requester-facing screens share one Zen Green app shell: TokTickIT brand, My Tickets/Create Ticket/Check System navigation on desktop/tablet, and a Development Requester menu with a Switch action.
 
 ## 2. Screens
 
 ### S1 — Select Development Requester
 | Aspect | Desktop / Tablet / Mobile |
 |---|---|
-| Layout | Centered card (max-width 480px), app title above |
-| Content | Radio-style list of **active** requesters (name + email); Continue button (disabled until selection) |
+| Layout | Centered Zen Green card with responsive padding, TokTickIT header, and Development Requester context breadcrumb |
+| Content | **Dropdown** populated with active requester name + email; development/testing-only explanation; “Only active development requesters are shown” notice; Continue disabled until selection |
 | States | Loading (spinner) · Error (retry alert) · Empty (no active requesters alert) |
 
 On continue → requester stored in context; user lands on S3 (My Tickets). A persistent identity chip (name) appears in the navbar on all later screens with a "Switch" action returning to S1.
+
+After requester selection, **Check System** is retained as a utility destination. Desktop/tablet show it directly in the Zen Green navbar next to My Tickets/Create Ticket; mobile exposes the same destination from the hamburger menu.
 
 ### S2 — Create Ticket
 | Breakpoint | Form layout |
@@ -46,21 +50,21 @@ Fields:
 | Requested Priority* | select (`Low` / `Medium` / `High`) | required |
 | Summary* | text input | required, ≤100 chars, live counter |
 | Description* | textarea | required, ≤2000 chars, live counter |
-| Attachments | file input + list | ≤5 files, ≤5 MB each, allowed types (BR-4); per-file error row |
+| Attachments | dashed upload area + file input/list | ≤5 files, ≤5 MB each, allowed types (BR-4); per-file error row |
 
 States: Default · Busy (submit disabled + spinner) · Success (pale-green success panel showing generated Ticket Number, links to detail/list) · Error (danger alert + preserved form values).
 
 ### S3 — My Tickets
 | Breakpoint | Presentation |
 |---|---|
-| Desktop/Tablet | Table: Ticket No · Summary · Category · Requested Priority · System · Created · Status badge |
-| Mobile | Cards (one per ticket), same fields stacked |
+| Desktop/Tablet | Zen card table: Ticket No · Summary · Category · Requested Priority badge · System · Created · Status badge |
+| Mobile | Zen cards (one per ticket), same fields with explicit labels and priority/status badges |
 
 Toolbar: debounced search box for **Ticket Number or Summary**, category/system filter selects, sort select (Newest/Oldest/Summary A-Z), page-size select. Pagination footer shows `Page x of y` with prev/next.
 States: Loading skeleton · **Empty** ("No tickets yet" + CTA to Create) · **No results** (filter mismatch message + "Clear filters") · Error alert with retry.
 
 ### S4 — Ticket Detail (read-only)
-Layout: definition-list of ticket metadata (number, status badge, requester, category, requested priority, system, created) + description block + Attachments section.
+Layout: responsive metadata grid (number, created, requester, category, related system, requested priority badge, status badge) + separate Summary/Description card + Attachments panel.
 
 Attachments rows: icon · filename · size · type · actions:
 - Active → Download (secondary green outline button) + Remove (outline danger).
@@ -70,7 +74,7 @@ States: Loading · NotFound (friendly panel + back link) · required removal-rea
 
 ## 3. Responsive & Accessibility Conventions
 
-- Navbar collapses to hamburger below 768px (Bootstrap defaults).
+- Below 768px the app shell becomes compact: brand + requester/profile control remain visible while My Tickets/Create Ticket/Check System move into a hamburger menu; requester switching stays available from the profile control/menu.
 - Touch targets ≥ 44px on mobile; tables never require horizontal scroll (cards instead).
 - Every form control has an associated `<label>`; validation messages linked via `aria-describedby`; focus moves to first invalid field on failed submit.
 - Colour is never the only signal: badges include text labels, errors include messages.

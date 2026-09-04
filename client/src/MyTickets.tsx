@@ -21,6 +21,15 @@ interface MyTicketsProps {
   onOpenTicket?: (ticketId: number) => void;
 }
 
+function priorityClass(priority: Ticket["requestedPriority"]): string {
+  if (!priority) return "priority-not-recorded";
+  return `priority-${priority.toLowerCase()}`;
+}
+
+function statusClass(status: string): string {
+  return `status-${status.toLowerCase().replace(/\s+/g, "-")}`;
+}
+
 export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }: MyTicketsProps) {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -104,31 +113,37 @@ export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }:
     setSort("newest");
   }
 
+  const visiblePages = Array.from({ length: Math.min(totalPages, 5) }, (_, index) => index + 1);
+
   return (
-    <div className="container py-4" style={{ maxWidth: 900 }}>
-      <h2 className="h4 mb-3">My Tickets</h2>
+    <div>
+      <div className="page-heading">
+        <h1 className="page-title">My Tickets</h1>
+        <p className="page-subtitle">View and track all of your support requests.</p>
+      </div>
 
       {/* Toolbar */}
-      <div className="row g-2 mb-3 align-items-end">
-        <div className="col-12 col-md-4">
-          <label htmlFor="search" className="form-label form-label-sm mb-1">
+      <section className="zen-card filter-card mb-4">
+        <div className="row g-3 align-items-end">
+        <div className="col-12 col-lg-4">
+          <label htmlFor="search" className="form-label form-label-sm mb-1 visually-hidden">
             Search
           </label>
           <input
             id="search"
-            className="form-control form-control-sm"
+            className="form-control"
             placeholder="Search ticket no. or summary…"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />
         </div>
-        <div className="col-6 col-md-2">
+        <div className="col-6 col-lg-2">
           <label htmlFor="filterCategory" className="form-label form-label-sm mb-1">
             Category
           </label>
           <select
             id="filterCategory"
-            className="form-select form-select-sm"
+            className="form-select"
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
           >
@@ -140,13 +155,13 @@ export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }:
             ))}
           </select>
         </div>
-        <div className="col-6 col-md-2">
+        <div className="col-6 col-lg-2">
           <label htmlFor="filterSystem" className="form-label form-label-sm mb-1">
             System
           </label>
           <select
             id="filterSystem"
-            className="form-select form-select-sm"
+            className="form-select"
             value={filterSystem}
             onChange={(e) => setFilterSystem(e.target.value)}
           >
@@ -158,13 +173,13 @@ export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }:
             ))}
           </select>
         </div>
-        <div className="col-6 col-md-2">
+        <div className="col-6 col-lg-2">
           <label htmlFor="sort" className="form-label form-label-sm mb-1">
             Sort
           </label>
           <select
             id="sort"
-            className="form-select form-select-sm"
+            className="form-select"
             value={sort}
             onChange={(e) => setSort(e.target.value as typeof sort)}
           >
@@ -173,13 +188,13 @@ export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }:
             <option value="summary_asc">Summary A-Z</option>
           </select>
         </div>
-        <div className="col-6 col-md-2">
+        <div className="col-6 col-lg-2">
           <label htmlFor="pageSize" className="form-label form-label-sm mb-1">
             Page size
           </label>
           <select
             id="pageSize"
-            className="form-select form-select-sm"
+            className="form-select"
             value={String(pageSize)}
             onChange={(e) => setPageSize(Number(e.target.value))}
           >
@@ -188,19 +203,22 @@ export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }:
             <option value="20">20</option>
           </select>
         </div>
-      </div>
+        </div>
 
-      {hasActiveFilter && (
-        <button className="btn btn-sm btn-outline-secondary mb-3" onClick={clearFilters}>
-          Clear filters
-        </button>
-      )}
+        {hasActiveFilter && (
+          <div className="mt-3 text-end">
+            <button className="btn btn-sm btn-outline-secondary" onClick={clearFilters}>
+              Clear filters
+            </button>
+          </div>
+        )}
+      </section>
 
       {loadState === "loading" && (
-        <p className="text-secondary">
+        <div className="zen-card content-card text-secondary">
           <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
           Loading tickets…
-        </p>
+        </div>
       )}
 
       {loadState === "error" && (
@@ -213,8 +231,8 @@ export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }:
       )}
 
       {loadState === "success" && totalItems === 0 && !hasActiveFilter && (
-        <div className="text-center py-5">
-          <p className="text-secondary mb-2">No tickets yet</p>
+        <div className="zen-card content-card text-center py-5">
+          <h2 className="h5 mb-2">No tickets yet</h2>
           <p className="small text-secondary mb-3">Create your first ticket to get started.</p>
           {onCreateTicket && (
             <button className="btn btn-success btn-sm" onClick={onCreateTicket}>
@@ -225,8 +243,8 @@ export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }:
       )}
 
       {loadState === "success" && totalItems === 0 && hasActiveFilter && (
-        <div className="text-center py-4">
-          <p className="text-secondary">No results</p>
+        <div className="zen-card content-card text-center py-4">
+          <h2 className="h5">No results</h2>
           <p className="small text-secondary">Try adjusting your search or filters.</p>
         </div>
       )}
@@ -234,9 +252,9 @@ export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }:
       {loadState === "success" && tickets.length > 0 && (
         <>
           {/* Desktop/tablet table */}
-          <div className="d-none d-md-block table-responsive">
-            <table className="table table-hover align-middle">
-              <thead style={{ backgroundColor: "#EAF6EF" }}>
+          <div className="d-none d-md-block zen-card ticket-table-card">
+            <table className="table table-hover align-middle ticket-table">
+              <thead>
                 <tr>
                   <th>Ticket No</th>
                   <th>Summary</th>
@@ -253,7 +271,7 @@ export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }:
                     <td className="fw-semibold">
                       {onOpenTicket ? (
                         <button
-                          className="btn btn-link p-0 fw-semibold text-success"
+                          className="btn btn-link p-0 fw-semibold ticket-link"
                           aria-label={`Open ${t.ticketNumber}`}
                           onClick={() => onOpenTicket(t.id)}
                         >
@@ -265,14 +283,15 @@ export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }:
                     </td>
                     <td>{t.summary}</td>
                     <td>{t.category.name}</td>
-                    <td>{t.requestedPriority ?? "Not recorded"}</td>
-                    <td>{t.relatedSystem.name}</td>
-                    <td className="small text-secondary">{new Date(t.createdAt).toLocaleDateString()}</td>
                     <td>
-                      <span
-                        className="badge"
-                        style={{ backgroundColor: "#EAF6EF", color: "#0B7A46" }}
-                      >
+                      <span className={`priority-badge ${priorityClass(t.requestedPriority)}`}>
+                        {t.requestedPriority ?? "Not recorded"}
+                      </span>
+                    </td>
+                    <td>{t.relatedSystem.name}</td>
+                    <td className="small text-secondary">{new Date(t.createdAt).toLocaleString()}</td>
+                    <td>
+                      <span className={`status-badge ${statusClass(t.status)}`}>
                         {t.status}
                       </span>
                     </td>
@@ -283,13 +302,13 @@ export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }:
           </div>
 
           {/* Mobile cards */}
-          <div className="d-md-none d-flex flex-column gap-2">
+          <div className="d-md-none d-flex flex-column gap-3">
             {tickets.map((t) => (
-              <div key={t.id} className="card p-3">
-                <div className="d-flex justify-content-between">
+              <article key={t.id} className="zen-card ticket-mobile-card">
+                <div className="d-flex justify-content-between gap-3 align-items-start">
                   {onOpenTicket ? (
                     <button
-                      className="btn btn-link p-0 fw-semibold text-success"
+                      className="btn btn-link p-0 fw-semibold ticket-link"
                       aria-label={`Open ${t.ticketNumber}`}
                       onClick={() => onOpenTicket(t.id)}
                     >
@@ -298,33 +317,53 @@ export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }:
                   ) : (
                     <span className="fw-semibold">{t.ticketNumber}</span>
                   )}
-                  <span className="badge" style={{ backgroundColor: "#EAF6EF", color: "#0B7A46" }}>
+                  <span className={`status-badge ${statusClass(t.status)}`}>
                     {t.status}
                   </span>
                 </div>
-                <p className="mb-1 mt-2">{t.summary}</p>
-                <small className="text-secondary">
-                  {t.category.name} · {t.requestedPriority ?? "Not recorded"} · {t.relatedSystem.name} · {new Date(t.createdAt).toLocaleDateString()}
-                </small>
-              </div>
+                <div className="mt-3"><span className="meta-label">Summary:</span>{t.summary}</div>
+                <div className="ticket-mobile-meta">
+                  <div><span className="meta-label">Category:</span>{t.category.name}</div>
+                  <div>
+                    <span className="meta-label">Priority:</span>
+                    <span className={`priority-badge ${priorityClass(t.requestedPriority)}`}>
+                      {t.requestedPriority ?? "Not recorded"}
+                    </span>
+                  </div>
+                  <div><span className="meta-label">System:</span>{t.relatedSystem.name}</div>
+                  <div><span className="meta-label">Created:</span>{new Date(t.createdAt).toLocaleString()}</div>
+                </div>
+              </article>
             ))}
           </div>
 
           {/* Pagination */}
-          <div className="d-flex justify-content-between align-items-center mt-3">
+          <div className="zen-card d-flex flex-wrap justify-content-between align-items-center mt-3 pagination-bar">
             <small className="text-secondary">
-              Page {page} of {totalPages} · {totalItems} tickets
+              Showing page {page} of {totalPages} · {totalItems} tickets
             </small>
-            <div className="d-flex gap-2">
-              <button className="btn btn-sm btn-outline-success" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-                Prev
+            <div className="d-flex gap-2 pagination-pages">
+              <button className="btn btn-sm btn-outline-success" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} aria-label="Previous page">
+                ‹
               </button>
+              {visiblePages.map((pageNumber) => (
+                <button
+                  key={pageNumber}
+                  className={`btn btn-sm page-number ${pageNumber === page ? "btn-success" : "btn-outline-secondary"}`}
+                  aria-current={pageNumber === page ? "page" : undefined}
+                  onClick={() => setPage(pageNumber)}
+                >
+                  {pageNumber}
+                </button>
+              ))}
+              {totalPages > 5 && <span className="align-self-center px-1">…</span>}
               <button
                 className="btn btn-sm btn-outline-success"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
+                aria-label="Next page"
               >
-                Next
+                ›
               </button>
             </div>
           </div>

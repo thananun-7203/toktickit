@@ -54,6 +54,9 @@ describe("CreateTicket", () => {
     expect(screen.getByLabelText(/Summary/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Description/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Attachments/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^Create Ticket$/i })).toBeInTheDocument();
+    expect(screen.getByText(/Provide the details below to open a new support request/i)).toBeInTheDocument();
+    expect(screen.getByText(/PDF, JPG, PNG, WEBP/i)).toBeInTheDocument();
 
     // Zen Green primary action button.
     const submit = screen.getByRole("button", { name: /Create Ticket/i });

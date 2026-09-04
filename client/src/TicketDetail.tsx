@@ -28,6 +28,20 @@ function formatSize(size: number): string {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function priorityClass(priority: TicketDetailModel["requestedPriority"]): string {
+  if (!priority) return "priority-not-recorded";
+  return `priority-${priority.toLowerCase()}`;
+}
+
+function statusClass(status: string): string {
+  return `status-${status.toLowerCase().replace(/\s+/g, "-")}`;
+}
+
+function fileLabel(fileName: string): string {
+  const extension = fileName.split(".").pop()?.toUpperCase();
+  return extension && extension.length <= 4 ? extension : "FILE";
+}
+
 function validateSelectedFiles(files: File[], activeCount: number): string | null {
   if (files.length === 0) return "Select at least one attachment";
   if (files.length > MAX_ACTIVE_FILES || activeCount + files.length > MAX_ACTIVE_FILES) {
@@ -173,109 +187,132 @@ export default function TicketDetail({ ticketId, requesterId, onBack }: TicketDe
   }
 
   return (
-    <div className="py-3">
-      <div className="d-flex justify-content-between align-items-start gap-3 mb-4">
-        <div>
-          <button className="btn btn-link px-0 text-success" onClick={onBack}>← Back to My Tickets</button>
-          <h2 className="h4 mb-1">{ticket.ticketNumber}</h2>
-          <h3 className="h6 fw-normal text-secondary mb-0">{ticket.summary}</h3>
-        </div>
-        <span className="badge" style={{ backgroundColor: "#EAF6EF", color: "#0B7A46" }}>
-          {ticket.status}
-        </span>
+    <div>
+      <div className="page-heading">
+        <button className="btn btn-link px-0 pt-0 ticket-link text-decoration-none" onClick={onBack}>← Back to My Tickets</button>
+        <h1 className="page-title">Ticket Detail</h1>
+        <p className="page-subtitle">View all the details and updates for this support request.</p>
       </div>
 
-      <div className="card border-0 shadow-sm mb-4">
-        <div className="card-body">
-          <dl className="row mb-0">
-            <dt className="col-sm-4">Requester</dt><dd className="col-sm-8">{ticket.requester.name}</dd>
-            <dt className="col-sm-4">Category</dt><dd className="col-sm-8">{ticket.category.name}</dd>
-            <dt className="col-sm-4">Requested Priority</dt><dd className="col-sm-8">{ticket.requestedPriority ?? "Not recorded"}</dd>
-            <dt className="col-sm-4">Related System</dt><dd className="col-sm-8">{ticket.relatedSystem.name}</dd>
-            <dt className="col-sm-4">Created</dt><dd className="col-sm-8">{new Date(ticket.createdAt).toLocaleString()}</dd>
-          </dl>
+      <section className="zen-card detail-card p-0 overflow-hidden mb-4">
+        <div className="detail-metadata-grid">
+          <div className="detail-meta-item">
+            <span className="detail-meta-label">Ticket No.</span>
+            <span className="detail-meta-value text-success">{ticket.ticketNumber}</span>
+          </div>
+          <div className="detail-meta-item">
+            <span className="detail-meta-label">Created</span>
+            <span className="detail-meta-value">{new Date(ticket.createdAt).toLocaleString()}</span>
+          </div>
+          <div className="detail-meta-item">
+            <span className="detail-meta-label">Requester</span>
+            <span className="detail-meta-value">{ticket.requester.name}</span>
+          </div>
+          <div className="detail-meta-item">
+            <span className="detail-meta-label">Category</span>
+            <span className="detail-meta-value">{ticket.category.name}</span>
+          </div>
+          <div className="detail-meta-item">
+            <span className="detail-meta-label">Related System</span>
+            <span className="detail-meta-value">{ticket.relatedSystem.name}</span>
+          </div>
+          <div className="detail-meta-item">
+            <span className="detail-meta-label">Requested Priority</span>
+            <span className={`priority-badge ${priorityClass(ticket.requestedPriority)}`}>
+              {ticket.requestedPriority ?? "Not recorded"}
+            </span>
+          </div>
+          <div className="detail-meta-item">
+            <span className="detail-meta-label">Status</span>
+            <span className={`status-badge ${statusClass(ticket.status)}`}>{ticket.status}</span>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <section className="mb-4">
-        <h3 className="h5">Description</h3>
-        <div className="p-3 rounded" style={{ backgroundColor: "#EAF6EF" }}>{ticket.description}</div>
+      <section className="zen-card content-card mb-4">
+        <h2 className="h6 fw-bold mb-2">Summary</h2>
+        <p className="mb-4">{ticket.summary}</p>
+        <h2 className="h6 fw-bold mb-2">Description</h2>
+        <p className="mb-0 text-secondary" style={{ whiteSpace: "pre-wrap" }}>{ticket.description}</p>
       </section>
 
       <section>
-        <div className="d-flex justify-content-between align-items-center mb-2">
-          <h3 className="h5 mb-0">Attachments</h3>
-          <small className="text-secondary">{activeCount}/{MAX_ACTIVE_FILES} active</small>
-        </div>
-
-        <div className="border rounded p-3 mb-3">
-          <label htmlFor="detailAttachments" className="form-label">Add attachments</label>
-          <input
-            id="detailAttachments"
-            type="file"
-            className="form-control"
-            multiple
-            accept=".jpg,.jpeg,.png,.webp,.pdf"
-            onChange={(e) => setSelectedFiles(Array.from(e.target.files ?? []))}
-          />
-          <div className="form-text">Up to 5 active files, 5 MB each. JPG, JPEG, PNG, WEBP or PDF.</div>
-          {selectedFiles.length > 0 && (
-            <ul className="small mt-2 mb-2">
-              {selectedFiles.map((file) => <li key={`${file.name}-${file.size}`}>{file.name} ({formatSize(file.size)})</li>)}
-            </ul>
-          )}
-          <button
-            className="btn btn-success btn-sm mt-2"
-            disabled={uploading || selectedFiles.length === 0}
-            onClick={handleUpload}
-          >
-            {uploading ? "Uploading…" : "Upload selected"}
-          </button>
-        </div>
-
-        {notice && (
-          <div
-            className="toast show mb-3"
-            role="status"
-            aria-live="polite"
-            style={{ backgroundColor: "#EAF6EF", color: "#0B7A46" }}
-          >
-            <div className="toast-body">{notice}</div>
+        <div className="zen-card attachment-panel mb-3">
+          <div className="attachment-panel-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+              <h2 className="h5 mb-1">Attachments <span className="badge rounded-pill text-bg-light">{ticket.attachments.length}</span></h2>
+              <small className="text-secondary">{activeCount}/{MAX_ACTIVE_FILES} active</small>
+            </div>
+            <div className="d-flex flex-wrap gap-2 align-items-center">
+              <label htmlFor="detailAttachments" className="btn btn-outline-success btn-sm mb-0">Add attachments</label>
+              <input
+                id="detailAttachments"
+                type="file"
+                className="visually-hidden"
+                multiple
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                onChange={(e) => setSelectedFiles(Array.from(e.target.files ?? []))}
+              />
+              <button
+                className="btn btn-success btn-sm"
+                disabled={uploading || selectedFiles.length === 0}
+                onClick={handleUpload}
+              >
+                {uploading ? "Uploading…" : "Upload selected"}
+              </button>
+            </div>
           </div>
-        )}
-        {error && <div className="alert alert-danger py-2">{error}</div>}
 
-        {ticket.attachments.length === 0 ? (
-          <p className="text-secondary">No attachments yet.</p>
-        ) : (
-          <div className="d-flex flex-column gap-2">
-            {ticket.attachments.map((attachment) => {
+          {selectedFiles.length > 0 && (
+            <div className="px-4 py-3 border-bottom bg-light-subtle">
+              <div className="small fw-semibold mb-1">Selected files</div>
+              <ul className="small mb-0 ps-3">
+                {selectedFiles.map((file) => <li key={`${file.name}-${file.size}`}>{file.name} ({formatSize(file.size)})</li>)}
+              </ul>
+            </div>
+          )}
+
+          {notice && (
+            <div className="zen-info m-3" role="status" aria-live="polite">
+              <span className="info-dot" aria-hidden="true">✓</span>
+              <span>{notice}</span>
+            </div>
+          )}
+          {error && <div className="alert alert-danger m-3 py-2">{error}</div>}
+
+          {ticket.attachments.length === 0 ? (
+            <p className="text-secondary px-4 py-4 mb-0">No attachments yet.</p>
+          ) : (
+            ticket.attachments.map((attachment) => {
               const removed = Boolean(attachment.removedAt);
               return (
                 <div
                   key={attachment.id}
                   data-testid={`attachment-${attachment.id}`}
-                  className={`border rounded p-3 d-flex flex-column flex-md-row justify-content-between gap-3 ${removed ? "text-secondary" : ""}`}
+                  className={`attachment-row d-flex flex-column flex-md-row justify-content-between gap-3 ${removed ? "removed" : ""}`}
                 >
-                  <div>
-                    <div className={removed ? "text-decoration-line-through" : "fw-semibold"}>{attachment.fileName}</div>
-                    <small>{formatSize(attachment.sizeBytes)} · {attachment.mimeType}</small>
-                    {removed && <span className="badge text-bg-secondary ms-2">Removed</span>}
-                    {removed && (
-                      <div className="small mt-1">
-                        Removal reason: {attachment.removalReason ?? "Not recorded (legacy)"}
-                      </div>
-                    )}
+                  <div className="d-flex gap-3 align-items-start min-w-0">
+                    <div className="file-icon" aria-hidden="true">{fileLabel(attachment.fileName)}</div>
+                    <div className="min-w-0">
+                      <div className={removed ? "fw-semibold text-decoration-line-through" : "fw-semibold"}>{attachment.fileName}</div>
+                      <small className="text-secondary">{formatSize(attachment.sizeBytes)} · {attachment.mimeType}</small>
+                      {removed && (
+                        <div className="small mt-2">
+                          <span className="status-badge status-new me-2">Removed</span>
+                          <strong>Removal reason:</strong> {attachment.removalReason ?? "Not recorded (legacy)"}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   {!removed && (
-                    <div className="d-flex gap-2 align-items-center">
+                    <div className="d-flex gap-2 align-items-center attachment-actions">
                       <button
                         className="btn btn-sm btn-outline-success"
                         aria-label={`Download ${attachment.fileName}`}
                         disabled={downloadingId === attachment.id}
                         onClick={() => handleDownload(attachment)}
                       >
-                        {downloadingId === attachment.id ? "Downloading…" : "Download"}
+                        {downloadingId === attachment.id ? "Downloading…" : "↓ Download"}
                       </button>
                       <button
                         className="btn btn-sm btn-outline-danger"
@@ -289,9 +326,10 @@ export default function TicketDetail({ ticketId, requesterId, onBack }: TicketDe
                   )}
                 </div>
               );
-            })}
-          </div>
-        )}
+            })
+          )}
+        </div>
+        <div className="small text-secondary">Up to 5 active files, 5 MB each. JPG, JPEG, PNG, WEBP or PDF.</div>
       </section>
     </div>
   );

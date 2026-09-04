@@ -66,9 +66,12 @@ describe("MyTickets (UI-5)", () => {
     expect(screen.getByLabelText(/System/)).toBeInTheDocument();
     expect(screen.getByLabelText(/^Sort/)).toBeInTheDocument();
     expect(screen.getAllByText("High").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/View and track all of your support requests/i)).toBeInTheDocument();
+    expect(screen.getAllByText("High")[0]).toHaveClass("priority-badge", "priority-high");
+    expect(screen.getAllByText("Low")[0]).toHaveClass("priority-badge", "priority-low");
     // Zen Green badge
     const badges = screen.getAllByText("New");
-    expect(badges[0].style.backgroundColor).toBeTruthy();
+    expect(badges[0]).toHaveClass("status-badge");
   });
 
   it("UI-5: shows empty state with actionable Create Ticket CTA", async () => {

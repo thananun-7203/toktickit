@@ -45,9 +45,12 @@ describe("TicketDetail", () => {
     render(<TicketDetail ticketId={12} requesterId={1} onBack={vi.fn()} />);
 
     expect(await screen.findByText("TKT-2026-00012")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Ticket Detail/i })).toBeInTheDocument();
     expect(screen.getByText("Export fails after clicking the button.")).toBeInTheDocument();
     expect(screen.getByText("Requested Priority")).toBeInTheDocument();
-    expect(screen.getByText("High")).toBeInTheDocument();
+    expect(screen.getByText("High")).toHaveClass("priority-badge", "priority-high");
+    expect(screen.getByText("Summary")).toBeInTheDocument();
+    expect(screen.getByText("Description")).toBeInTheDocument();
 
     const activeRow = screen.getByTestId("attachment-3");
     expect(activeRow).toHaveTextContent("active.pdf");

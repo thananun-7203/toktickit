@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useEffect } from "react";
 import App from "../../src/App.js";
@@ -58,7 +58,7 @@ describe("App", () => {
       </RequesterProvider>
     );
 
-    expect(await screen.findByText("Somchai Jaidee")).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: /Somchai Jaidee/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Continue/i })).toBeDisabled();
     expect(screen.queryByRole("heading", { name: /My Tickets/i })).not.toBeInTheDocument();
   });
@@ -68,6 +68,11 @@ describe("App", () => {
     renderWithRequester(TEST_REQUESTER);
     expect(screen.getByText(/TokTickIT/i)).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: /My Tickets/i })).toBeInTheDocument();
+    const nav = screen.getByRole("navigation", { name: /Primary navigation/i });
+    expect(within(nav).getByRole("button", { name: /My Tickets/i })).toBeInTheDocument();
+    expect(within(nav).getByRole("button", { name: /Create Ticket/i })).toBeInTheDocument();
+    expect(within(nav).getByRole("button", { name: /Check System/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Requester menu for Somchai Jaidee/i)).toBeInTheDocument();
   });
 
   it("shows Online and the seeded categories on success", async () => {
@@ -83,8 +88,9 @@ describe("App", () => {
     });
 
     renderWithRequester(TEST_REQUESTER);
-    await user.click(screen.getByRole("button", { name: /^Home$/i }));
-    await user.click(screen.getByRole("button", { name: /Check System/i }));
+    const nav = screen.getByRole("navigation", { name: /Primary navigation/i });
+    await user.click(within(nav).getByRole("button", { name: /Check System/i }));
+    await user.click(screen.getByRole("main").querySelector("button.btn-success")!);
 
     expect(await screen.findByText("System Status: Online")).toBeInTheDocument();
     expect(screen.getByText("Account and Access")).toBeInTheDocument();
@@ -98,9 +104,10 @@ describe("App", () => {
     vi.spyOn(api, "checkSystem").mockRejectedValue(new Error("network error"));
 
     renderWithRequester(TEST_REQUESTER);
-    await waitFor(() => expect(screen.getByRole("button", { name: /^Home$/i })).toBeInTheDocument());
-    await user.click(screen.getByRole("button", { name: /^Home$/i }));
-    await user.click(screen.getByRole("button", { name: /Check System/i }));
+    await waitFor(() => expect(screen.getByRole("navigation", { name: /Primary navigation/i })).toBeInTheDocument());
+    const nav = screen.getByRole("navigation", { name: /Primary navigation/i });
+    await user.click(within(nav).getByRole("button", { name: /Check System/i }));
+    await user.click(screen.getByRole("main").querySelector("button.btn-success")!);
 
     expect(await screen.findByText("System Status: Offline")).toBeInTheDocument();
     expect(screen.getByText("Unable to connect to TokTickIT API")).toBeInTheDocument();
