@@ -3,10 +3,13 @@
 
 export const SUMMARY_MAX = 100;
 export const DESCRIPTION_MAX = 2000;
+export const REQUESTED_PRIORITIES = ["Low", "Medium", "High"] as const;
+export type RequestedPriority = (typeof REQUESTED_PRIORITIES)[number];
 
 export interface TicketInput {
   categoryId?: unknown;
   relatedSystemId?: unknown;
+  requestedPriority?: unknown;
   summary?: unknown;
   description?: unknown;
 }
@@ -28,6 +31,14 @@ export function validateTicketInput(body: TicketInput): Record<string, string> {
     body.relatedSystemId <= 0
   ) {
     errors.relatedSystemId = "Related System must be a positive integer";
+  }
+
+  const requestedPriority =
+    typeof body.requestedPriority === "string" ? body.requestedPriority.trim() : "";
+  if (!requestedPriority) {
+    errors.requestedPriority = "Requested Priority is required";
+  } else if (!REQUESTED_PRIORITIES.includes(requestedPriority as RequestedPriority)) {
+    errors.requestedPriority = "Requested Priority must be one of: Low, Medium, High";
   }
 
   // Lengths are validated on the trimmed value so validation and the persisted

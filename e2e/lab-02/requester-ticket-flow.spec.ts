@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const API_URL = "http://127.0.0.1:3001";
 
-test("E1-E5 requester create/list/detail/isolation/attachment lifecycle", async ({ page, request }) => {
+test("E1-E6 requester create/list/detail/isolation/priority/attachment lifecycle", async ({ page, request }) => {
   const unique = `E2E Issue5 ${Date.now()}`;
   const attachmentName = "e2e-evidence.pdf";
 
@@ -25,6 +25,7 @@ test("E1-E5 requester create/list/detail/isolation/attachment lifecycle", async 
   await page.getByRole("button", { name: "Create Ticket" }).first().click();
   await page.getByLabel(/Category/).selectOption({ label: "Software" });
   await page.getByLabel(/Related System/).selectOption({ label: "Report Portal" });
+  await page.getByLabel(/Requested Priority/).selectOption("High");
   await page.getByLabel(/Summary/).fill(unique);
   await page.getByLabel(/Description/).fill("Playwright E2E ticket for Issue 5 attachment lifecycle.");
   await page.getByLabel(/Attachments/i).setInputFiles({
@@ -38,6 +39,7 @@ test("E1-E5 requester create/list/detail/isolation/attachment lifecycle", async 
   await page.getByRole("button", { name: "My Tickets" }).last().click();
   await page.getByLabel("Search").fill(unique);
   await expect(page.getByText(unique).first()).toBeVisible();
+  await expect(page.getByText("High").first()).toBeVisible();
 
   const ownList = await request.get(
     `${API_URL}/api/v1/tickets?search=${encodeURIComponent(unique)}`,
@@ -46,12 +48,19 @@ test("E1-E5 requester create/list/detail/isolation/attachment lifecycle", async 
   expect(ownList.ok()).toBeTruthy();
   const ownListBody = await ownList.json();
   expect(ownListBody.items).toHaveLength(1);
+  expect(ownListBody.items[0].requestedPriority).toBe("High");
   const ticketId = ownListBody.items[0].id as number;
   const ticketNumber = ownListBody.items[0].ticketNumber as string;
+
+  // The same My Tickets search box also finds the ticket by Ticket Number.
+  await page.getByLabel("Search").fill(ticketNumber);
+  await expect(page.getByText(unique).first()).toBeVisible();
 
   // E-3: open the owned ticket detail and download the active attachment.
   await page.getByRole("button", { name: `Open ${ticketNumber}` }).first().click();
   await expect(page.getByText(ticketNumber)).toBeVisible();
+  await expect(page.getByText("Requested Priority")).toBeVisible();
+  await expect(page.getByText("High")).toBeVisible();
   await expect(page.getByText(attachmentName)).toBeVisible();
 
   // Responsive smoke checks for S4: the page must not introduce horizontal

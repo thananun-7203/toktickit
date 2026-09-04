@@ -34,7 +34,7 @@ On continue → requester stored in context; user lands on S3 (My Tickets). A pe
 ### S2 — Create Ticket
 | Breakpoint | Form layout |
 |---|---|
-| Desktop ≥992px | Multi-column: Category + Related System side-by-side, Summary full width, Description full width, attachments dropzone full width |
+| Desktop ≥992px | Multi-column: Category + Related System, Requested Priority, then Summary/Description and attachments |
 | Tablet 768–991px | 2-column pairs |
 | Mobile <768px | Single stacked column, no horizontal scroll |
 
@@ -43,6 +43,7 @@ Fields:
 |---|---|---|
 | Category* | select | required |
 | Related System* | select | required |
+| Requested Priority* | select (`Low` / `Medium` / `High`) | required |
 | Summary* | text input | required, ≤100 chars, live counter |
 | Description* | textarea | required, ≤2000 chars, live counter |
 | Attachments | file input + list | ≤5 files, ≤5 MB each, allowed types (BR-4); per-file error row |
@@ -52,14 +53,14 @@ States: Default · Busy (submit disabled + spinner) · Success (pale-green succe
 ### S3 — My Tickets
 | Breakpoint | Presentation |
 |---|---|
-| Desktop/Tablet | Table: Ticket No · Summary · Category · System · Created · Status badge |
+| Desktop/Tablet | Table: Ticket No · Summary · Category · Requested Priority · System · Created · Status badge |
 | Mobile | Cards (one per ticket), same fields stacked |
 
-Toolbar: search box (debounced), category filter select, sort select (Newest/Oldest/Summary A-Z), page-size select. Pagination footer shows `Page x of y` with prev/next.
+Toolbar: debounced search box for **Ticket Number or Summary**, category/system filter selects, sort select (Newest/Oldest/Summary A-Z), page-size select. Pagination footer shows `Page x of y` with prev/next.
 States: Loading skeleton · **Empty** ("No tickets yet" + CTA to Create) · **No results** (filter mismatch message + "Clear filters") · Error alert with retry.
 
 ### S4 — Ticket Detail (read-only)
-Layout: definition-list of ticket metadata (number, status badge, requester, category, system, created) + description block + Attachments section.
+Layout: definition-list of ticket metadata (number, status badge, requester, category, requested priority, system, created) + description block + Attachments section.
 
 Attachments rows: icon · filename · size · type · actions:
 - Active → Download (secondary green outline button) + Remove (outline danger).

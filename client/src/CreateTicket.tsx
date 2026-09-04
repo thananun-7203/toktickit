@@ -5,6 +5,8 @@ import {
   getRelatedSystems,
   Category,
   RelatedSystem,
+  REQUESTED_PRIORITIES,
+  RequestedPriority,
   Ticket,
   uploadAttachments,
 } from "./api.js";
@@ -27,11 +29,18 @@ type SubmitState = "idle" | "busy" | "success" | "error";
 interface FormFields {
   categoryId: string;
   relatedSystemId: string;
+  requestedPriority: string;
   summary: string;
   description: string;
 }
 
-const EMPTY: FormFields = { categoryId: "", relatedSystemId: "", summary: "", description: "" };
+const EMPTY: FormFields = {
+  categoryId: "",
+  relatedSystemId: "",
+  requestedPriority: "",
+  summary: "",
+  description: "",
+};
 
 interface CreateTicketProps {
   onOpenTicket?: (ticketId: number) => void;
@@ -59,6 +68,7 @@ function validate(fields: FormFields): Partial<Record<keyof FormFields, string>>
   const errors: Partial<Record<keyof FormFields, string>> = {};
   if (!fields.categoryId) errors.categoryId = "Please select a category";
   if (!fields.relatedSystemId) errors.relatedSystemId = "Please select a related system";
+  if (!fields.requestedPriority) errors.requestedPriority = "Please select a requested priority";
   // Length is validated against the trimmed value so the client matches the
   // server and the persisted value stays consistent.
   const summary = fields.summary.trim();
@@ -125,6 +135,7 @@ export default function CreateTicket({ onOpenTicket, onGoToTickets }: CreateTick
         {
           categoryId: Number(fields.categoryId),
           relatedSystemId: Number(fields.relatedSystemId),
+          requestedPriority: fields.requestedPriority as RequestedPriority,
           summary: fields.summary.trim(),
           description: fields.description.trim(),
         },
@@ -156,6 +167,7 @@ export default function CreateTicket({ onOpenTicket, onGoToTickets }: CreateTick
           const mapped: Partial<Record<keyof FormFields, string>> = {};
           if (serverFields.categoryId) mapped.categoryId = serverFields.categoryId;
           if (serverFields.relatedSystemId) mapped.relatedSystemId = serverFields.relatedSystemId;
+          if (serverFields.requestedPriority) mapped.requestedPriority = serverFields.requestedPriority;
           if (serverFields.summary) mapped.summary = serverFields.summary;
           if (serverFields.description) mapped.description = serverFields.description;
           setErrors((e) => ({ ...e, ...mapped }));
@@ -304,6 +316,26 @@ export default function CreateTicket({ onOpenTicket, onGoToTickets }: CreateTick
               <div className="form-text text-end">{fields.description.length}/{DESCRIPTION_MAX}</div>
               {errors.description && (
                 <div className="invalid-feedback d-block">{errors.description}</div>
+              )}
+            </div>
+
+            <div className="col-12 col-md-6">
+              <label htmlFor="requestedPriority" className="form-label">
+                Requested Priority <span className="text-danger">*</span>
+              </label>
+              <select
+                id="requestedPriority"
+                className={`form-select ${errors.requestedPriority ? "is-invalid" : ""}`}
+                value={fields.requestedPriority}
+                onChange={(e) => setField("requestedPriority", e.target.value)}
+              >
+                <option value="">Select requested priority…</option>
+                {REQUESTED_PRIORITIES.map((priority) => (
+                  <option key={priority} value={priority}>{priority}</option>
+                ))}
+              </select>
+              {errors.requestedPriority && (
+                <div className="invalid-feedback d-block">{errors.requestedPriority}</div>
               )}
             </div>
 

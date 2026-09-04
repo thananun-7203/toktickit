@@ -11,6 +11,7 @@ const ACTIVE_REQUESTER_ID = 1; // Somchai Jaidee (seeded active)
 const validPayload = {
   categoryId: 1, // Account and Access
   relatedSystemId: 1, // CRM
+  requestedPriority: "Medium",
   summary: "Cannot export monthly report",
   description: "Export button spins forever after clicking.",
 };
@@ -52,9 +53,19 @@ describe("POST /api/v1/tickets", () => {
     expect(res.body.error.fields).toMatchObject({
       categoryId: expect.any(String),
       relatedSystemId: expect.any(String),
+      requestedPriority: expect.any(String),
       summary: expect.any(String),
       description: expect.any(String),
     });
+  });
+
+  it("A-16: returns 400 for an unsupported Requested Priority", async () => {
+    const res = await request(app)
+      .post("/api/v1/tickets")
+      .set("X-Dev-Requester-Id", String(ACTIVE_REQUESTER_ID))
+      .send({ ...validPayload, requestedPriority: "Urgent" });
+    expect(res.status).toBe(400);
+    expect(res.body.error.fields.requestedPriority).toMatch(/Low.*Medium.*High/i);
   });
 
   it("A-3: returns 400 when summary is too long", async () => {
@@ -86,10 +97,14 @@ describe("POST /api/v1/tickets", () => {
     expect(res.status).toBe(201);
     expect(res.body.ticketNumber).toMatch(/^TKT-\d{4}-\d{5}$/);
     expect(res.body.status).toBe("New");
+    expect(res.body.requestedPriority).toBe("Medium");
     expect(res.body.summary).toBe(validPayload.summary);
     expect(res.body.requester.id).toBe(ACTIVE_REQUESTER_ID);
     expect(res.body.category.id).toBe(1);
     expect(res.body.relatedSystem.id).toBe(1);
+
+    const persisted = await getPrisma().ticket.findUnique({ where: { id: res.body.id } });
+    expect(persisted?.requestedPriority).toBe("Medium");
 
     createdTicketIds.push(res.body.id);
   });

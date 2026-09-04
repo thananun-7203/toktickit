@@ -45,12 +45,13 @@ Header: `X-Dev-Requester-Id`.
 {
   "categoryId": 1,
   "relatedSystemId": 2,
+  "requestedPriority": "High",
   "summary": "Cannot export monthly report",
   "description": "Export button spins forever after clicking."
 }
 ```
 
-**Validation (BR-3):** all fields required; `summary` ≤ 100 chars; `description` ≤ 2,000 chars; referenced ids must exist.
+**Validation (BR-3):** all fields required; `requestedPriority` must be `Low`, `Medium`, or `High`; `summary` ≤ 100 chars; `description` ≤ 2,000 chars; referenced ids must exist.
 
 **Response `201`:** full ticket object incl. server-generated `ticketNumber` (BR-2):
 ```json
@@ -58,6 +59,7 @@ Header: `X-Dev-Requester-Id`.
   "id": 12,
   "ticketNumber": "TKT-2026-00001",
   "status": "New",
+  "requestedPriority": "High",
   "summary": "...",
   "description": "...",
   "createdAt": "2026-08-24T03:15:00.000Z",
@@ -72,11 +74,12 @@ Header: `X-Dev-Requester-Id`.
 ## 3. GET /api/v1/tickets
 
 Header: `X-Dev-Requester-Id`. Returns **only that requester's** tickets (BR-1).
+Each ticket item includes `requestedPriority`; pre-Issue-6 historical rows may return `null`, while all newly created tickets contain `Low`, `Medium`, or `High`.
 
 **Query parameters:**
 | Param | Type | Default | Notes |
 |---|---|---|---|
-| search | string | — | Case-insensitive match on `summary` |
+| search | string | — | Case-insensitive match on `ticketNumber` **or** `summary` |
 | categoryId | int | — | Exact filter |
 | relatedSystemId | int | — | Exact filter |
 | sort | `newest` \| `oldest` \| `summary_asc` | `newest` | By `createdAt` / `summary` |
@@ -97,6 +100,7 @@ Header: `X-Dev-Requester-Id`. Returns **only that requester's** tickets (BR-1).
 ## 4. GET /api/v1/tickets/:id
 
 Header: `X-Dev-Requester-Id`.
+The ticket metadata includes `requestedPriority` with the same historical-null compatibility described for the list endpoint.
 
 **Response `200`:** ticket object plus `attachments` array:
 ```json

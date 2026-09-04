@@ -190,6 +190,7 @@ export default function TicketDetail({ ticketId, requesterId, onBack }: TicketDe
           <dl className="row mb-0">
             <dt className="col-sm-4">Requester</dt><dd className="col-sm-8">{ticket.requester.name}</dd>
             <dt className="col-sm-4">Category</dt><dd className="col-sm-8">{ticket.category.name}</dd>
+            <dt className="col-sm-4">Requested Priority</dt><dd className="col-sm-8">{ticket.requestedPriority ?? "Not recorded"}</dd>
             <dt className="col-sm-4">Related System</dt><dd className="col-sm-8">{ticket.relatedSystem.name}</dd>
             <dt className="col-sm-4">Created</dt><dd className="col-sm-8">{new Date(ticket.createdAt).toLocaleString()}</dd>
           </dl>

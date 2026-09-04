@@ -65,6 +65,7 @@ async function createTicket(requesterId: number) {
     .send({
       categoryId: 1,
       relatedSystemId: 1,
+      requestedPriority: "High",
       summary: `Detail test ${Date.now()} ${Math.random().toString(36).slice(2, 7)}`,
       description: "Ticket detail API test description.",
     });
@@ -85,6 +86,7 @@ describe("GET /api/v1/tickets/:id", () => {
     expect(res.body.id).toBe(ticket.id);
     expect(res.body.ticketNumber).toBe(ticket.ticketNumber);
     expect(res.body.requester.id).toBe(R1);
+    expect(res.body.requestedPriority).toBe("High");
     expect(res.body.attachments).toEqual([]);
   });
 
