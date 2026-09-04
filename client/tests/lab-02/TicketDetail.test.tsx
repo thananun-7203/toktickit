@@ -10,6 +10,7 @@ const DETAIL: api.TicketDetail = {
   summary: "Cannot export report",
   description: "Export fails after clicking the button.",
   status: "New",
+  requestedPriority: "High",
   createdAt: "2026-09-01T08:00:00.000Z",
   requester: { id: 1, name: "Somchai Jaidee" },
   category: { id: 1, name: "Software" },
@@ -40,11 +41,13 @@ describe("TicketDetail", () => {
     vi.spyOn(api, "getTicketDetail").mockResolvedValue(DETAIL);
   });
 
-  it("UI-6/UI-9: renders active actions and removed attachment metadata only", async () => {
+  it("UI-6/UI-9/UI-12: renders Requested Priority and attachment states", async () => {
     render(<TicketDetail ticketId={12} requesterId={1} onBack={vi.fn()} />);
 
     expect(await screen.findByText("TKT-2026-00012")).toBeInTheDocument();
     expect(screen.getByText("Export fails after clicking the button.")).toBeInTheDocument();
+    expect(screen.getByText("Requested Priority")).toBeInTheDocument();
+    expect(screen.getByText("High")).toBeInTheDocument();
 
     const activeRow = screen.getByTestId("attachment-3");
     expect(activeRow).toHaveTextContent("active.pdf");

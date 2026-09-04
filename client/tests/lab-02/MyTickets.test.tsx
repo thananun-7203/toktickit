@@ -20,6 +20,7 @@ const TICKETS: api.Ticket[] = [
     summary: "Cannot export report",
     description: "details",
     status: "New",
+    requestedPriority: "High",
     createdAt: new Date().toISOString(),
     requester: { id: 1, name: "Somchai" },
     category: { id: 1, name: "Account and Access" },
@@ -31,6 +32,7 @@ const TICKETS: api.Ticket[] = [
     summary: "Login fails",
     description: "details",
     status: "New",
+    requestedPriority: "Low",
     createdAt: new Date().toISOString(),
     requester: { id: 1, name: "Somchai" },
     category: { id: 2, name: "Hardware" },
@@ -45,7 +47,7 @@ describe("MyTickets (UI-5)", () => {
     vi.spyOn(api, "getRelatedSystems").mockResolvedValue(SYSTEMS);
   });
 
-  it("UI-5: renders list with table columns and Zen Green badges", async () => {
+  it("UI-5/UI-11: renders Requested Priority in list/table-card data", async () => {
     vi.spyOn(api, "getTickets").mockResolvedValue({
       items: TICKETS,
       page: 1,
@@ -59,9 +61,11 @@ describe("MyTickets (UI-5)", () => {
     expect(screen.getAllByText("Cannot export report").length).toBeGreaterThanOrEqual(1);
     // toolbar
     expect(screen.getByLabelText(/Search/)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Search ticket no\. or summary/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Category/)).toBeInTheDocument();
     expect(screen.getByLabelText(/System/)).toBeInTheDocument();
     expect(screen.getByLabelText(/^Sort/)).toBeInTheDocument();
+    expect(screen.getAllByText("High").length).toBeGreaterThanOrEqual(1);
     // Zen Green badge
     const badges = screen.getAllByText("New");
     expect(badges[0].style.backgroundColor).toBeTruthy();

@@ -50,6 +50,7 @@ describe("CreateTicket", () => {
 
     expect(screen.getByLabelText(/Category/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Related System/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Requested Priority/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Summary/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Description/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Attachments/i)).toBeInTheDocument();
@@ -70,11 +71,12 @@ describe("CreateTicket", () => {
     expect(createSpy).not.toHaveBeenCalled();
     expect(screen.getByText(/Please select a category/i)).toBeInTheDocument();
     expect(screen.getByText(/Please select a related system/i)).toBeInTheDocument();
+    expect(screen.getByText(/Please select a requested priority/i)).toBeInTheDocument();
     expect(screen.getByText("Summary is required")).toBeInTheDocument();
     expect(screen.getByText("Description is required")).toBeInTheDocument();
   });
 
-  it("UI-4: shows a busy state while submitting", async () => {
+  it("UI-4/UI-10: submits the selected Requested Priority and shows a busy state", async () => {
     const user = userEvent.setup();
     let resolveCreate!: (t: api.Ticket) => void;
     const promise = new Promise<api.Ticket>((resolve) => {
@@ -87,13 +89,14 @@ describe("CreateTicket", () => {
 
     await user.selectOptions(screen.getByLabelText(/Category/), "1");
     await user.selectOptions(screen.getByLabelText(/Related System/), "1");
+    await user.selectOptions(screen.getByLabelText(/Requested Priority/), "High");
     await user.type(screen.getByLabelText(/Summary/), "Unit test ticket");
     await user.type(screen.getByLabelText(/Description/), "Description of the unit test ticket.");
 
     await user.click(screen.getByRole("button", { name: /Create Ticket/i }));
     expect(screen.getByRole("button", { name: /Creating/ })).toBeDisabled();
     expect(api.createTicket).toHaveBeenCalledWith(
-      expect.objectContaining({ summary: "Unit test ticket" }),
+      expect.objectContaining({ summary: "Unit test ticket", requestedPriority: "High" }),
       TEST_REQUESTER.id,
     );
 
@@ -103,6 +106,7 @@ describe("CreateTicket", () => {
       summary: "Unit test ticket",
       description: "Description of the unit test ticket.",
       status: "New",
+      requestedPriority: "High",
       createdAt: new Date().toISOString(),
       requester: { id: 1, name: "Somchai Jaidee" },
       category: { id: 1, name: "Account and Access" },
@@ -126,6 +130,7 @@ describe("CreateTicket", () => {
 
     await user.selectOptions(screen.getByLabelText(/Category/), "1");
     await user.selectOptions(screen.getByLabelText(/Related System/), "1");
+    await user.selectOptions(screen.getByLabelText(/Requested Priority/), "Medium");
     await user.type(screen.getByLabelText(/Summary/), "Server error ticket");
     await user.type(screen.getByLabelText(/Description/), "Checking per-field error mapping.");
 
@@ -152,6 +157,7 @@ describe("CreateTicket", () => {
 
     await user.selectOptions(screen.getByLabelText(/Category/), "1");
     await user.selectOptions(screen.getByLabelText(/Related System/), "1");
+    await user.selectOptions(screen.getByLabelText(/Requested Priority/), "Low");
     await user.type(screen.getByLabelText(/Summary/), "Attachment validation");
     await user.type(screen.getByLabelText(/Description/), "Should not submit with invalid attachment.");
     await user.click(screen.getByRole("button", { name: /Create Ticket/i }));
@@ -167,6 +173,7 @@ describe("CreateTicket", () => {
       summary: "Create with attachment",
       description: "description",
       status: "New",
+      requestedPriority: "Medium",
       createdAt: new Date().toISOString(),
       requester: { id: 1, name: "Somchai Jaidee" },
       category: { id: 1, name: "Account and Access" },
@@ -179,6 +186,7 @@ describe("CreateTicket", () => {
 
     await user.selectOptions(screen.getByLabelText(/Category/), "1");
     await user.selectOptions(screen.getByLabelText(/Related System/), "1");
+    await user.selectOptions(screen.getByLabelText(/Requested Priority/), "Medium");
     await user.type(screen.getByLabelText(/Summary/), "Create with attachment");
     await user.type(screen.getByLabelText(/Description/), "description");
     const file = new File(["pdf"], "evidence.pdf", { type: "application/pdf" });

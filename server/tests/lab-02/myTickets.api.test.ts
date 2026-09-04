@@ -23,6 +23,7 @@ async function createTicket(requesterId: number, overrides: Record<string, unkno
   const payload = {
     categoryId: 1,
     relatedSystemId: 1,
+    requestedPriority: "Low",
     summary: `Ticket ${Date.now()} ${Math.random().toString(36).slice(2, 6)}`,
     description: "Description for my tickets test.",
     ...overrides,
@@ -61,6 +62,7 @@ describe("GET /api/v1/tickets", () => {
     const r1Res = await request(app).get("/api/v1/tickets").set("X-Dev-Requester-Id", String(R1));
     expect(r1Res.status).toBe(200);
     expect(r1Res.body.items.map((t: { id: number }) => t.id)).toContain(t1.id);
+    expect(r1Res.body.items.find((t: { id: number }) => t.id === t1.id).requestedPriority).toBe("Low");
     expect(r1Res.body.items.map((t: { id: number }) => t.id)).not.toContain(t2.id);
 
     const r2Res = await request(app).get("/api/v1/tickets").set("X-Dev-Requester-Id", String(R2));
@@ -68,7 +70,7 @@ describe("GET /api/v1/tickets", () => {
     expect(r2Res.body.items.map((t: { id: number }) => t.id)).not.toContain(t1.id);
   });
 
-  it("A-7: search filters by summary (case-insensitive)", async () => {
+  it("A-7: search matches summary or Ticket Number", async () => {
     const uniq = Math.random().toString(36).slice(2, 8);
     const tMatch = await createTicket(R1, { summary: `SearchMe ${uniq} alpha` });
     const tNoMatch = await createTicket(R1, { summary: `Other ${uniq} beta` });
@@ -86,6 +88,13 @@ describe("GET /api/v1/tickets", () => {
       .get(`/api/v1/tickets?search=${uniq.toUpperCase()} ALPHA`)
       .set("X-Dev-Requester-Id", String(R1));
     expect(resUpper.body.items.map((t: { id: number }) => t.id)).toContain(tMatch.id);
+
+    const ticketNumberRes = await request(app)
+      .get(`/api/v1/tickets?search=${encodeURIComponent(tMatch.ticketNumber)}`)
+      .set("X-Dev-Requester-Id", String(R1));
+    expect(ticketNumberRes.status).toBe(200);
+    expect(ticketNumberRes.body.items.map((t: { id: number }) => t.id)).toContain(tMatch.id);
+    expect(ticketNumberRes.body.items.map((t: { id: number }) => t.id)).not.toContain(tNoMatch.id);
   });
 
   it("A-8: filters by categoryId and sorts oldest/newest correctly", async () => {

@@ -43,6 +43,7 @@ describe("validateTicketInput (U-2, U-4)", () => {
   const valid = {
     categoryId: 1,
     relatedSystemId: 1,
+    requestedPriority: "Medium",
     summary: "Cannot export report",
     description: "Export button spins forever.",
   };
@@ -72,9 +73,15 @@ describe("validateTicketInput (U-2, U-4)", () => {
     expect(errors).toMatchObject({
       categoryId: expect.any(String),
       relatedSystemId: expect.any(String),
+      requestedPriority: expect.any(String),
       summary: expect.any(String),
       description: expect.any(String),
     });
+  });
+
+  it("U-7: rejects an unsupported Requested Priority", () => {
+    const errors = validateTicketInput({ ...valid, requestedPriority: "Urgent" });
+    expect(errors.requestedPriority).toMatch(/Low.*Medium.*High/i);
   });
 
   it("rejects non-positive / non-integer category being 400", () => {

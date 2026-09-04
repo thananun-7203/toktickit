@@ -24,11 +24,15 @@ export interface RelatedSystem {
   name: string;
 }
 
+export const REQUESTED_PRIORITIES = ["Low", "Medium", "High"] as const;
+export type RequestedPriority = (typeof REQUESTED_PRIORITIES)[number];
+
 export interface Ticket {
   id: number;
   ticketNumber: string;
   summary: string;
   description: string;
+  requestedPriority: RequestedPriority | null;
   status: string;
   createdAt: string;
   requester: { id: number; name: string };
@@ -59,6 +63,7 @@ export class ApiError extends Error {
 export interface NewTicketInput {
   categoryId: number;
   relatedSystemId: number;
+  requestedPriority: RequestedPriority;
   summary: string;
   description: string;
 }

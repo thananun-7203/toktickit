@@ -46,19 +46,20 @@ model RelatedSystem {
 }
 
 model Ticket {
-  id              Int                  @id @default(autoincrement())
-  ticketNumber    String               @unique
-  summary         String
-  description     String
-  status          String               @default("New")
-  createdAt       DateTime             @default(now())
-  requesterId     Int
-  requester       DevelopmentRequester @relation(fields: [requesterId], references: [id])
-  categoryId      Int
-  category        Category             @relation(fields: [categoryId], references: [id])
-  relatedSystemId Int
-  relatedSystem   RelatedSystem        @relation(fields: [relatedSystemId], references: [id])
-  attachments     Attachment[]
+  id                Int                  @id @default(autoincrement())
+  ticketNumber      String               @unique
+  summary           String
+  description       String
+  requestedPriority String?
+  status            String               @default("New")
+  createdAt         DateTime             @default(now())
+  requesterId       Int
+  requester         DevelopmentRequester @relation(fields: [requesterId], references: [id])
+  categoryId        Int
+  category          Category             @relation(fields: [categoryId], references: [id])
+  relatedSystemId   Int
+  relatedSystem     RelatedSystem        @relation(fields: [relatedSystemId], references: [id])
+  attachments       Attachment[]
 
   @@index([requesterId])
   @@index([categoryId])

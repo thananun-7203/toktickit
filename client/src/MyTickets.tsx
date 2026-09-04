@@ -117,7 +117,7 @@ export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }:
           <input
             id="search"
             className="form-control form-control-sm"
-            placeholder="Search summary…"
+            placeholder="Search ticket no. or summary…"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />
@@ -241,6 +241,7 @@ export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }:
                   <th>Ticket No</th>
                   <th>Summary</th>
                   <th>Category</th>
+                  <th>Requested Priority</th>
                   <th>System</th>
                   <th>Created</th>
                   <th>Status</th>
@@ -264,6 +265,7 @@ export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }:
                     </td>
                     <td>{t.summary}</td>
                     <td>{t.category.name}</td>
+                    <td>{t.requestedPriority ?? "Not recorded"}</td>
                     <td>{t.relatedSystem.name}</td>
                     <td className="small text-secondary">{new Date(t.createdAt).toLocaleDateString()}</td>
                     <td>
@@ -302,7 +304,7 @@ export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }:
                 </div>
                 <p className="mb-1 mt-2">{t.summary}</p>
                 <small className="text-secondary">
-                  {t.category.name} · {t.relatedSystem.name} · {new Date(t.createdAt).toLocaleDateString()}
+                  {t.category.name} · {t.requestedPriority ?? "Not recorded"} · {t.relatedSystem.name} · {new Date(t.createdAt).toLocaleDateString()}
                 </small>
               </div>
             ))}

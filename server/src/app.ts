@@ -156,9 +156,10 @@ app.post(
         return;
       }
 
-      const { categoryId, relatedSystemId, summary, description } = req.body as {
+      const { categoryId, relatedSystemId, requestedPriority, summary, description } = req.body as {
         categoryId: number;
         relatedSystemId: number;
+        requestedPriority: string;
         summary: string;
         description: string;
       };
@@ -190,6 +191,7 @@ app.post(
               ticketNumber,
               summary: summary.trim(),
               description: description.trim(),
+              requestedPriority: requestedPriority.trim(),
               status: "New",
               requesterId: requester.id,
               categoryId,
@@ -237,7 +239,10 @@ app.get("/api/v1/tickets", requireDevRequester, async (req: Request, res: Respon
 
     const where: Record<string, unknown> = { requesterId: requester.id };
     if (q.search) {
-      (where as Record<string, unknown>).summary = { contains: q.search, mode: "insensitive" };
+      where.OR = [
+        { summary: { contains: q.search, mode: "insensitive" } },
+        { ticketNumber: { contains: q.search, mode: "insensitive" } },
+      ];
     }
     if (q.categoryId) where.categoryId = q.categoryId;
     if (q.relatedSystemId) where.relatedSystemId = q.relatedSystemId;
