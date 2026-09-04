@@ -4,7 +4,7 @@
 
 AI was used as a coding assistant throughout Lab 2 to help inspect the existing codebase, compare implementation against the Lab 2 specification/test plan, implement features incrementally, and verify the result with automated tests.
 
-**LLM / Model used for the review-and-fix workflow recorded here:** OpenAI ChatGPT — **GPT-5.6 Sol**.
+**LLM / Model used for the Lab 2 implementation, review, and release-readiness workflow recorded here:** OpenAI ChatGPT — **GPT-5.6 Sol**.
 
 The implementation workflow followed these rules:
 
@@ -29,6 +29,8 @@ The table below records selected prompts from the Lab 2 implementation/review wo
 | 6 | `คือมันต้องแก้อะไรบ้าง เยอะมั้ยถ้าปรับแก้ตอนนี้` | Estimate the impact of aligning the implementation with missing Lab Sheet requirements. |
 | 7 | `ถ้าเพื่อนเม้นมาแบบนี้มันจริงมั้ย` | Verify a review comment about Removal Reason and Part 4 AI-use evidence against the Lab Sheet and repository. |
 | 8 | `ทำการแก้ไข ตามที่เพื่อนแนะนำได้เลย` | Implement Removal Reason end-to-end and align `ai-use.md` with the submission rubric. |
+| 9 | `โอเคเริ่มทำ [Lab 2] Issue_7: Zen Green UI Alignment ตามแบบนี้ได้เลย` | Implement the approved responsive Zen Green mockup while preserving the existing requester functionality. |
+| 10 | `โอเคเริ่มทำ issue 8 ตามแผนที่วางไว้ได้เลย` | Start the final evidence, documentation, traceability, and regression audit before release. |
 
 ## Prompt / Assistance Log
 
@@ -70,6 +72,44 @@ The table below records selected prompts from the Lab 2 implementation/review wo
 - Audited this AI-use record against Part 4 and added the model name, eight selected key prompts, and the required "My Reflection" heading.
 
 **TDD evidence note:** For Issue 5, the failing-first (Red) tests and later Green/regression runs were executed locally during development. Commit `a74694c` intentionally bundled the Issue 5 tests, implementation, and documentation, so the Git history does **not** demonstrate a separate committed Red snapshot. The evidence claimed here is the local test-first execution, not a test-only commit.
+
+### Issue 6 — Requested Priority & My Tickets Search
+
+**Student request:** Add the missing Requested Priority requirement, then extend the existing My Tickets free-text search to Ticket Number + Summary without turning Category/Related System into free-text search fields.
+
+**AI assistance:**
+
+- Compared the final Issue 5 integration state with the Lab 2 requirements before changing the schema.
+- Added local failing-first server/client coverage for missing/invalid Requested Priority and for list/detail rendering.
+- Added a Prisma migration and API validation for `Low`, `Medium`, and `High` while keeping historical rows readable.
+- Added Requested Priority to Create Ticket, My Tickets, and Ticket Detail.
+- Expanded My Tickets search so one search parameter matches `ticketNumber` OR `summary`; existing Category/System dropdown filters remained unchanged.
+- Updated the API/UI/spec/test documentation and ran server/client/build/E2E regression before the student approved commit/push/PR.
+
+### Issue 7 — Zen Green UI Alignment
+
+**Student request:** Implement the approved desktop/mobile mockups for the requester-facing Lab 2 UI.
+
+**AI assistance:**
+
+- Synced the feature branch to the Issue 6 merge before UI work.
+- Reworked Select Development Requester from radio-style presentation to a responsive dropdown screen.
+- Added a shared Zen Green app shell, desktop navigation, mobile hamburger menu, requester switching, and preserved Check System access.
+- Redesigned Create Ticket, My Tickets, and Ticket Detail while keeping their existing API behavior and requester isolation unchanged.
+- Added labelled Requested Priority/Status badges and responsive table-to-card behavior.
+- Updated UI/E2E tests and documentation, then verified desktop/tablet/mobile widths without horizontal overflow.
+
+### Issue 8 — Final Evidence & Release Readiness
+
+**Student request:** Perform the final Lab 2 evidence/docs/release-readiness audit before the release PR.
+
+**AI assistance:**
+
+- Synced the Issue 8 branch to the merged Issue 7 `lab2-staging` head.
+- Audited specification, API/UI docs, traceability, reviewer history, AI-use evidence, README setup instructions, and GitHub PR status for stale or unsupported claims.
+- Normalized FR/BR/AC identifiers to two-digit form required by the Lab 2 documentation convention.
+- Prepared reproducible Playwright screenshot evidence and final regression recording rather than relying only on manually captured UI images.
+- Kept release merge work out of scope until the student explicitly approves the final release PR.
 
 ## Example of AI-assisted debugging
 

@@ -1,7 +1,7 @@
 # TokTickIT Lab 2 — UI Specification
 
 Framework: React + TypeScript + Vite + Bootstrap 5.
-Screens are client-side routes; the selected Development Requester lives in a React context (`RequesterContext`) and is sent as the `X-Dev-Requester-Id` header by the shared API client (FR-1, BR-1).
+Screens are client-side routes; the selected Development Requester lives in a React context (`RequesterContext`) and is sent as the `X-Dev-Requester-Id` header by the shared API client (FR-01, BR-01).
 
 ---
 
@@ -33,7 +33,7 @@ Rules:
 
 On continue → requester stored in context; user lands on S3 (My Tickets). A persistent identity chip (name) appears in the navbar on all later screens with a "Switch" action returning to S1.
 
-After requester selection, **Check System** is retained as a utility destination. Desktop/tablet show it directly in the Zen Green navbar next to My Tickets/Create Ticket; mobile exposes the same destination from the hamburger menu.
+**Check System** is retained as a utility before and after requester selection. On S1 it is reachable from the desktop/tablet header or the mobile hamburger menu. After selection it remains in the main desktop/tablet navbar and mobile hamburger menu.
 
 ### S2 — Create Ticket
 | Breakpoint | Form layout |
@@ -43,14 +43,14 @@ After requester selection, **Check System** is retained as a utility destination
 | Mobile <768px | Single stacked column, no horizontal scroll |
 
 Fields:
-| Field | Control | Validation (client mirrors BR-3) |
+| Field | Control | Validation (client mirrors BR-03) |
 |---|---|---|
 | Category* | select | required |
 | Related System* | select | required |
 | Requested Priority* | select (`Low` / `Medium` / `High`) | required |
 | Summary* | text input | required, ≤100 chars, live counter |
 | Description* | textarea | required, ≤2000 chars, live counter |
-| Attachments | dashed upload area + file input/list | ≤5 files, ≤5 MB each, allowed types (BR-4); per-file error row |
+| Attachments | dashed upload area + file input/list | ≤5 files, ≤5 MB each, allowed types (BR-04); per-file error row |
 
 States: Default · Busy (submit disabled + spinner) · Success (pale-green success panel showing generated Ticket Number, links to detail/list) · Error (danger alert + preserved form values).
 
@@ -68,7 +68,7 @@ Layout: responsive metadata grid (number, created, requester, category, related 
 
 Attachments rows: icon · filename · size · type · actions:
 - Active → Download (secondary green outline button) + Remove (outline danger).
-- Removed (`removedAt` set) → muted style, strikethrough name, badge "Removed", recorded removal reason, **no download/remove actions** (metadata only, FR-9).
+- Removed (`removedAt` set) → muted style, strikethrough name, badge "Removed", recorded removal reason, **no download/remove actions** (metadata only, FR-09).
 
 States: Loading · NotFound (friendly panel + back link) · required removal-reason prompt followed by confirmation before soft delete · Success toast after actions. Cancelling either step leaves the attachment active; a blank reason is rejected before the API call.
 

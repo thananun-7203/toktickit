@@ -43,8 +43,8 @@ describe("CreateTicket", () => {
     vi.spyOn(api, "getRelatedSystems").mockResolvedValue(SYSTEMS);
   });
 
-  it("UI-2: renders the form with required-field asterisks and dropdowns", async () => {
-    renderForm();
+  it("UI-2/UI-8: renders the form with required-field asterisks and dropdowns", async () => {
+    const { container } = renderForm();
     await screen.findByText(/Loading form data/);
     await waitFor(() => expect(screen.queryByText(/Loading form data/)).not.toBeInTheDocument());
 
@@ -57,13 +57,14 @@ describe("CreateTicket", () => {
     expect(screen.getByRole("heading", { name: /^Create Ticket$/i })).toBeInTheDocument();
     expect(screen.getByText(/Provide the details below to open a new support request/i)).toBeInTheDocument();
     expect(screen.getByText(/PDF, JPG, PNG, WEBP/i)).toBeInTheDocument();
+    expect(container.querySelectorAll("label.form-label .text-danger")).toHaveLength(5);
 
     // Zen Green primary action button.
     const submit = screen.getByRole("button", { name: /Create Ticket/i });
     expect(submit).toHaveClass("btn-success");
   });
 
-  it("UI-3: blocks submit and shows validation messages below inputs", async () => {
+  it("UI-3/UI-7: blocks submit and shows validation messages below inputs", async () => {
     const user = userEvent.setup();
     const createSpy = vi.spyOn(api, "createTicket");
     renderForm();
@@ -75,8 +76,8 @@ describe("CreateTicket", () => {
     expect(screen.getByText(/Please select a category/i)).toBeInTheDocument();
     expect(screen.getByText(/Please select a related system/i)).toBeInTheDocument();
     expect(screen.getByText(/Please select a requested priority/i)).toBeInTheDocument();
-    expect(screen.getByText("Summary is required")).toBeInTheDocument();
-    expect(screen.getByText("Description is required")).toBeInTheDocument();
+    expect(screen.getByText("Summary is required")).toHaveClass("invalid-feedback", "d-block");
+    expect(screen.getByText("Description is required")).toHaveClass("invalid-feedback", "d-block");
   });
 
   it("UI-4/UI-10: submits the selected Requested Priority and shows a busy state", async () => {
