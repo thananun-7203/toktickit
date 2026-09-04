@@ -1,7 +1,7 @@
 # TokTickIT Lab 2 — Test Plan & Traceability
 
 Tools: **Vitest** (Unit + UI), **Supertest** (API), **Playwright** (E2E), manual screenshots (Visual).
-Test-first workflow: failing tests for each issue are committed before its implementation.
+Test-first workflow: failing-first tests are run locally before implementation where practical, then rerun after the implementation and during regression. For Issue 5, the Red/Green runs happened locally; the feature's Git history combines tests, implementation, and documentation in the same feature commit rather than providing separate committed Red and Green snapshots.
 
 ---
 
@@ -22,15 +22,18 @@ Test-first workflow: failing tests for each issue are committed before its imple
 | A-2 | `server/tests/lab-02/tickets.api.test.ts` | FR-3, FR-4 | POST valid ticket | 201; persisted; ticketNumber format BR-2; status New | Planned |
 | A-3 | `server/tests/lab-02/tickets.api.test.ts` | BR-3 | POST over-length summary/description | 400 + `fields` map; nothing persisted | Planned |
 | A-4 | `server/tests/lab-02/tickets.api.test.ts` | BR-3 | POST missing required fields | 400 + per-field messages | Planned |
-| A-5 | `server/tests/lab-02/tickets.api.test.ts` | FR-6, BR-1 | GET other requester's ticket id | 404 (no existence leak) | Planned |
+| A-5 | `server/tests/lab-02/ticketDetail.api.test.ts` | FR-6, BR-1 | GET other requester's ticket id | 404 (no existence leak) | Pass |
 | A-6 | `server/tests/lab-02/tickets.api.test.ts` | FR-5, BR-1 | List isolation (requesters R1 vs R2) | Each sees only own tickets | Planned |
 | A-7 | `server/tests/lab-02/tickets.api.test.ts` | FR-5 | Search by summary substring | Only matching items returned | Planned |
 | A-8 | `server/tests/lab-02/tickets.api.test.ts` | FR-5 | Filter by category + sort oldest/newest | Correct order/subset | Planned |
 | A-9 | `server/tests/lab-02/tickets.api.test.ts` | FR-5 | Pagination | page/pageSize/totalItems/totalPages consistent | Planned |
-| A-10 | `server/tests/lab-02/tickets.api.test.ts` | FR-7, BR-4 | Upload 1 valid file | 201; appears in detail attachments | Planned |
-| A-11 | `server/tests/lab-02/tickets.api.test.ts` | BR-4 | Upload >5 MB or disallowed type | 400 naming offending file | Planned |
-| A-12 | `server/tests/lab-02/tickets.api.test.ts` | BR-4 | Upload beyond 5 active files | 400; count stays ≤5 | Planned |
-| A-13 | `server/tests/lab-02/tickets.api.test.ts` | FR-9, BR-5 | DELETE attachment then download it | Remove → 200 w/ timestamp; download then fails; metadata still listed | Planned |
+| A-10 | `server/tests/lab-02/ticketDetail.api.test.ts` | FR-7, BR-4 | Upload 1 valid file | 201; appears in detail attachments | Pass |
+| A-11 | `server/tests/lab-02/ticketDetail.api.test.ts` | BR-4 | Upload >5 MB or disallowed type | 400 naming offending file | Pass |
+| A-12 | `server/tests/lab-02/ticketDetail.api.test.ts` | BR-4 | Upload beyond 5 active files | 400; count stays ≤5 | Pass |
+| A-12C | `server/tests/lab-02/ticketDetail.api.test.ts` | BR-4 | 4 active files + 2 simultaneous one-file uploads | Exactly one upload succeeds; the capacity loser performs no storage write/cleanup; active metadata/storage stays at 5 | Pass |
+| A-13 | `server/tests/lab-02/ticketDetail.api.test.ts` | FR-9, BR-5 | DELETE with reason, then download it | Remove → 200 with `removedAt` + `removalReason`; download fails; metadata/reason remain listed | Pass |
+| A-13R | `server/tests/lab-02/ticketDetail.api.test.ts` | FR-9, BR-5 | DELETE with missing/blank reason | 400; attachment remains active; storage remains | Pass |
+| A-13C | `server/tests/lab-02/ticketDetail.api.test.ts` | FR-9, BR-5 | 2 simultaneous DELETEs with reasons for one active attachment | Exactly one 200 and one 409; winner's reason + `removedAt` retained; storage object remains | Pass |
 | A-14 | `server/tests/lab-02/reference-data.api.test.ts` | FR-3 | GET /api/v1/categories | 200; returns 4 active seeded categories | Planned |
 | A-15 | `server/tests/lab-02/reference-data.api.test.ts` | FR-3 | GET /api/v1/related-systems | 200; returns ≥6 active seeded related systems | Planned |
 
@@ -62,18 +65,18 @@ Test-first workflow: failing tests for each issue are committed before its imple
 
 | ID | File Path | Target | Scenario | Expected | Final |
 |---|---|---|---|---|---|
-| UI-6 | `client/tests/lab-02/TicketDetail.test.tsx` | FR-9 | Active attachment shows Download + Remove buttons | Two action buttons visible per active attachment row | Planned |
-| UI-9 | `client/tests/lab-02/TicketDetail.test.tsx` | FR-9, AC-9 | Removed attachment shows muted metadata only — no download/remove actions | `removedAt` non-null row: muted style, no action buttons; metadata fields (name, size, type) still present | Planned |
+| UI-6 | `client/tests/lab-02/TicketDetail.test.tsx` | FR-9 | Active attachment shows Download + Remove buttons | Two action buttons visible per active attachment row | Pass |
+| UI-9 | `client/tests/lab-02/TicketDetail.test.tsx` | FR-9, AC-9 | Removal requires a reason; removed attachment shows muted metadata + reason only | Prompt/confirm precede DELETE; blank reason blocks API call; removed row shows name/size/type/reason and no actions | Pass |
 
 ## 4. E2E Tests (Playwright)
 
 | ID | File Path | Scenario | Expected | Final |
 |---|---|---|---|---|
-| E-1 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Select requester → identity chip appears | Context stored; subsequent pages scoped to selected requester | Planned |
-| E-2 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Create ticket via form | Success view shows TKT-number; ticket appears in My Tickets | Planned |
-| E-3 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Open own ticket detail | Fields + attachments section rendered correctly | Planned |
-| E-4 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Switch requester → list changes | Isolation proven end-to-end (AC-5) | Planned |
-| E-5 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Upload file → remove it → download attempt blocked | Soft-remove behaviour visible (AC-9) | Planned |
+| E-1 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Select requester → identity chip appears | Context stored; subsequent pages scoped to selected requester | Pass |
+| E-2 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Create ticket via form | Success view shows TKT-number; ticket appears in My Tickets | Pass |
+| E-3 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Open own ticket detail | Fields + attachments section rendered correctly | Pass |
+| E-4 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Switch requester → list changes | Isolation proven end-to-end (AC-5) | Pass |
+| E-5 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Upload file → remove with reason → download attempt blocked | Reason remains visible; soft-remove behaviour visible (AC-9) | Pass |
 
 ## 5. Visual Checks (manual screenshots)
 
@@ -96,8 +99,8 @@ Every Acceptance Criterion must map to at least one planned test.
 | AC-5 | My Tickets shows only tickets for the acting requester (isolation proof) | A-6, E-4 |
 | AC-6 | Search/filter/sort/pagination return correct subsets | A-7, A-8, A-9 |
 | AC-7 | Detail shows ticket metadata + attachments; other requester's id = 404 | A-5, E-3 |
-| AC-8 | Upload within limits succeeds; exceeding limits fails clearly | A-10, A-11, A-12 |
-| AC-9 | Soft-removed attachments visible as metadata; download blocked | A-13, UI-6, UI-9, E-5 |
+| AC-8 | Upload within limits succeeds; exceeding limits fails clearly, including concurrent uploads | A-10, A-11, A-12, A-12C |
+| AC-9 | Soft removal requires a reason; removed metadata/reason remain visible; download blocked; concurrent removal is atomic | A-13, A-13R, A-13C, UI-6, UI-9, E-5 |
 | AC-10 | Zen Green theme + responsive Desktop/Tablet/Mobile | V-1, V-2, V-3 |
 
 Every AC has ≥1 automated or manual test mapped.
@@ -112,8 +115,8 @@ Every AC has ≥1 automated or manual test mapped.
 | FR-4 | U-1 | A-2 | — | E-2 |
 | FR-5 | — | A-6–A-9 | UI-5 | E-2, E-4 |
 | FR-6 | — | A-5 | — | E-3 |
-| FR-7 | — | A-10–A-12 | — | E-5 |
+| FR-7 | — | A-10–A-12, A-12C | — | E-5 |
 | FR-8 | — | A-13 (download path) | — | E-5 |
-| FR-9 | — | A-13 | UI-6, UI-9 | E-5 |
+| FR-9 | — | A-13, A-13R, A-13C | UI-6, UI-9 | E-5 |
 
 Every Must-FR has ≥1 automated test; remaining gaps covered by Visual checks (V-1–V-3).

@@ -36,6 +36,26 @@ export interface Ticket {
   relatedSystem: { id: number; name: string };
 }
 
+export interface Attachment {
+  id: number;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  removedAt: string | null;
+  removalReason: string | null;
+}
+
+export interface TicketDetail extends Ticket {
+  attachments: Attachment[];
+}
+
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 export interface NewTicketInput {
   categoryId: number;
   relatedSystemId: number;
@@ -165,6 +185,64 @@ export async function getTickets(
     throw new Error(data?.error?.message ?? `Failed to load tickets (${res.status})`);
   }
   return res.json();
+}
+
+export async function getTicketDetail(id: number, requesterId: number): Promise<TicketDetail> {
+  const res = await apiFetch(`/api/v1/tickets/${id}`, {}, requesterId);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new ApiError(data?.error?.message ?? `Failed to load ticket (${res.status})`, res.status);
+  }
+  return data as TicketDetail;
+}
+
+export async function uploadAttachments(
+  ticketId: number,
+  files: File[],
+  requesterId: number,
+): Promise<Attachment[]> {
+  const form = new FormData();
+  files.forEach((file) => form.append("files", file));
+  const res = await apiFetch(
+    `/api/v1/tickets/${ticketId}/attachments`,
+    { method: "POST", body: form },
+    requesterId,
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new ApiError(data?.error?.message ?? `Failed to upload attachments (${res.status})`, res.status);
+  }
+  return data as Attachment[];
+}
+
+export async function removeAttachment(id: number, requesterId: number, reason: string): Promise<Attachment> {
+  const res = await apiFetch(
+    `/api/v1/attachments/${id}`,
+    { method: "DELETE", body: JSON.stringify({ reason }) },
+    requesterId,
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new ApiError(data?.error?.message ?? `Failed to remove attachment (${res.status})`, res.status);
+  }
+  return data as Attachment;
+}
+
+export async function downloadAttachment(
+  id: number,
+  requesterId: number,
+): Promise<{ blob: Blob; fileName: string }> {
+  const res = await apiFetch(`/api/v1/attachments/${id}/download`, {}, requesterId);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data?.error?.message ?? `Failed to download attachment (${res.status})`, res.status);
+  }
+  const disposition = res.headers.get("Content-Disposition") ?? "";
+  const match = disposition.match(/filename="([^"]+)"/i);
+  return {
+    blob: await res.blob(),
+    fileName: match?.[1] ?? "attachment",
+  };
 }
 
 // Error thrown by createTicket; carries optional per-field validation messages.

@@ -118,29 +118,29 @@ describe("GET /api/v1/tickets", () => {
   });
 
   it("A-9: pagination returns consistent page/pageSize/totalItems/totalPages", async () => {
-    // Create 3 tickets to have predictable count (plus any existing isolation but paginated)
-    const before = await request(app).get("/api/v1/tickets?pageSize=50").set("X-Dev-Requester-Id", String(R1));
-    const baseCount = before.body.totalItems as number;
-
-    await createTicket(R1, { summary: "pag 1" });
-    await createTicket(R1, { summary: "pag 2" });
-    await createTicket(R1, { summary: "pag 3" });
+    // Scope this test to its own unique search marker. Other API test files run
+    // concurrently and may create/delete R1 tickets, so relying on a shared
+    // requester-wide base count makes pagination assertions flaky.
+    const uniq = `a9-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    await createTicket(R1, { summary: `${uniq} pag 1` });
+    await createTicket(R1, { summary: `${uniq} pag 2` });
+    await createTicket(R1, { summary: `${uniq} pag 3` });
 
     const p1 = await request(app)
-      .get("/api/v1/tickets?page=1&pageSize=2&sort=newest")
+      .get(`/api/v1/tickets?search=${encodeURIComponent(uniq)}&page=1&pageSize=2&sort=newest`)
       .set("X-Dev-Requester-Id", String(R1));
     expect(p1.status).toBe(200);
     expect(p1.body.page).toBe(1);
     expect(p1.body.pageSize).toBe(2);
-    expect(p1.body.totalItems).toBe(baseCount + 3);
-    expect(p1.body.totalPages).toBe(Math.ceil((baseCount + 3) / 2));
+    expect(p1.body.totalItems).toBe(3);
+    expect(p1.body.totalPages).toBe(2);
     expect(p1.body.items).toHaveLength(2);
 
     const p2 = await request(app)
-      .get("/api/v1/tickets?page=2&pageSize=2&sort=newest")
+      .get(`/api/v1/tickets?search=${encodeURIComponent(uniq)}&page=2&pageSize=2&sort=newest`)
       .set("X-Dev-Requester-Id", String(R1));
     expect(p2.body.page).toBe(2);
-    expect(p2.body.items.length).toBeGreaterThan(0);
+    expect(p2.body.items).toHaveLength(1);
     // Items across pages should not overlap
     const p1Ids = p1.body.items.map((t: { id: number }) => t.id);
     const p2Ids = p2.body.items.map((t: { id: number }) => t.id);

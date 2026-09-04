@@ -18,9 +18,10 @@ type LoadState = "idle" | "loading" | "success" | "error";
 interface MyTicketsProps {
   requesterId: number;
   onCreateTicket?: () => void;
+  onOpenTicket?: (ticketId: number) => void;
 }
 
-export default function MyTickets({ requesterId, onCreateTicket }: MyTicketsProps) {
+export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }: MyTicketsProps) {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [totalItems, setTotalItems] = useState(0);
@@ -248,7 +249,19 @@ export default function MyTickets({ requesterId, onCreateTicket }: MyTicketsProp
               <tbody>
                 {tickets.map((t) => (
                   <tr key={t.id}>
-                    <td className="fw-semibold">{t.ticketNumber}</td>
+                    <td className="fw-semibold">
+                      {onOpenTicket ? (
+                        <button
+                          className="btn btn-link p-0 fw-semibold text-success"
+                          aria-label={`Open ${t.ticketNumber}`}
+                          onClick={() => onOpenTicket(t.id)}
+                        >
+                          {t.ticketNumber}
+                        </button>
+                      ) : (
+                        t.ticketNumber
+                      )}
+                    </td>
                     <td>{t.summary}</td>
                     <td>{t.category.name}</td>
                     <td>{t.relatedSystem.name}</td>
@@ -272,7 +285,17 @@ export default function MyTickets({ requesterId, onCreateTicket }: MyTicketsProp
             {tickets.map((t) => (
               <div key={t.id} className="card p-3">
                 <div className="d-flex justify-content-between">
-                  <span className="fw-semibold">{t.ticketNumber}</span>
+                  {onOpenTicket ? (
+                    <button
+                      className="btn btn-link p-0 fw-semibold text-success"
+                      aria-label={`Open ${t.ticketNumber}`}
+                      onClick={() => onOpenTicket(t.id)}
+                    >
+                      {t.ticketNumber}
+                    </button>
+                  ) : (
+                    <span className="fw-semibold">{t.ticketNumber}</span>
+                  )}
                   <span className="badge" style={{ backgroundColor: "#EAF6EF", color: "#0B7A46" }}>
                     {t.status}
                   </span>

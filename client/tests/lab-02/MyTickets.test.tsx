@@ -131,4 +131,21 @@ describe("MyTickets (UI-5)", () => {
     await user.selectOptions(screen.getByLabelText(/Page size/), "5");
     await waitFor(() => expect(spy).toHaveBeenCalledWith(expect.objectContaining({ pageSize: 5 }), 1));
   });
+
+  it("opens a ticket detail from the list", async () => {
+    const onOpenTicket = vi.fn();
+    vi.spyOn(api, "getTickets").mockResolvedValue({
+      items: TICKETS,
+      page: 1,
+      pageSize: 10,
+      totalItems: 2,
+      totalPages: 1,
+    });
+    const user = userEvent.setup();
+    render(<MyTickets requesterId={1} onOpenTicket={onOpenTicket} />);
+
+    const buttons = await screen.findAllByRole("button", { name: /Open TKT-2026-00001/i });
+    await user.click(buttons[0]);
+    expect(onOpenTicket).toHaveBeenCalledWith(1);
+  });
 });

@@ -1,11 +1,19 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
+import crypto from "node:crypto";
+import multer from "multer";
 import { getPrisma } from "./prisma.js";
 import { filterActiveRequesters } from "./requesterFilter.js";
 import { requireDevRequester } from "./devRequester.js";
 import { generateTicketNumber, isTicketNumberConflict } from "./ticketNumber.js";
 import { validateTicketInput } from "./ticketValidation.js";
 import { toPrismaOrderBy, validateTicketQuery } from "./ticketQuery.js";
+import { getAttachmentStorage } from "./attachmentStorage.js";
+import {
+  MAX_ACTIVE_ATTACHMENTS,
+  safeStorageFileName,
+  validateAttachmentFiles,
+} from "./attachmentValidation.js";
 
 type DevRequester = {
   id: number;
@@ -27,8 +35,37 @@ declare global {
 // Supertest can import `app` without opening a port. Do not merge these files.
 export const app = express();
 
-app.use(cors());          // already wired: lets the Vite dev server call this API
+app.use(cors({
+  // Attachment downloads are fetched by the Vite client, so expose the
+  // filename header to browser JavaScript instead of letting it be hidden by
+  // CORS. The client uses it to preserve the original attachment filename.
+  exposedHeaders: ["Content-Disposition"],
+}));
 app.use(express.json());
+
+const attachmentUpload = multer({
+  storage: multer.memoryStorage(),
+  // Keep a small buffer above the business-rule limit so the route can return
+  // a validation error naming the offending file instead of a generic parser
+  // failure for the common 5 MB + 1 byte case.
+  limits: { files: 5, fileSize: 6 * 1024 * 1024 },
+});
+
+const parseAttachmentUpload = (req: Request, res: Response, next: express.NextFunction) => {
+  attachmentUpload.array("files", 5)(req, res, (err: unknown) => {
+    if (err) {
+      const message = err instanceof multer.MulterError && err.code === "LIMIT_FILE_COUNT"
+        ? "A ticket can have at most 5 files per upload"
+        : "Attachment upload exceeds allowed limits";
+      res.status(400).json({ error: { message } });
+      return;
+    }
+    next();
+  });
+};
+
+class AttachmentLimitError extends Error {}
+class TicketNotFoundError extends Error {}
 
 // ---------------------------------------------------------------------------
 // Issue 2 — API health check
@@ -235,6 +272,286 @@ app.get("/api/v1/tickets", requireDevRequester, async (req: Request, res: Respon
     });
   } catch {
     res.status(500).json({ error: { message: "Unable to load tickets" } });
+  }
+});
+
+app.get("/api/v1/tickets/:id", requireDevRequester, async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(404).json({ error: { message: "Ticket not found" } });
+      return;
+    }
+
+    const prisma = getPrisma();
+    const requester = res.locals.devRequester!;
+    const ticket = await prisma.ticket.findFirst({
+      where: { id, requesterId: requester.id },
+      include: {
+        requester: { select: { id: true, name: true } },
+        category: { select: { id: true, name: true } },
+        relatedSystem: { select: { id: true, name: true } },
+        attachments: {
+          select: {
+            id: true,
+            fileName: true,
+            mimeType: true,
+            sizeBytes: true,
+            removedAt: true,
+            removalReason: true,
+          },
+          orderBy: { id: "asc" },
+        },
+      },
+    });
+
+    if (!ticket) {
+      res.status(404).json({ error: { message: "Ticket not found" } });
+      return;
+    }
+
+    res.json(ticket);
+  } catch {
+    res.status(500).json({ error: { message: "Unable to load ticket" } });
+  }
+});
+
+// Issue 5 — Upload attachments to an owned ticket.
+app.post(
+  "/api/v1/tickets/:id/attachments",
+  requireDevRequester,
+  parseAttachmentUpload,
+  async (req: Request, res: Response) => {
+    const writtenKeys: string[] = [];
+    try {
+      const ticketId = Number(req.params.id);
+      if (!Number.isInteger(ticketId) || ticketId <= 0) {
+        res.status(404).json({ error: { message: "Ticket not found" } });
+        return;
+      }
+
+      const prisma = getPrisma();
+      const requester = res.locals.devRequester!;
+      const ticket = await prisma.ticket.findFirst({
+        where: { id: ticketId, requesterId: requester.id },
+        select: { id: true },
+      });
+      if (!ticket) {
+        res.status(404).json({ error: { message: "Ticket not found" } });
+        return;
+      }
+
+      const files = (req.files ?? []) as Express.Multer.File[];
+      if (files.length === 0) {
+        res.status(400).json({ error: { message: "At least one file is required" } });
+        return;
+      }
+
+      const invalid = validateAttachmentFiles(files);
+      if (invalid.length > 0) {
+        res.status(400).json({ error: { message: `Invalid attachment(s): ${invalid.join(", ")}` } });
+        return;
+      }
+
+      // Fast pre-check avoids writing to object storage when the ticket is
+      // already known to be full. This is intentionally NOT the authoritative
+      // concurrency check; a second check runs while holding a PostgreSQL row
+      // lock below so simultaneous requests cannot both reserve the fifth slot.
+      const activeCount = await prisma.attachment.count({
+        where: { ticketId, removedAt: null },
+      });
+      if (activeCount + files.length > MAX_ACTIVE_ATTACHMENTS) {
+        res.status(400).json({ error: { message: "A ticket can have at most 5 active attachments" } });
+        return;
+      }
+
+      const storage = getAttachmentStorage();
+      const pending = files.map((file) => ({
+        fileName: file.originalname,
+        mimeType: file.mimetype,
+        sizeBytes: file.size,
+        storageKey: `toktickit/tickets/${ticketId}/${crypto.randomUUID()}-${safeStorageFileName(file.originalname)}`,
+        source: file,
+      }));
+
+      const created = await prisma.$transaction(async (tx) => {
+        // Serialize attachment reservations for this ticket. The lock is held
+        // until the transaction commits. The authoritative capacity check is
+        // intentionally completed before any SeaweedFS write, so a request
+        // that loses a capacity race creates no storage object to compensate.
+        const locked = await tx.$queryRaw<Array<{ id: number }>>`
+          SELECT "id"
+          FROM "Ticket"
+          WHERE "id" = ${ticketId} AND "requesterId" = ${requester.id}
+          FOR UPDATE
+        `;
+        if (locked.length === 0) throw new TicketNotFoundError();
+
+        const lockedActiveCount = await tx.attachment.count({
+          where: { ticketId, removedAt: null },
+        });
+        if (lockedActiveCount + files.length > MAX_ACTIVE_ATTACHMENTS) {
+          throw new AttachmentLimitError();
+        }
+
+        const rows = [] as Array<{
+          id: number;
+          fileName: string;
+          mimeType: string;
+          sizeBytes: number;
+          removedAt: Date | null;
+          removalReason: string | null;
+        }>;
+        for (const file of pending) {
+          await storage.put(file.storageKey, file.source.buffer, file.source.mimetype);
+          writtenKeys.push(file.storageKey);
+          rows.push(
+            await tx.attachment.create({
+              data: {
+                fileName: file.fileName,
+                mimeType: file.mimeType,
+                sizeBytes: file.sizeBytes,
+                storageKey: file.storageKey,
+                ticketId,
+              },
+              select: {
+                id: true,
+                fileName: true,
+                mimeType: true,
+                sizeBytes: true,
+                removedAt: true,
+                removalReason: true,
+              },
+            }),
+          );
+        }
+        return rows;
+      }, { timeout: 30_000 });
+
+      res.status(201).json(created);
+    } catch (err) {
+      const storage = getAttachmentStorage();
+      await Promise.allSettled(writtenKeys.map((key) => storage.delete(key)));
+      if (err instanceof multer.MulterError) {
+        res.status(400).json({ error: { message: "Attachment upload exceeds allowed limits" } });
+        return;
+      }
+      if (err instanceof AttachmentLimitError) {
+        res.status(400).json({ error: { message: "A ticket can have at most 5 active attachments" } });
+        return;
+      }
+      if (err instanceof TicketNotFoundError) {
+        res.status(404).json({ error: { message: "Ticket not found" } });
+        return;
+      }
+      res.status(500).json({ error: { message: "Unable to upload attachments" } });
+    }
+  },
+);
+
+// Issue 5 — Download an active owned attachment via the storage proxy.
+app.get(
+  "/api/v1/attachments/:id/download",
+  requireDevRequester,
+  async (req: Request, res: Response) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id) || id <= 0) {
+        res.status(404).json({ error: { message: "Attachment not found" } });
+        return;
+      }
+
+      const requester = res.locals.devRequester!;
+      const attachment = await getPrisma().attachment.findFirst({
+        where: { id, ticket: { requesterId: requester.id } },
+      });
+      if (!attachment) {
+        res.status(404).json({ error: { message: "Attachment not found" } });
+        return;
+      }
+      if (attachment.removedAt) {
+        res.status(409).json({ error: { message: "Attachment has been removed" } });
+        return;
+      }
+
+      let body: Buffer;
+      try {
+        body = await getAttachmentStorage().get(attachment.storageKey);
+      } catch {
+        res.status(502).json({ error: { message: "Unable to read attachment storage" } });
+        return;
+      }
+
+      const headerName = attachment.fileName.replace(/[\r\n"]/g, "_");
+      res.setHeader("Content-Type", attachment.mimeType);
+      res.setHeader("Content-Disposition", `attachment; filename="${headerName}"`);
+      res.send(body);
+    } catch {
+      res.status(500).json({ error: { message: "Unable to download attachment" } });
+    }
+  },
+);
+
+// Issue 5 — Soft-remove an attachment while retaining metadata and storage.
+app.delete("/api/v1/attachments/:id", requireDevRequester, async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(404).json({ error: { message: "Attachment not found" } });
+      return;
+    }
+
+    const prisma = getPrisma();
+    const requester = res.locals.devRequester!;
+    const attachment = await prisma.attachment.findFirst({
+      where: { id, ticket: { requesterId: requester.id } },
+    });
+    if (!attachment) {
+      res.status(404).json({ error: { message: "Attachment not found" } });
+      return;
+    }
+    if (attachment.removedAt) {
+      res.status(409).json({ error: { message: "Attachment already removed" } });
+      return;
+    }
+
+    const reason = typeof req.body?.reason === "string" ? req.body.reason.trim() : "";
+    if (!reason) {
+      res.status(400).json({ error: { message: "Removal reason is required" } });
+      return;
+    }
+
+    const removedAt = new Date();
+    // Make the state transition atomic. With concurrent DELETEs, only the
+    // first request can change removedAt from NULL; the loser updates zero rows
+    // and therefore returns the documented 409 instead of a second 200.
+    const result = await prisma.attachment.updateMany({
+      where: { id, removedAt: null },
+      data: { removedAt, removalReason: reason },
+    });
+    if (result.count === 0) {
+      res.status(409).json({ error: { message: "Attachment already removed" } });
+      return;
+    }
+
+    const updated = await prisma.attachment.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        fileName: true,
+        mimeType: true,
+        sizeBytes: true,
+        removedAt: true,
+        removalReason: true,
+      },
+    });
+    if (!updated) {
+      res.status(404).json({ error: { message: "Attachment not found" } });
+      return;
+    }
+    res.json(updated);
+  } catch {
+    res.status(500).json({ error: { message: "Unable to remove attachment" } });
   }
 });
 
