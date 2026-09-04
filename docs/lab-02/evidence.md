@@ -22,6 +22,10 @@ All screenshots are under `artifacts/lab-02/screenshots/`.
 | `12-ticket-detail-removed-reason.png` | S4 after soft removal: retained attachment metadata, Removed state, recorded removal reason, no Download/Remove actions |
 | `14-requester-isolation-no-results.png` | After requester switch, searching for the first requester's ticket returns No results |
 | `15-my-tickets-empty-state.png` | My Tickets empty state with Create Ticket CTA |
+| `16-requester-loading.png` | S1 Loading state while the requester API response is intentionally held in flight |
+| `17-create-ticket-validation-errors.png` | S2 required-field validation errors shown directly below all required inputs |
+| `18-create-ticket-invalid-attachment.png` | S2 boundary failure: disallowed `.exe` attachment rejected client-side with a visible error |
+| `19-create-ticket-backend-failure-preserved.png` | S2 simulated backend failure: error alert shown while all entered form values remain preserved |
 
 These screenshots cover the Lab 2 Desktop (`>=992px`), Tablet (`768–991px`), and Mobile (`<768px`) presentation required by V-1/V-2/V-3.
 
@@ -83,6 +87,26 @@ These screenshots cover the Lab 2 Desktop (`>=992px`), Tablet (`768–991px`), a
 
 ![My Tickets Empty State](../../artifacts/lab-02/screenshots/15-my-tickets-empty-state.png)
 
+### Part 6 — Failure / Boundary Evidence
+
+#### Development Requester — Loading state
+
+![Development Requester Loading](../../artifacts/lab-02/screenshots/16-requester-loading.png)
+
+#### Create Ticket — Required-field validation errors
+
+![Create Ticket Validation Errors](../../artifacts/lab-02/screenshots/17-create-ticket-validation-errors.png)
+
+#### Create Ticket — Invalid attachment type
+
+![Create Ticket Invalid Attachment](../../artifacts/lab-02/screenshots/18-create-ticket-invalid-attachment.png)
+
+#### Create Ticket — Backend failure with preserved form values
+
+![Create Ticket Backend Failure Preserved](../../artifacts/lab-02/screenshots/19-create-ticket-backend-failure-preserved.png)
+
+These four screenshots were added after PR #31 peer-review feedback specifically to cover the Part 6 failure/boundary evidence, rather than relying only on happy-path screenshots.
+
 ## 2. Part 8 Attachment / Ownership Evidence
 
 The same Playwright flow proves the required attachment lifecycle and requester isolation:
@@ -115,6 +139,7 @@ Expected evidence values:
 - Pagination metadata (`page`, `pageSize`, `totalItems`, `totalPages`) is covered by A-9.
 - Empty and no-results states are covered by UI-5 and screenshots `14-...` / `15-...`.
 - Requester list loading/error behavior and Create Ticket validation/busy/error behavior are covered by the client UI regression suite.
+- Part 6 screenshot evidence now includes requester loading, required-field validation, invalid attachment type, and simulated backend failure with preserved form values (`16-...` through `19-...`).
 
 ## 4. Peer Review / CI Evidence
 

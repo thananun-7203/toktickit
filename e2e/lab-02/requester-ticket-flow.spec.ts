@@ -6,7 +6,7 @@ const API_URL = "http://127.0.0.1:3001";
 const CAPTURE_EVIDENCE = process.env.CAPTURE_EVIDENCE === "1";
 const EVIDENCE_DIR = path.resolve("../artifacts/lab-02/screenshots");
 
-test("E1-E8 requester create/list/detail/isolation/priority/attachment/responsive/navigation lifecycle", async ({ page, request }) => {
+test("E1-E9 requester create/list/detail/isolation/priority/attachment/responsive/navigation/failure-evidence lifecycle", async ({ page, request }) => {
   const unique = `Lab 2 Final Evidence ${Date.now()}`;
   const attachmentName = "e2e-evidence.pdf";
 
@@ -31,9 +31,26 @@ test("E1-E8 requester create/list/detail/isolation/priority/attachment/responsiv
   expect(somchai).toBeTruthy();
   expect(somsri).toBeTruthy();
 
+  // E-9 / Part 6 failure-state evidence: keep the first requester request in
+  // flight briefly so the real S1 loading state can be captured repeatably.
+  let releaseRequesterRequest!: () => void;
+  const requesterRequestGate = new Promise<void>((resolve) => {
+    releaseRequesterRequest = resolve;
+  });
+  await page.route("**/api/v1/requesters", async (route) => {
+    await requesterRequestGate;
+    await route.continue();
+  });
+
   // E-1: choose the acting Development Requester.
-  await page.goto("/");
+  const initialNavigation = page.goto("/");
   await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(page.getByText("Loading requesters…")).toBeVisible();
+  await capture("16-requester-loading.png");
+  releaseRequesterRequest();
+  await initialNavigation;
+  await expect(page.getByLabel(/Development Requester/i)).toBeVisible();
+  await page.unroute("**/api/v1/requesters");
   await capture("01-requester-selection-desktop.png");
   await expect(page.getByRole("navigation", { name: "Utility navigation" }).getByRole("button", { name: "Check System" })).toBeVisible();
   await page.getByRole("navigation", { name: "Utility navigation" }).getByRole("button", { name: "Check System" }).click();
@@ -82,9 +99,59 @@ test("E1-E8 requester create/list/detail/isolation/priority/attachment/responsiv
     await expectNoHorizontalOverflow();
   }
   await page.setViewportSize({ width: 1280, height: 800 });
+  const createForm = page.locator("form");
+  await expect(createForm).toBeVisible();
+  const createSubmit = createForm.getByRole("button", { name: /Create Ticket/i });
+
+  // E-9 / Part 6 failure-boundary evidence 1: submit an empty form and prove
+  // required-field validation appears directly below the inputs.
+  await createSubmit.click();
+  await expect(page.getByText("Please select a category")).toBeVisible();
+  await expect(page.getByText("Please select a related system")).toBeVisible();
+  await expect(page.getByText("Please select a requested priority")).toBeVisible();
+  await expect(page.getByText("Summary is required")).toBeVisible();
+  await expect(page.getByText("Description is required")).toBeVisible();
+  await capture("17-create-ticket-validation-errors.png");
+
+  const failureSummary = `Backend failure evidence ${Date.now()}`;
+  const failureDescription = "These values must remain in the form after the simulated backend failure.";
   await page.getByLabel(/Category/).selectOption({ label: "Software" });
   await page.getByLabel(/Related System/).selectOption({ label: "Report Portal" });
   await page.getByLabel(/Requested Priority/).selectOption("High");
+  await page.getByLabel(/Summary/).fill(failureSummary);
+  await page.getByLabel(/Description/).fill(failureDescription);
+
+  // E-9 / Part 6 failure-boundary evidence 2: invalid attachment type is
+  // rejected client-side before any create request is sent.
+  await page.getByLabel(/Attachments/i).setInputFiles({
+    name: "blocked-evidence.exe",
+    mimeType: "application/octet-stream",
+    buffer: Buffer.from("not an allowed Lab 2 attachment"),
+  });
+  await expect(page.getByText(/blocked-evidence\.exe — not an allowed type/i)).toBeVisible();
+  await capture("18-create-ticket-invalid-attachment.png");
+  await page.getByLabel(/Attachments/i).setInputFiles([]);
+
+  // E-9 / Part 6 failure-boundary evidence 3: simulate a backend 500 on the
+  // next create request, then prove the alert is visible and every entered
+  // form value is preserved for correction/retry.
+  await page.route("**/api/v1/tickets", async (route) => {
+    await route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { message: "Simulated backend failure for Part 6 evidence" } }),
+    });
+  }, { times: 1 });
+  await createSubmit.click();
+  await expect(page.getByText("Simulated backend failure for Part 6 evidence")).toBeVisible();
+  await expect(page.getByLabel(/Category/)).toHaveValue("3");
+  await expect(page.getByLabel(/Related System/)).toHaveValue("2");
+  await expect(page.getByLabel(/Requested Priority/)).toHaveValue("High");
+  await expect(page.getByLabel(/Summary/)).toHaveValue(failureSummary);
+  await expect(page.getByLabel(/Description/)).toHaveValue(failureDescription);
+  await capture("19-create-ticket-backend-failure-preserved.png");
+
+  // Continue with the normal happy-path ticket after the failure evidence.
   await page.getByLabel(/Summary/).fill(unique);
   await page.getByLabel(/Description/).fill("Playwright E2E ticket for final Lab 2 release evidence.");
   await page.getByLabel(/Attachments/i).setInputFiles({
@@ -98,7 +165,7 @@ test("E1-E8 requester create/list/detail/isolation/priority/attachment/responsiv
   await page.setViewportSize({ width: 390, height: 844 });
   await capture("05-create-ticket-mobile.png");
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.getByRole("button", { name: "Create Ticket" }).last().click();
+  await createSubmit.click();
   await expect(page.getByText("Ticket created successfully")).toBeVisible();
   await capture("06-create-ticket-success.png");
 

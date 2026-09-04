@@ -85,6 +85,7 @@ Test-first workflow: failing-first tests are run locally before implementation w
 | E-6 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Select Requested Priority → create → list → detail | Persisted priority returned by API and visible in list/detail | Pass |
 | E-7 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Exercise S1/S2/S3/S4 at desktop/tablet/mobile widths | No page-level horizontal overflow; My Tickets uses table at tablet/desktop and cards on mobile | Pass |
 | E-8 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Reach Check System before/after requester selection from desktop navbar and mobile hamburger menu | System Check remains accessible at both layouts without horizontal overflow | Pass |
+| E-9 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Capture Part 6 failure/boundary states | Requester Loading visible; blank Create shows per-field validation; invalid attachment type is rejected; simulated backend 500 shows an alert while form values remain preserved | Pass |
 
 ## 5. Visual Checks (manual screenshots)
 
@@ -93,6 +94,7 @@ Test-first workflow: failing-first tests are run locally before implementation w
 | V-1 | `artifacts/lab-02/screenshots/01-*.png`, `03-*.png`, `07-*.png`, `10-*.png`, `12-*.png` | Desktop (≥992px): requester, Create, My Tickets, Detail/removed evidence — Zen Green applied | Pass |
 | V-2 | `artifacts/lab-02/screenshots/04-create-ticket-tablet.png`, `08-my-tickets-tablet.png` | Tablet (820px): responsive layout intact without page-level horizontal overflow | Pass |
 | V-3 | `artifacts/lab-02/screenshots/02-*.png`, `05-*.png`, `09-*.png`, `11-*.png` | Mobile (390px): hamburger/stacked/card/detail layouts, no page-level horizontal overflow | Pass |
+| V-4 | `artifacts/lab-02/screenshots/16-*.png` through `19-*.png` | Part 6 failure/boundary evidence: requester Loading, required-field validation, invalid attachment, backend failure with preserved form values | Pass |
 
 ## 6. AC → Test Traceability
 
@@ -103,11 +105,11 @@ Every Acceptance Criterion must map to at least one planned test.
 | AC-01 | Requester selection stored in app context; all later API calls carry it | UI-1, E-1 |
 | AC-02 | Requester list shows exactly 4 active requesters (inactive hidden) | A-1, A-14, U-3, UI-1 |
 | AC-03 | Valid form creates ticket and displays generated Ticket Number | A-2, U-1, U-2, UI-2, E-2 |
-| AC-04 | Invalid data shows per-field messages below inputs without network write | A-3, A-4, U-4, UI-7, UI-8 |
+| AC-04 | Invalid data shows per-field messages below inputs without network write | A-3, A-4, U-4, UI-7, UI-8, E-9, V-4 |
 | AC-05 | My Tickets shows only tickets for the acting requester (isolation proof) | A-6, E-4 |
 | AC-06 | Search/filter/sort/pagination return correct subsets | A-7, A-8, A-9 |
 | AC-07 | Detail shows ticket metadata + attachments; other requester's id = 404 | A-5, E-3 |
-| AC-08 | Upload within limits succeeds; exceeding limits fails clearly, including concurrent uploads | A-10, A-11, A-12, A-12C |
+| AC-08 | Upload within limits succeeds; exceeding limits fails clearly, including concurrent uploads | A-10, A-11, A-12, A-12C, E-9, V-4 |
 | AC-09 | Soft removal requires a reason; removed metadata/reason remain visible; download blocked; concurrent removal is atomic | A-13, A-13R, A-13C, UI-6, UI-9, E-5 |
 | AC-10 | Zen Green theme + responsive Desktop/Tablet/Mobile | UI-1, UI-5, UI-11, UI-12, E-7, E-8, V-1, V-2, V-3 |
 | AC-11 | Requested Priority required, persisted, returned, and displayed | U-7, A-2, A-16, UI-2, UI-3, UI-10, UI-11, UI-12, E-6 |
@@ -118,9 +120,9 @@ Every AC has ≥1 automated or manual test mapped.
 
 | FR | Unit | API | UI | E2E |
 |---|---|---|---|---|
-| FR-01 | — | A-1 | UI-1 | E-1, E-7 |
+| FR-01 | — | A-1 | UI-1 | E-1, E-7, E-9 |
 | FR-02 | U-3 | A-1 | UI-1 | E-1 |
-| FR-03 | U-2, U-4, U-7 | A-2–A-4, A-14–A-16 | UI-2–UI-4, UI-7, UI-8, UI-10 | E-2, E-6 |
+| FR-03 | U-2, U-4, U-7 | A-2–A-4, A-14–A-16 | UI-2–UI-4, UI-7, UI-8, UI-10 | E-2, E-6, E-9 |
 | FR-04 | U-1 | A-2 | — | E-2 |
 | FR-05 | — | A-6–A-9 | UI-5, UI-11 | E-2, E-4, E-6, E-7 |
 | FR-06 | — | A-5 | UI-12 | E-3, E-6, E-7 |

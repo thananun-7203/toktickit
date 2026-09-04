@@ -16,8 +16,9 @@
 | [thananun-7203/toktickit#25](https://github.com/thananun-7203/toktickit/pull/25) | `feature/5-ticket-detail-and-attachments` | Multiple review rounds by `Peepipat-Suesoongnuen` and `cottonlnwza`; concurrency, removal-reason, TDD wording, and AI-use evidence fixes accepted; merged on 2026-09-04 |
 | [thananun-7203/toktickit#29](https://github.com/thananun-7203/toktickit/pull/29) | `feature/6-functional-alignment-requested-priority` | Requested Priority and Ticket Number/Summary search reviewed and approved by `cottonlnwza`; merged on 2026-09-04 |
 | [thananun-7203/toktickit#30](https://github.com/thananun-7203/toktickit/pull/30) | `feature/7-zen-green-ui-alignment` | Zen Green UI, requester dropdown, responsive layouts, badges, and Check System compatibility approved by `cottonlnwza`; merged on 2026-09-04 |
+| [thananun-7203/toktickit#31](https://github.com/thananun-7203/toktickit/pull/31) | `feature/8-final-evidence-release-readiness` | Initial review praised the final docs/evidence/README and green CI, then requested four additional Part 6 failure/boundary screenshots before final release readiness |
 
-The notes below preserve the main review history that led to the approved Lab 2 implementation. Requested changes were resolved in follow-up work before merge. Issue 8 is the final evidence/release-readiness audit and remains uncommitted/unpushed until the student approves that step.
+The notes below preserve the main review history that led to the approved Lab 2 implementation. Requested changes are resolved in follow-up work before merge. Issue 8 is the final evidence/release-readiness audit and PR #31 is currently in peer-review follow-up.
 
 ## Review feedback and how I responded
 
@@ -140,6 +141,23 @@ Reviewer feedback / result:
 
 Status: approved by `cottonlnwza` and merged into `lab2-staging`.
 
+### PR #31 — Issue 8: Final Evidence & Release Readiness
+
+Reviewer feedback:
+
+- Final documentation, traceability, README setup guidance, AI-use record, reproducible Playwright evidence capture, and automated verification were accepted as strong release-readiness work.
+- The reviewer requested four additional screenshots for the Part 6 failure/boundary evidence: Create Ticket required-field validation, invalid/over-limit attachment feedback, simulated backend failure with preserved form values, and Development Requester Loading or Error/Retry state.
+
+How I responded:
+
+- Extended the Playwright evidence flow with deterministic requester-loading capture.
+- Added a blank-form Create Ticket submission and captured the visible per-field validation errors.
+- Added a disallowed `.exe` attachment scenario and captured the client-side rejection message.
+- Intercepted one Create Ticket POST with a simulated `500`, asserted that Category, Related System, Requested Priority, Summary, and Description remain unchanged, and captured the visible error alert with preserved values.
+- Added screenshots `16-requester-loading.png` through `19-create-ticket-backend-failure-preserved.png` and indexed them in `evidence.md` / `tests.md`.
+
+Status: follow-up changes are prepared and verified for PR #31; final GitHub review status will be updated after re-review.
+
 ## Hosted CI / verification status
 
 | PR | Verification before merge |
@@ -149,8 +167,9 @@ Status: approved by `cottonlnwza` and merged into `lab2-staging`.
 | #25 | Server, Client, and E2E checks passed on the final approved head |
 | #29 | Server, Client, and E2E checks passed |
 | #30 | Server, Client, and E2E checks passed |
+| #31 initial head | Server, Client, and E2E checks passed; supplemental Part 6 evidence requested in review |
 
-Current Issue 8 local final-regression evidence is maintained in `docs/lab-02/tests.md`. Hosted CI/reviewer evidence for Issue 8 will be added only after its PR is explicitly approved for commit/push/opening.
+Current Issue 8 final-regression evidence is maintained in `docs/lab-02/tests.md`. PR #31 is open; the supplemental Part 6 evidence follow-up is ready for re-review.
 
 ## Pull Requests I reviewed for my partners
 
@@ -168,4 +187,4 @@ The following Lab 2 pull requests have GitHub review activity from `@thananun-72
 | [cottonlnwza/toktickit#27](https://github.com/cottonlnwza/toktickit/pull/27) | My Tickets list workflow | GitHub review submitted by `@thananun-7203` |
 | [cottonlnwza/toktickit#28](https://github.com/cottonlnwza/toktickit/pull/28) | Requester Ticket Detail and Attachments | GitHub review submitted by `@thananun-7203` |
 
-Status: the authored Lab 2 PRs listed above through Issue 7 are merged into `lab2-staging`. Issue 8 remains the final evidence/release-readiness change. The later `lab2-staging` → `main` merge is a separate release operation and is not performed until explicitly approved.
+Status: the authored Lab 2 PRs listed above through Issue 7 are merged into `lab2-staging`. PR #31 (Issue 8) remains the final evidence/release-readiness change and is in review follow-up. The later `lab2-staging` → `main` merge is a separate release operation and is not performed until explicitly approved.
