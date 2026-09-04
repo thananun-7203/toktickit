@@ -365,29 +365,19 @@ app.post(
       }
 
       const storage = getAttachmentStorage();
-      const pending = [] as Array<{
-        fileName: string;
-        mimeType: string;
-        sizeBytes: number;
-        storageKey: string;
-      }>;
-
-      for (const file of files) {
-        const storageKey = `toktickit/tickets/${ticketId}/${crypto.randomUUID()}-${safeStorageFileName(file.originalname)}`;
-        await storage.put(storageKey, file.buffer, file.mimetype);
-        writtenKeys.push(storageKey);
-        pending.push({
-          fileName: file.originalname,
-          mimeType: file.mimetype,
-          sizeBytes: file.size,
-          storageKey,
-        });
-      }
+      const pending = files.map((file) => ({
+        fileName: file.originalname,
+        mimeType: file.mimetype,
+        sizeBytes: file.size,
+        storageKey: `toktickit/tickets/${ticketId}/${crypto.randomUUID()}-${safeStorageFileName(file.originalname)}`,
+        source: file,
+      }));
 
       const created = await prisma.$transaction(async (tx) => {
         // Serialize attachment reservations for this ticket. The lock is held
-        // until the transaction commits, so a concurrent uploader must wait,
-        // then sees the first request's newly-created metadata in the count.
+        // until the transaction commits. The authoritative capacity check is
+        // intentionally completed before any SeaweedFS write, so a request
+        // that loses a capacity race creates no storage object to compensate.
         const locked = await tx.$queryRaw<Array<{ id: number }>>`
           SELECT "id"
           FROM "Ticket"
@@ -411,9 +401,17 @@ app.post(
           removedAt: Date | null;
         }>;
         for (const file of pending) {
+          await storage.put(file.storageKey, file.source.buffer, file.source.mimetype);
+          writtenKeys.push(file.storageKey);
           rows.push(
             await tx.attachment.create({
-              data: { ...file, ticketId },
+              data: {
+                fileName: file.fileName,
+                mimeType: file.mimeType,
+                sizeBytes: file.sizeBytes,
+                storageKey: file.storageKey,
+                ticketId,
+              },
               select: {
                 id: true,
                 fileName: true,
@@ -425,7 +423,7 @@ app.post(
           );
         }
         return rows;
-      });
+      }, { timeout: 30_000 });
 
       res.status(201).json(created);
     } catch (err) {
@@ -514,9 +512,21 @@ app.delete("/api/v1/attachments/:id", requireDevRequester, async (req: Request, 
       return;
     }
 
-    const updated = await prisma.attachment.update({
+    const removedAt = new Date();
+    // Make the state transition atomic. With concurrent DELETEs, only the
+    // first request can change removedAt from NULL; the loser updates zero rows
+    // and therefore returns the documented 409 instead of a second 200.
+    const result = await prisma.attachment.updateMany({
+      where: { id, removedAt: null },
+      data: { removedAt },
+    });
+    if (result.count === 0) {
+      res.status(409).json({ error: { message: "Attachment already removed" } });
+      return;
+    }
+
+    const updated = await prisma.attachment.findUnique({
       where: { id },
-      data: { removedAt: new Date() },
       select: {
         id: true,
         fileName: true,
@@ -525,6 +535,10 @@ app.delete("/api/v1/attachments/:id", requireDevRequester, async (req: Request, 
         removedAt: true,
       },
     });
+    if (!updated) {
+      res.status(404).json({ error: { message: "Attachment not found" } });
+      return;
+    }
     res.json(updated);
   } catch {
     res.status(500).json({ error: { message: "Unable to remove attachment" } });

@@ -7,7 +7,7 @@ This file records peer-review evidence for the Lab 2 feature workflow.
 | Feature / PR | Reviewer | Initial result | Follow-up | Final status |
 |---|---|---|---|---|
 | Issue 4 — My Tickets, PR #24 | Peepipat-Suesoongnuen | Changes requested: requester landing flow, empty-state Create Ticket CTA, and missing A-8 oldest/newest assertions | All three points fixed; regression tests added and CI passed | Approved and merged into `lab2-staging` |
-| Issue 5 — Ticket Detail & Attachments, PR #25 | Peepipat-Suesoongnuen | Changes requested: concurrent uploads could exceed five active attachments; TDD wording overstated what Git history proves | Both fixes implemented and verified locally; commit/push and re-review are still pending | Changes requested |
+| Issue 5 — Ticket Detail & Attachments, PR #25 | Peepipat-Suesoongnuen | Changes requested: concurrent uploads could exceed five active attachments; TDD wording overstated what Git history proves | First fixes pushed at `25cf7d5`; hosted CI run `33765029030` passed. Second review confirmed those fixes and requested storage-before-lock + concurrent soft-remove hardening. Follow-up fixes are implemented and verified locally; next push/re-review pending. | Changes requested |
 
 ## Issue 5 Reviewer Checklist
 
@@ -34,4 +34,9 @@ Two blockers were requested before approval:
 1. Make the max-five-active-attachments rule concurrency-safe and add a regression test proving that `4 active + 2 simultaneous uploads` never produces more than five active attachments or orphan storage/metadata.
 2. Correct the TDD documentation so it states what can actually be proven: failing-first tests were run locally, while the Issue 5 feature commit bundled tests and implementation rather than committing a separate Red snapshot.
 
-Local follow-up verification after addressing the blockers: server `45/45`, client `23/23`, TypeScript checks passed, and Playwright E2E `1/1` passed. Hosted CI/re-review evidence will be recorded after the fixes are pushed.
+The first follow-up was pushed as head `25cf7d5`. Hosted CI run `33765029030` passed server `45/45`, client `23/23`, and Playwright E2E `1/1`. The second peer review explicitly confirmed both original blockers as fixed, then identified two additional concurrency/failure-path blockers:
+
+1. A capacity-race loser could still write a SeaweedFS object before acquiring the authoritative Ticket row lock, then rely on best-effort cleanup if it lost the capacity check.
+2. Two simultaneous soft-remove requests could both read `removedAt = null` and both return 200 instead of exactly one 200 and one 409.
+
+The local second follow-up moves the authoritative row lock/count before any storage write, strengthens A-12C to prove the losing request performs no storage write or cleanup, makes soft removal an atomic conditional update, and adds A-13C for simultaneous DELETEs. Local verification after these changes: server `46/46`, client `23/23`, server/client TypeScript checks passed, Playwright E2E `1/1`, and the two concurrency tests passed in three repeated runs. Hosted CI and final re-review evidence will be recorded after the next push.

@@ -15,8 +15,12 @@ let createdTicketIds: number[] = [];
 
 class MemoryStorage implements AttachmentStorage {
   readonly objects = new Map<string, Buffer>();
+  putCalls = 0;
+  deleteCalls = 0;
+  failDeletes = false;
 
   async put(key: string, body: Buffer): Promise<void> {
+    this.putCalls += 1;
     this.objects.set(key, Buffer.from(body));
   }
 
@@ -27,6 +31,8 @@ class MemoryStorage implements AttachmentStorage {
   }
 
   async delete(key: string): Promise<void> {
+    this.deleteCalls += 1;
+    if (this.failDeletes) throw new Error("simulated cleanup failure");
     this.objects.delete(key);
   }
 }
@@ -196,6 +202,12 @@ describe("Ticket attachments", () => {
     }
     expect((await initial).status).toBe(201);
     expect(storage.objects.size).toBe(4);
+    expect(storage.putCalls).toBe(4);
+
+    // If the losing request writes to storage before the authoritative
+    // capacity check, this makes compensation fail and exposes the orphan.
+    // A correct flow never calls delete for the capacity loser at all.
+    storage.failDeletes = true;
 
     const [uploadA, uploadB] = await Promise.all([
       request(app)
@@ -229,6 +241,8 @@ describe("Ticket attachments", () => {
     });
     expect(persistedCount).toBe(5);
     expect(storage.objects.size).toBe(5);
+    expect(storage.putCalls).toBe(5);
+    expect(storage.deleteCalls).toBe(0);
   });
 
   it("returns a JSON 400 when one multipart request contains more than five files", async () => {
@@ -288,6 +302,35 @@ describe("Ticket attachments", () => {
       .set("X-Dev-Requester-Id", String(R1));
     expect(removedAgain.status).toBe(409);
     expect(removedAgain.body.error.message).toMatch(/already removed/i);
+  });
+
+  it("A-13C: two simultaneous removes return exactly one 200 and one 409", async () => {
+    const ticket = await createTicket(R1);
+    const upload = await request(app)
+      .post(`/api/v1/tickets/${ticket.id}/attachments`)
+      .set("X-Dev-Requester-Id", String(R1))
+      .attach("files", Buffer.from("remove race"), {
+        filename: "remove-race.pdf",
+        contentType: "application/pdf",
+      });
+    const attachmentId = upload.body[0].id as number;
+
+    const [removeA, removeB] = await Promise.all([
+      request(app)
+        .delete(`/api/v1/attachments/${attachmentId}`)
+        .set("X-Dev-Requester-Id", String(R1)),
+      request(app)
+        .delete(`/api/v1/attachments/${attachmentId}`)
+        .set("X-Dev-Requester-Id", String(R1)),
+    ]);
+
+    expect([removeA.status, removeB.status].sort()).toEqual([200, 409]);
+
+    const detail = await request(app)
+      .get(`/api/v1/tickets/${ticket.id}`)
+      .set("X-Dev-Requester-Id", String(R1));
+    expect(detail.body.attachments[0].removedAt).not.toBeNull();
+    expect(storage.objects.size).toBe(1);
   });
 
   it("returns 502 when the attachment storage cannot be read", async () => {
