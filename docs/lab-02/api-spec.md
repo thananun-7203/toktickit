@@ -1,10 +1,10 @@
 # TokTickIT Lab 2 — API Specification
 
-Base URL: `http://localhost:4000` · All bodies are JSON unless marked *multipart*.
+Base URL: `http://localhost:3000` by default · All bodies are JSON unless marked *multipart*.
 Errors use a consistent shape: `{ "error": { "message": string, "fields"?: Record<string,string> } }`.
 
 **Development Requester context:** every ticket-scoped request must send header
-`X-Dev-Requester-Id: <requesterId>` (simulated identity, see specification FR-1/BR-1).
+`X-Dev-Requester-Id: <requesterId>` (simulated identity, see specification FR-01/BR-01).
 Missing or unknown/inactive requester → `401`.
 
 ---
@@ -27,7 +27,7 @@ Missing or unknown/inactive requester → `401`.
 
 ## 1. GET /api/v1/requesters
 
-Returns **active** requesters only (BR-6).
+Returns **active** requesters only (BR-06).
 
 **Response `200`:**
 ```json
@@ -51,9 +51,9 @@ Header: `X-Dev-Requester-Id`.
 }
 ```
 
-**Validation (BR-3):** all fields required; `requestedPriority` must be `Low`, `Medium`, or `High`; `summary` ≤ 100 chars; `description` ≤ 2,000 chars; referenced ids must exist.
+**Validation (BR-03):** all fields required; `requestedPriority` must be `Low`, `Medium`, or `High`; `summary` ≤ 100 chars; `description` ≤ 2,000 chars; referenced ids must exist.
 
-**Response `201`:** full ticket object incl. server-generated `ticketNumber` (BR-2):
+**Response `201`:** full ticket object incl. server-generated `ticketNumber` (BR-02):
 ```json
 {
   "id": 12,
@@ -73,7 +73,7 @@ Header: `X-Dev-Requester-Id`.
 
 ## 3. GET /api/v1/tickets
 
-Header: `X-Dev-Requester-Id`. Returns **only that requester's** tickets (BR-1).
+Header: `X-Dev-Requester-Id`. Returns **only that requester's** tickets (BR-01).
 Each ticket item includes `requestedPriority`; pre-Issue-6 historical rows may return `null`, while all newly created tickets contain `Low`, `Medium`, or `High`.
 
 **Query parameters:**
@@ -112,15 +112,15 @@ The ticket metadata includes `requestedPriority` with the same historical-null c
   ]
 }
 ```
-Removed attachments still appear with non-null `removedAt` and their recorded `removalReason` (BR-5).
+Removed attachments still appear with non-null `removedAt` and their recorded `removalReason` (BR-05).
 
-**Errors:** `404` when id does not exist **or belongs to another requester** (no existence leak, BR-1).
+**Errors:** `404` when id does not exist **or belongs to another requester** (no existence leak, BR-01).
 
 ## 5. POST /api/v1/tickets/:id/attachments  *(multipart/form-data)*
 
-Field `files`: 1–5 binary parts (BR-4).
+Field `files`: 1–5 binary parts (BR-04).
 
-**Rules (BR-4):** each file ≤ 5 MB; allowed types `jpg, jpeg, png, webp, pdf` only; total **active** attachments per ticket ≤ 5; ticket must belong to the acting requester.
+**Rules (BR-04):** each file ≤ 5 MB; allowed types `jpg, jpeg, png, webp, pdf` only; total **active** attachments per ticket ≤ 5; ticket must belong to the acting requester.
 
 **Response `201`:** updated attachments array.
 
@@ -132,11 +132,11 @@ Header: `X-Dev-Requester-Id`. Streams file content via SeaweedFS proxy.
 
 **Response `200`:** `Content-Type` = stored mime, `Content-Disposition: attachment; filename="..."`.
 
-**Errors:** `404` unknown/not owned; `409` when `removedAt` is set (BR-5); upstream storage failure → `502`.
+**Errors:** `404` unknown/not owned; `409` when `removedAt` is set (BR-05); upstream storage failure → `502`.
 
 ## 7. DELETE /api/v1/attachments/:id  *(soft remove)*
 
-Header: `X-Dev-Requester-Id`. Requires a non-blank reason, sets `removedAt` and `removalReason` atomically, and keeps the storage object and DB row (BR-5).
+Header: `X-Dev-Requester-Id`. Requires a non-blank reason, sets `removedAt` and `removalReason` atomically, and keeps the storage object and DB row (BR-05).
 
 **Request:**
 ```json

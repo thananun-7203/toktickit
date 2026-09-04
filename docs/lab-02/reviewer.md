@@ -1,46 +1,190 @@
-# TokTickIT Lab 2 — Peer Review Record
+# Lab 2 — Peer Review Record
 
-This file records peer-review evidence for the Lab 2 feature workflow.
+**Author:** ธนนันท์ ครังตุ้ย - 67070507203 - GitHub: [@thananun-7203](https://github.com/thananun-7203)<br>
+**Peer reviewer:** Peepipat Suesoongnuen — 67070507207 — GitHub: [@Peepipat-Suesoongnuen](https://github.com/Peepipat-Suesoongnuen)<br>
+**Peer reviewer:** ธนากร สร้อยสน — 67070507205 — GitHub: [@cottonlnwza](https://github.com/cottonlnwza)
 
-## Review Log
+## Pull Requests I authored (partner review status)
 
-| Feature / PR | Reviewer | Initial result | Follow-up | Final status |
-|---|---|---|---|---|
-| Issue 4 — My Tickets, PR #24 | Peepipat-Suesoongnuen | Changes requested: requester landing flow, empty-state Create Ticket CTA, and missing A-8 oldest/newest assertions | All three points fixed; regression tests added and CI passed | Approved and merged into `lab2-staging` |
-| Issue 5 — Ticket Detail & Attachments, PR #25 | Peepipat-Suesoongnuen / cottonlnwza | Changes requested across review rounds: attachment concurrency/failure paths, TDD wording, then Lab Sheet evidence gaps for removal reason and AI-use format | Concurrency fixes reached head `1fd9977` with hosted server/client/E2E CI green. Latest review confirmed concurrency fixes and requested Removal Reason + Part 4 AI-use evidence alignment; both follow-up gaps are now implemented and verified locally, with push/re-review pending. | Changes requested |
+| PR | Branch | Reviewer verdict |
+|----|--------|------------------|
+| [thananun-7203/toktickit#20](https://github.com/thananun-7203/toktickit/pull/20) | `feature/1-spec-and-test-plan` | Changes requested, revised, approved by `Peepipat-Suesoongnuen`, and merged on 2026-08-26 |
+| [thananun-7203/toktickit#21](https://github.com/thananun-7203/toktickit/pull/21) | `feature/2-dev-requester-context` | Changes requested, revised, approved by `Peepipat-Suesoongnuen`, and merged on 2026-08-29 |
+| [thananun-7203/toktickit#22](https://github.com/thananun-7203/toktickit/pull/22) | `feature/3-ticket-creation` | Changes requested, revised, approved by `Peepipat-Suesoongnuen`, and merged on 2026-08-30 |
+| [thananun-7203/toktickit#23](https://github.com/thananun-7203/toktickit/pull/23) | `chore/followup-ticket-retry-ci` | Ticket-number retry and hosted CI follow-up approved by `Peepipat-Suesoongnuen`; merged on 2026-08-31 |
+| [thananun-7203/toktickit#24](https://github.com/thananun-7203/toktickit/pull/24) | `feature/4-my-tickets` | Changes requested for requester landing, empty-state CTA, and A-8 sorting coverage; revised, approved, and merged on 2026-09-02 |
+| [thananun-7203/toktickit#25](https://github.com/thananun-7203/toktickit/pull/25) | `feature/5-ticket-detail-and-attachments` | Multiple review rounds by `Peepipat-Suesoongnuen` and `cottonlnwza`; concurrency, removal-reason, TDD wording, and AI-use evidence fixes accepted; merged on 2026-09-04 |
+| [thananun-7203/toktickit#29](https://github.com/thananun-7203/toktickit/pull/29) | `feature/6-functional-alignment-requested-priority` | Requested Priority and Ticket Number/Summary search reviewed and approved by `cottonlnwza`; merged on 2026-09-04 |
+| [thananun-7203/toktickit#30](https://github.com/thananun-7203/toktickit/pull/30) | `feature/7-zen-green-ui-alignment` | Zen Green UI, requester dropdown, responsive layouts, badges, and Check System compatibility approved by `cottonlnwza`; merged on 2026-09-04 |
+| [thananun-7203/toktickit#31](https://github.com/thananun-7203/toktickit/pull/31) | `feature/8-final-evidence-release-readiness` | Initial review praised the final docs/evidence/README and green CI, then requested four additional Part 6 failure/boundary screenshots before final release readiness |
 
-## Issue 5 Reviewer Checklist
+The notes below preserve the main review history that led to the approved Lab 2 implementation. Requested changes are resolved in follow-up work before merge. Issue 8 is the final evidence/release-readiness audit and PR #31 is currently in peer-review follow-up.
 
-The Issue 5 reviewer should verify the following before approval:
+## Review feedback and how I responded
 
-- [ ] `GET /api/v1/tickets/:id` returns only the acting requester's ticket and uses 404 for another requester's ticket.
-- [ ] Ticket Detail is read-only and displays ticket metadata, description, and attachment metadata.
-- [ ] Upload accepts only JPG/JPEG/PNG/WEBP/PDF, maximum 5 MB per file, and maximum five active attachments.
-- [ ] An invalid/rejected upload batch does not partially persist attachment metadata.
-- [ ] Attachment data is stored through the SeaweedFS storage adapter in the real E2E environment.
-- [ ] Download preserves the original filename and is scoped to the acting requester.
-- [ ] Remove requires a non-blank reason and is a soft removal: timestamp/reason metadata remain visible, storage is retained, and the file can no longer be downloaded through the API.
-- [ ] Removed attachments have no Download/Remove actions in the UI.
-- [ ] My Tickets can open Ticket Detail on desktop and mobile layouts.
-- [ ] Create Ticket can optionally upload attachments after successful ticket creation.
-- [ ] Server tests, client tests, TypeScript checks, and Playwright E2E all pass.
+### PR #20 — Issue 1: Specification and Test Plan
 
-## Review Notes for Issue 5
+Reviewer feedback:
 
-Initial review of PR #25 confirmed that requester ownership, soft removal, download/remove behavior, storage cleanup, Create Ticket attachment flow, and hosted client/server/E2E CI were otherwise in good shape.
+- The initial Ticket Status must be `New`, not `Open`, because this is a Lab 2 business rule.
+- Specification, API contract, test plan, schema/model expectations, and UI references must use the same status value.
+- The review also checked that reference-data endpoints and test traceability were complete.
 
-Two blockers were requested before approval:
+How I responded:
 
-1. Make the max-five-active-attachments rule concurrency-safe and add a regression test proving that `4 active + 2 simultaneous uploads` never produces more than five active attachments or orphan storage/metadata.
-2. Correct the TDD documentation so it states what can actually be proven: failing-first tests were run locally, while the Issue 5 feature commit bundled tests and implementation rather than committing a separate Red snapshot.
+- Updated the Lab 2 documents so initial Ticket Status is consistently `New`.
+- Aligned the API/test expectations and reference-data coverage with the specification.
+- Rechecked the traceability information before the follow-up review.
 
-The first follow-up was pushed as head `25cf7d5`. Hosted CI run `33765029030` passed server `45/45`, client `23/23`, and Playwright E2E `1/1`. The second peer review explicitly confirmed both original blockers as fixed, then identified two additional concurrency/failure-path blockers:
+Follow-up result: `Peepipat-Suesoongnuen` confirmed the requested changes were covered and approved PR #20.
 
-1. A capacity-race loser could still write a SeaweedFS object before acquiring the authoritative Ticket row lock, then rely on best-effort cleanup if it lost the capacity check.
-2. Two simultaneous soft-remove requests could both read `removedAt = null` and both return 200 instead of exactly one 200 and one 409.
+### PR #21 — Issue 2: Development Requester Context & Database Seed
 
-The local second follow-up moves the authoritative row lock/count before any storage write, strengthens A-12C to prove the losing request performs no storage write or cleanup, makes soft removal an atomic conditional update, and adds A-13C for simultaneous DELETEs. Local verification after these changes: server `46/46`, client `23/23`, server/client TypeScript checks passed, Playwright E2E `1/1`, and the two concurrency tests passed in three repeated runs. Hosted CI and final re-review evidence will be recorded after the next push.
+Reviewer feedback:
 
-At head `1fd9977`, the next peer review confirmed both concurrency fixes and the exact-head hosted CI as good, then identified two Lab Sheet submission gaps: (1) soft removal must record and display a removal reason for Part 8 evidence, and (2) `ai-use.md` must identify the LLM/model, provide a 6–10 selected-prompt Markdown table, and present "My Reflection" for Part 4.
+- Prepare the requester identity plumbing so later Create/My Tickets/Attachment issues do not need repeated refactoring.
+- Add reusable handling for `X-Dev-Requester-Id` and requester context.
+- The initial review also suggested browser persistence for the requester selection.
 
-The local third follow-up adds nullable `Attachment.removalReason` migration support for historical rows, requires a non-blank reason for all new removals, records `removedAt` + `removalReason` in the same atomic conditional update, displays the reason on removed attachment metadata, and exercises the reason through API/UI/E2E tests. `ai-use.md` now records OpenAI ChatGPT — GPT-5.6 Sol for this review/fix workflow, eight selected prompts, and a `My Reflection` section. Local verification: server `47/47`, client `24/24`, server/client TypeScript checks passed, Playwright E2E `1/1`, Prisma schema validation passed, and A-12C/A-13C concurrency tests passed in three repeated runs. Hosted CI and final re-review evidence will be recorded after the next push.
+How I responded:
+
+- Added the shared requester-context/API identity plumbing needed by later Lab 2 screens.
+- Implemented the requested follow-up and received approval.
+- During the later Issue 4 review, requester identity was rechecked against the current Lab 2 contract and browser persistence was removed so `RequesterContext` remains the source of truth for the active development requester.
+
+Follow-up result: PR #21 was approved by `Peepipat-Suesoongnuen` and merged.
+
+### PR #22 / #23 — Issue 3: Create Ticket and follow-up CI
+
+Reviewer feedback:
+
+- Verify that the Create Ticket API contract matches this repository's `/api/v1/...` routes and `X-Dev-Requester-Id` identity header.
+- Keep server-side Ticket Number generation robust against unique-number conflicts.
+- Improve evidence by adding hosted CI.
+- Keep validation and field-level error handling aligned with the UI specification.
+
+How I responded:
+
+- Kept the repository's documented `/api/v1/tickets` + `X-Dev-Requester-Id` contract consistent across code and docs.
+- Preserved server-side `TKT-YYYY-NNNNN` generation and validation rules.
+- Added the ticket-number retry/CI follow-up in PR #23.
+- Kept per-field validation and Create Ticket busy/success states covered by tests.
+
+Follow-up result: PR #22 was approved, then PR #23 was approved as the retry/hosted-CI follow-up.
+
+### PR #24 — Issue 4: My Tickets
+
+Reviewer feedback:
+
+- After selecting a Development Requester, the flow must land on My Tickets.
+- The My Tickets empty state needs an actionable Create Ticket CTA.
+- A-8 must prove `oldest` and `newest` sorting, not only category filtering/summary ordering.
+
+How I responded:
+
+- Changed the post-selection flow to land on My Tickets.
+- Added the Create Ticket CTA to the empty state.
+- Added API assertions for both `oldest` and `newest` ordering.
+- Rechecked requester identity handling and kept `RequesterContext` as the current source of truth.
+
+Follow-up result: all three blockers were confirmed fixed and PR #24 was approved and merged.
+
+### PR #25 — Issue 5: Ticket Detail & Attachments
+
+Reviewer feedback across several rounds:
+
+- Make the maximum-five-active-attachments rule concurrency-safe.
+- Ensure a losing concurrent upload does not leave orphan SeaweedFS storage or metadata.
+- Make simultaneous soft-removal atomic so exactly one request succeeds and the other conflicts.
+- Keep the TDD wording aligned with evidence actually available in Git history/local runs.
+- Add the Lab Sheet Part 8 removal reason and retain it with removed attachment metadata.
+- Align `ai-use.md` with the required model name, selected prompts, and My Reflection section.
+
+How I responded:
+
+- Moved the authoritative attachment capacity check under a database row lock before storage write.
+- Added concurrency regression coverage for `4 active + 2 simultaneous uploads`.
+- Implemented atomic conditional soft removal and regression coverage for simultaneous DELETE requests.
+- Required a non-blank `removalReason`, stored it with `removedAt`, displayed it in Ticket Detail, and blocked download after removal.
+- Corrected TDD documentation so it claims local Red/Green execution rather than a separate committed Red snapshot.
+- Updated `ai-use.md` for the Lab Sheet Part 4 format.
+
+Follow-up result: final review by `cottonlnwza` approved head `b157502`; PR #25 was merged into `lab2-staging`.
+
+### PR #29 — Issue 6: Requested Priority & My Tickets Search
+
+Reviewer feedback / result:
+
+- Requested Priority was verified across Prisma, API validation, Create Ticket, My Tickets, and Ticket Detail.
+- Search by both Ticket Number and Summary was verified while preserving requester isolation.
+- No IT Staff / IT Priority workflow was introduced outside Lab 2 scope.
+- A priority-badge visual improvement was suggested as non-blocking follow-up work.
+
+How I responded:
+
+- Kept the allowed requester-facing values as `Low`, `Medium`, and `High`.
+- Kept historical database compatibility while requiring priority for every new API-created ticket.
+- Included Ticket Number/Summary search in the final API/UI/E2E behavior.
+- Addressed the visual priority-badge suggestion in Issue 7.
+
+Status: approved by `cottonlnwza` and merged into `lab2-staging`.
+
+### PR #30 — Issue 7: Zen Green UI Alignment
+
+Reviewer feedback / result:
+
+- Zen Green color tokens, requester dropdown, Create Ticket/My Tickets/Ticket Detail redesign, and responsive layouts were accepted.
+- Priority and Status badges were accepted.
+- Mobile hamburger navigation and table-to-card behavior were accepted.
+- Check System remained available and Lab 1 compatibility was preserved.
+- Playwright evidence confirmed no page-level horizontal overflow at 1280 px, 820 px, and 390 px.
+
+Status: approved by `cottonlnwza` and merged into `lab2-staging`.
+
+### PR #31 — Issue 8: Final Evidence & Release Readiness
+
+Reviewer feedback:
+
+- Final documentation, traceability, README setup guidance, AI-use record, reproducible Playwright evidence capture, and automated verification were accepted as strong release-readiness work.
+- The reviewer requested four additional screenshots for the Part 6 failure/boundary evidence: Create Ticket required-field validation, invalid/over-limit attachment feedback, simulated backend failure with preserved form values, and Development Requester Loading or Error/Retry state.
+
+How I responded:
+
+- Extended the Playwright evidence flow with deterministic requester-loading capture.
+- Added a blank-form Create Ticket submission and captured the visible per-field validation errors.
+- Added a disallowed `.exe` attachment scenario and captured the client-side rejection message.
+- Intercepted one Create Ticket POST with a simulated `500`, asserted that Category, Related System, Requested Priority, Summary, and Description remain unchanged, and captured the visible error alert with preserved values.
+- Added screenshots `16-requester-loading.png` through `19-create-ticket-backend-failure-preserved.png` and indexed them in `evidence.md` / `tests.md`.
+
+Status: follow-up changes are prepared and verified for PR #31; final GitHub review status will be updated after re-review.
+
+## Hosted CI / verification status
+
+| PR | Verification before merge |
+|----|---------------------------|
+| #23 | Hosted CI follow-up added for the Create Ticket work |
+| #24 | Server and Client checks passed |
+| #25 | Server, Client, and E2E checks passed on the final approved head |
+| #29 | Server, Client, and E2E checks passed |
+| #30 | Server, Client, and E2E checks passed |
+| #31 initial head | Server, Client, and E2E checks passed; supplemental Part 6 evidence requested in review |
+
+Current Issue 8 final-regression evidence is maintained in `docs/lab-02/tests.md`. PR #31 is open; the supplemental Part 6 evidence follow-up is ready for re-review.
+
+## Pull Requests I reviewed for my partners
+
+The following Lab 2 pull requests have GitHub review activity from `@thananun-7203` and belong to the peer reviewers named above.
+
+| Repository / PR | Review focus | Evidence recorded |
+|---|---|---|
+| [Peepipat-Suesoongnuen/TokTickIT#22](https://github.com/Peepipat-Suesoongnuen/TokTickIT/pull/22) | Development Requester context, API and selector-screen alignment | GitHub review submitted by `@thananun-7203` |
+| [Peepipat-Suesoongnuen/TokTickIT#23](https://github.com/Peepipat-Suesoongnuen/TokTickIT/pull/23) | Create Ticket backend generation, UI, and validation | GitHub review submitted by `@thananun-7203` |
+| [Peepipat-Suesoongnuen/TokTickIT#37](https://github.com/Peepipat-Suesoongnuen/TokTickIT/pull/37) | Lab 2 release readiness and final integration | GitHub review submitted by `@thananun-7203` |
+| [cottonlnwza/toktickit#23](https://github.com/cottonlnwza/toktickit/pull/23) | Lab 2 engineering-contract documentation | GitHub review submitted by `@thananun-7203` |
+| [cottonlnwza/toktickit#24](https://github.com/cottonlnwza/toktickit/pull/24) | Database models, migrations, and seed data | GitHub review submitted by `@thananun-7203` |
+| [cottonlnwza/toktickit#25](https://github.com/cottonlnwza/toktickit/pull/25) | Development Requester context | GitHub review submitted by `@thananun-7203` |
+| [cottonlnwza/toktickit#26](https://github.com/cottonlnwza/toktickit/pull/26) | Create Ticket workflow | GitHub review submitted by `@thananun-7203` |
+| [cottonlnwza/toktickit#27](https://github.com/cottonlnwza/toktickit/pull/27) | My Tickets list workflow | GitHub review submitted by `@thananun-7203` |
+| [cottonlnwza/toktickit#28](https://github.com/cottonlnwza/toktickit/pull/28) | Requester Ticket Detail and Attachments | GitHub review submitted by `@thananun-7203` |
+
+Status: the authored Lab 2 PRs listed above through Issue 7 are merged into `lab2-staging`. PR #31 (Issue 8) remains the final evidence/release-readiness change and is in review follow-up. The later `lab2-staging` → `main` merge is a separate release operation and is not performed until explicitly approved.

@@ -1,0 +1,8 @@
+{
+  "ticketNumber": "TKT-2026-00003",
+  "requestedPriority": "High",
+  "activeAttachmentDownloadSuggestedFilename": "e2e-evidence.pdf",
+  "removalReason": "E2E evidence cleanup",
+  "removedAttachmentDownloadStatus": 409,
+  "otherRequesterTicketDetailStatus": 404
+}
