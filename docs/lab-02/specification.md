@@ -84,10 +84,10 @@ The Lab 2 handout specifies the following key requirements, interpreted and adop
 Full details in [`ui-spec.md`](./ui-spec.md).
 
 **Screens:** 4 core screens built with React + TypeScript + Vite + Bootstrap 5:
-- **S1 — Select Development Requester:** Centered card with radio-style list of active requesters; Continue button disabled until selection. Stores choice in React context (`RequesterContext`).
+- **S1 — Select Development Requester:** Zen Green selection card with an **active-requester dropdown**, explicit development/testing-only explanation, Lab 3 authentication notice, and Continue disabled until selection. Stores the choice in React context (`RequesterContext`).
 - **S2 — Create Ticket:** Form with Category, Related System, Requested Priority (`Low`/`Medium`/`High`), Summary (≤100), Description (≤2000), attachment dropzone. Responsive: Desktop multi-column, Tablet 2-column, Mobile stacked. Client-side validation with per-field messages below inputs.
-- **S3 — My Tickets:** Searchable by Ticket Number or Summary, filterable, sortable table (desktop) / card list (mobile) with pagination. Empty state and no-results state handled.
-- **S4 — Ticket Detail:** Read-only definition-list of metadata + attachments section. Active files show Download/Remove buttons; removal prompts for a required reason and confirmation; removed files show muted metadata including the recorded reason.
+- **S3 — My Tickets:** Searchable by Ticket Number or Summary, filterable, sortable Zen Green table (desktop/tablet) / card list (mobile) with pagination and labelled Requested Priority/Status badges. Empty state and no-results state handled.
+- **S4 — Ticket Detail:** Read-only metadata grid + Summary/Description card + attachments panel. Active files show Download/Remove buttons; removal prompts for a required reason and confirmation; removed files show muted retained metadata including the recorded reason.
 
 **Zen Green Theme:**
 | Token | Value | Usage |

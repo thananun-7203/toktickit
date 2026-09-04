@@ -1,7 +1,7 @@
 # TokTickIT Lab 2 — Test Plan & Traceability
 
 Tools: **Vitest** (Unit + UI), **Supertest** (API), **Playwright** (E2E), manual screenshots (Visual).
-Test-first workflow: failing-first tests are run locally before implementation where practical, then rerun after the implementation and during regression. For Issue 5, the Red/Green runs happened locally; the feature's Git history combines tests, implementation, and documentation in the same feature commit rather than providing separate committed Red and Green snapshots. For Issue 6, Requested Priority server/client tests were also run Red locally before the implementation, then Green after DB/API/UI changes.
+Test-first workflow: failing-first tests are run locally before implementation where practical, then rerun after the implementation and during regression. For Issue 5, the Red/Green runs happened locally; the feature's Git history combines tests, implementation, and documentation in the same feature commit rather than providing separate committed Red and Green snapshots. For Issue 6, Requested Priority server/client tests were also run Red locally before the implementation, then Green after DB/API/UI changes. For Issue 7, UI assertions for the requester dropdown/testing notices, Zen Green headings, priority badges, and Ticket Detail presentation were run Red before the UI refactor, then Green after the shared theme/app-shell work.
 
 ---
 
@@ -45,7 +45,7 @@ Test-first workflow: failing-first tests are run locally before implementation w
 
 | ID | File Path | Target | Scenario | Expected | Final |
 |---|---|---|---|---|---|
-| UI-1 | `client/tests/lab-02/SelectRequester.test.tsx` | FR-1, FR-2 | Requester select screen renders active options from API | 4 options listed; Continue disabled until one is chosen | Planned |
+| UI-1 | `client/tests/lab-02/SelectRequester.test.tsx` | FR-1, FR-2, AC-10 | Requester selection renders active API options in dropdown with testing-only/active-requester notices | 4 active options listed; Continue disabled until one is chosen; testing/active-requester notices visible | Pass |
 
 ### Screen: Create Ticket
 
@@ -62,8 +62,8 @@ Test-first workflow: failing-first tests are run locally before implementation w
 
 | ID | File Path | Target | Scenario | Expected | Final |
 |---|---|---|---|---|---|
-| UI-5 | `client/tests/lab-02/MyTickets.test.tsx` | FR-5 | My Tickets renders list + empty/no-results states | Table/card renders with correct columns; empty/no-results states work | Pass |
-| UI-11 | `client/tests/lab-02/MyTickets.test.tsx` | FR-5, AC-11 | My Tickets renders persisted Requested Priority | Priority visible in desktop table/mobile card data | Pass |
+| UI-5 | `client/tests/lab-02/MyTickets.test.tsx` | FR-5, AC-10 | My Tickets renders Zen Green list + empty/no-results states | Desktop/tablet table and mobile-card DOM render correct fields; empty/no-results states work | Pass |
+| UI-11 | `client/tests/lab-02/MyTickets.test.tsx` | FR-5, AC-10, AC-11 | My Tickets renders persisted Requested Priority | Priority visible with labelled Low/Medium/High badge styling in table/mobile-card data | Pass |
 
 ### Screen: Ticket Detail + Attachments
 
@@ -71,7 +71,7 @@ Test-first workflow: failing-first tests are run locally before implementation w
 |---|---|---|---|---|---|
 | UI-6 | `client/tests/lab-02/TicketDetail.test.tsx` | FR-9 | Active attachment shows Download + Remove buttons | Two action buttons visible per active attachment row | Pass |
 | UI-9 | `client/tests/lab-02/TicketDetail.test.tsx` | FR-9, AC-9 | Removal requires a reason; removed attachment shows muted metadata + reason only | Prompt/confirm precede DELETE; blank reason blocks API call; removed row shows name/size/type/reason and no actions | Pass |
-| UI-12 | `client/tests/lab-02/TicketDetail.test.tsx` | FR-6, AC-11 | Ticket Detail renders Requested Priority | Read-only Requested Priority label/value visible | Pass |
+| UI-12 | `client/tests/lab-02/TicketDetail.test.tsx` | FR-6, AC-10, AC-11 | Ticket Detail renders redesigned read-only metadata | Ticket Detail heading, Summary/Description sections, and Requested Priority badge visible | Pass |
 
 ## 4. E2E Tests (Playwright)
 
@@ -83,6 +83,8 @@ Test-first workflow: failing-first tests are run locally before implementation w
 | E-4 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Switch requester → list changes | Isolation proven end-to-end (AC-5) | Pass |
 | E-5 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Upload file → remove with reason → download attempt blocked | Reason remains visible; soft-remove behaviour visible (AC-9) | Pass |
 | E-6 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Select Requested Priority → create → list → detail | Persisted priority returned by API and visible in list/detail | Pass |
+| E-7 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Exercise S1/S2/S3/S4 at desktop/tablet/mobile widths | No page-level horizontal overflow; My Tickets uses table at tablet/desktop and cards on mobile | Pass |
+| E-8 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Reach Check System before/after requester selection from desktop navbar and mobile hamburger menu | System Check remains accessible at both layouts without horizontal overflow | Pass |
 
 ## 5. Visual Checks (manual screenshots)
 
@@ -107,7 +109,7 @@ Every Acceptance Criterion must map to at least one planned test.
 | AC-7 | Detail shows ticket metadata + attachments; other requester's id = 404 | A-5, E-3 |
 | AC-8 | Upload within limits succeeds; exceeding limits fails clearly, including concurrent uploads | A-10, A-11, A-12, A-12C |
 | AC-9 | Soft removal requires a reason; removed metadata/reason remain visible; download blocked; concurrent removal is atomic | A-13, A-13R, A-13C, UI-6, UI-9, E-5 |
-| AC-10 | Zen Green theme + responsive Desktop/Tablet/Mobile | V-1, V-2, V-3 |
+| AC-10 | Zen Green theme + responsive Desktop/Tablet/Mobile | UI-1, UI-5, UI-11, UI-12, E-7, E-8, V-1, V-2, V-3 |
 | AC-11 | Requested Priority required, persisted, returned, and displayed | U-7, A-2, A-16, UI-2, UI-3, UI-10, UI-11, UI-12, E-6 |
 
 Every AC has ≥1 automated or manual test mapped.
@@ -116,12 +118,12 @@ Every AC has ≥1 automated or manual test mapped.
 
 | FR | Unit | API | UI | E2E |
 |---|---|---|---|---|
-| FR-1 | — | A-1 | UI-1 | E-1 |
+| FR-1 | — | A-1 | UI-1 | E-1, E-7 |
 | FR-2 | U-3 | A-1 | UI-1 | E-1 |
 | FR-3 | U-2, U-4, U-7 | A-2–A-4, A-14–A-16 | UI-2–UI-4, UI-7, UI-8, UI-10 | E-2, E-6 |
 | FR-4 | U-1 | A-2 | — | E-2 |
-| FR-5 | — | A-6–A-9 | UI-5, UI-11 | E-2, E-4, E-6 |
-| FR-6 | — | A-5 | UI-12 | E-3, E-6 |
+| FR-5 | — | A-6–A-9 | UI-5, UI-11 | E-2, E-4, E-6, E-7 |
+| FR-6 | — | A-5 | UI-12 | E-3, E-6, E-7 |
 | FR-7 | — | A-10–A-12, A-12C | — | E-5 |
 | FR-8 | — | A-13 (download path) | — | E-5 |
 | FR-9 | — | A-13, A-13R, A-13C | UI-6, UI-9 | E-5 |

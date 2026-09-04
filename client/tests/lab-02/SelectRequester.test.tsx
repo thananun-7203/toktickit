@@ -35,10 +35,15 @@ describe("SelectRequester (UI-1)", () => {
     vi.spyOn(api, "getRequesters").mockResolvedValue(REQUESTERS);
     renderWithProvider();
 
-    expect(await screen.findByText("Somchai Jaidee")).toBeInTheDocument();
-    expect(screen.getByText("Somsri Rakdee")).toBeInTheDocument();
-    expect(screen.getByText("Anan Kongthong")).toBeInTheDocument();
-    expect(screen.getByText("Preecha Sombat")).toBeInTheDocument();
+    const requesterSelect = await screen.findByLabelText(/Development Requester/i);
+    expect(requesterSelect).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Somchai Jaidee/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Somsri Rakdee/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Anan Kongthong/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Preecha Sombat/i })).toBeInTheDocument();
+    expect(screen.getByText(/testing only and is not a login screen/i)).toBeInTheDocument();
+    expect(screen.getByText(/Only active development requesters are shown/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Authentication coming in Lab 3/i)).not.toBeInTheDocument();
   });
 
   it("keeps Continue disabled until a requester is chosen, then stores selection", async () => {
@@ -49,11 +54,27 @@ describe("SelectRequester (UI-1)", () => {
     const button = await screen.findByRole("button", { name: /Continue/i });
     expect(button).toBeDisabled();
 
-    await user.click(screen.getByLabelText(/Somchai Jaidee/i));
+    await user.selectOptions(screen.getByLabelText(/Development Requester/i), "1");
     expect(button).toBeEnabled();
 
     await user.click(button);
     expect(screen.getByTestId("selected")).toHaveTextContent("Somchai Jaidee");
+  });
+
+  it("keeps Check System available before a requester is selected", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, "getRequesters").mockResolvedValue(REQUESTERS);
+    vi.spyOn(api, "checkSystem").mockResolvedValue({
+      online: true,
+      categories: [{ id: 1, name: "Hardware" }],
+    });
+    renderWithProvider();
+
+    const checkButton = await screen.findByRole("button", { name: /Check System/i });
+    await user.click(checkButton);
+
+    expect(await screen.findByText("System Status: Online")).toBeInTheDocument();
+    expect(screen.getByText("Hardware")).toBeInTheDocument();
   });
 
   it("starts with no selected requester even if stale localStorage data exists", async () => {

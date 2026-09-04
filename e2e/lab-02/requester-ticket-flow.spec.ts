@@ -2,9 +2,16 @@ import { expect, test } from "@playwright/test";
 
 const API_URL = "http://127.0.0.1:3001";
 
-test("E1-E6 requester create/list/detail/isolation/priority/attachment lifecycle", async ({ page, request }) => {
+test("E1-E8 requester create/list/detail/isolation/priority/attachment/responsive/navigation lifecycle", async ({ page, request }) => {
   const unique = `E2E Issue5 ${Date.now()}`;
   const attachmentName = "e2e-evidence.pdf";
+
+  async function expectNoHorizontalOverflow() {
+    const hasHorizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(hasHorizontalOverflow).toBeFalsy();
+  }
 
   const requestersResponse = await request.get(`${API_URL}/api/v1/requesters`);
   expect(requestersResponse.ok()).toBeTruthy();
@@ -16,13 +23,53 @@ test("E1-E6 requester create/list/detail/isolation/priority/attachment lifecycle
 
   // E-1: choose the acting Development Requester.
   await page.goto("/");
-  await page.getByLabel(/Somchai Jaidee/i).check();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(page.getByRole("navigation", { name: "Utility navigation" }).getByRole("button", { name: "Check System" })).toBeVisible();
+  await page.getByRole("navigation", { name: "Utility navigation" }).getByRole("button", { name: "Check System" }).click();
+  await expect(page.getByText("System Status: Online")).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Open navigation menu" }).click();
+  await expect(page.getByRole("menuitem", { name: /Check System/i })).toBeVisible();
+  await page.getByRole("button", { name: "Close navigation menu" }).click();
+
+  for (const viewport of [
+    { width: 1280, height: 800 },
+    { width: 820, height: 1000 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await expectNoHorizontalOverflow();
+  }
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.getByLabel(/Development Requester/i).selectOption(String(somchai.id));
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("heading", { name: "My Tickets" })).toBeVisible();
-  await expect(page.getByText("Somchai Jaidee", { exact: true })).toBeVisible();
+  await expect(page.getByLabel(/Requester menu for Somchai Jaidee/i)).toBeVisible();
+
+  // E-8: System Check remains reachable in the Zen Green shell. Desktop shows
+  // it directly in the navbar; mobile exposes the same destination in the
+  // hamburger menu without adding page-level horizontal overflow.
+  await expect(page.getByRole("navigation", { name: "Primary navigation" }).getByRole("button", { name: "Check System" })).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Open navigation menu" }).click();
+  await expect(page.getByRole("menuitem", { name: /Check System/i })).toBeVisible();
+  await page.getByRole("menuitem", { name: /Check System/i }).click();
+  await expect(page.getByRole("heading", { name: "System Check" })).toBeVisible();
+  await expectNoHorizontalOverflow();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("button", { name: "My Tickets" }).click();
 
   // E-2: create a ticket with an attachment, then find it in My Tickets.
   await page.getByRole("button", { name: "Create Ticket" }).first().click();
+  for (const viewport of [
+    { width: 1280, height: 800 },
+    { width: 820, height: 1000 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await expectNoHorizontalOverflow();
+  }
+  await page.setViewportSize({ width: 1280, height: 800 });
   await page.getByLabel(/Category/).selectOption({ label: "Software" });
   await page.getByLabel(/Related System/).selectOption({ label: "Report Portal" });
   await page.getByLabel(/Requested Priority/).selectOption("High");
@@ -40,6 +87,16 @@ test("E1-E6 requester create/list/detail/isolation/priority/attachment lifecycle
   await page.getByLabel("Search").fill(unique);
   await expect(page.getByText(unique).first()).toBeVisible();
   await expect(page.getByText("High").first()).toBeVisible();
+
+  // E-7: My Tickets keeps the table on desktop/tablet, switches to cards on
+  // mobile, and never introduces page-level horizontal scrolling.
+  await page.setViewportSize({ width: 820, height: 1000 });
+  await expect(page.locator(".ticket-table-card")).toBeVisible();
+  await expectNoHorizontalOverflow();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator(".ticket-mobile-card").first()).toBeVisible();
+  await expectNoHorizontalOverflow();
+  await page.setViewportSize({ width: 1280, height: 800 });
 
   const ownList = await request.get(
     `${API_URL}/api/v1/tickets?search=${encodeURIComponent(unique)}`,
@@ -71,10 +128,7 @@ test("E1-E6 requester create/list/detail/isolation/priority/attachment lifecycle
     { width: 390, height: 844 },
   ]) {
     await page.setViewportSize(viewport);
-    const hasHorizontalOverflow = await page.evaluate(
-      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-    );
-    expect(hasHorizontalOverflow).toBeFalsy();
+    await expectNoHorizontalOverflow();
   }
   await page.setViewportSize({ width: 1280, height: 800 });
 
@@ -120,8 +174,9 @@ test("E1-E6 requester create/list/detail/isolation/priority/attachment lifecycle
   });
   expect(otherDetail.status()).toBe(404);
 
+  await page.getByLabel(/Requester menu for Somchai Jaidee/i).click();
   await page.getByRole("button", { name: "Switch" }).click();
-  await page.getByLabel(/Somsri Rakdee/i).check();
+  await page.getByLabel(/Development Requester/i).selectOption(String(somsri.id));
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByLabel("Search").fill(unique);
   await expect(page.getByText("No results")).toBeVisible();

@@ -179,18 +179,20 @@ export default function CreateTicket({ onOpenTicket, onGoToTickets }: CreateTick
 
   if (submitState === "success" && created) {
     return (
-      <div className="container py-4" style={{ maxWidth: 720 }}>
-        <div
-          className="alert p-4 border rounded"
-          style={{ backgroundColor: "#EAF6EF", borderColor: "#0B7A46", maxWidth: 640 }}
-        >
-          <h2 className="h5 text-success mb-2">Ticket created successfully</h2>
-          <p className="mb-1">
-            Ticket Number: <strong>{created.ticketNumber}</strong>
-          </p>
-          <p className="mb-0 text-secondary small">
-            {created.summary} — Status: {created.status}
-          </p>
+      <div>
+        <div className="page-heading">
+          <h1 className="page-title">Create Ticket</h1>
+          <p className="page-subtitle">Provide the details below to open a new support request.</p>
+        </div>
+        <div className="zen-card content-card mb-3" style={{ maxWidth: 760 }}>
+          <div className="zen-info mb-3">
+            <span className="info-dot" aria-hidden="true">✓</span>
+            <div>
+              <h2 className="h5 mb-1">Ticket created successfully</h2>
+              <div>Ticket Number: <strong>{created.ticketNumber}</strong></div>
+            </div>
+          </div>
+          <p className="mb-0 text-secondary">{created.summary} — Status: {created.status}</p>
         </div>
         {postCreateWarning && <div className="alert alert-warning">{postCreateWarning}</div>}
         <div className="d-flex flex-wrap gap-2">
@@ -220,29 +222,27 @@ export default function CreateTicket({ onOpenTicket, onGoToTickets }: CreateTick
   }
 
   return (
-    <div className="container py-4" style={{ maxWidth: 720 }}>
-      <h1 className="h4 mb-1">
-        TokTickIT <span className="text-success">IT Service Desk</span>
-      </h1>
-      <p className="text-secondary mb-4">
-        Creating ticket as <span className="fw-semibold text-success">{requester?.name}</span>
-      </p>
+    <div>
+      <div className="page-heading">
+        <h1 className="page-title">Create Ticket</h1>
+        <p className="page-subtitle">Provide the details below to open a new support request.</p>
+      </div>
 
       {loadState === "loading" && (
-        <p className="text-secondary">
+        <div className="zen-card content-card text-secondary">
           <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
           Loading form data…
-        </p>
+        </div>
       )}
 
       {loadState === "error" && (
-        <div className="alert alert-danger mb-1">Unable to load form data. Please try again.</div>
+        <div className="alert alert-danger">Unable to load form data. Please try again.</div>
       )}
 
       {loadState === "success" && (
-        <form onSubmit={handleSubmit} noValidate>
+        <form onSubmit={handleSubmit} noValidate className="zen-card form-card">
           <div className="row g-3">
-            <div className="col-12 col-md-6">
+            <div className="col-12 col-md-6 col-lg-4">
               <label htmlFor="categoryId" className="form-label">
                 Category <span className="text-danger">*</span>
               </label>
@@ -262,7 +262,7 @@ export default function CreateTicket({ onOpenTicket, onGoToTickets }: CreateTick
               {errors.categoryId && <div className="invalid-feedback d-block">{errors.categoryId}</div>}
             </div>
 
-            <div className="col-12 col-md-6">
+            <div className="col-12 col-md-6 col-lg-4">
               <label htmlFor="relatedSystemId" className="form-label">
                 Related System <span className="text-danger">*</span>
               </label>
@@ -284,42 +284,7 @@ export default function CreateTicket({ onOpenTicket, onGoToTickets }: CreateTick
               )}
             </div>
 
-            <div className="col-12">
-              <label htmlFor="summary" className="form-label">
-                Summary <span className="text-danger">*</span>
-              </label>
-              <input
-                id="summary"
-                className={`form-control ${errors.summary ? "is-invalid" : ""}`}
-                value={fields.summary}
-                maxLength={SUMMARY_MAX}
-                onChange={(e) => setField("summary", e.target.value)}
-                placeholder="Brief summary of the issue"
-              />
-              <div className="form-text text-end">{fields.summary.length}/{SUMMARY_MAX}</div>
-              {errors.summary && <div className="invalid-feedback d-block">{errors.summary}</div>}
-            </div>
-
-            <div className="col-12">
-              <label htmlFor="description" className="form-label">
-                Description <span className="text-danger">*</span>
-              </label>
-              <textarea
-                id="description"
-                className={`form-control ${errors.description ? "is-invalid" : ""}`}
-                rows={5}
-                value={fields.description}
-                maxLength={DESCRIPTION_MAX}
-                onChange={(e) => setField("description", e.target.value)}
-                placeholder="Describe the issue in detail"
-              />
-              <div className="form-text text-end">{fields.description.length}/{DESCRIPTION_MAX}</div>
-              {errors.description && (
-                <div className="invalid-feedback d-block">{errors.description}</div>
-              )}
-            </div>
-
-            <div className="col-12 col-md-6">
+            <div className="col-12 col-md-6 col-lg-4">
               <label htmlFor="requestedPriority" className="form-label">
                 Requested Priority <span className="text-danger">*</span>
               </label>
@@ -340,21 +305,59 @@ export default function CreateTicket({ onOpenTicket, onGoToTickets }: CreateTick
             </div>
 
             <div className="col-12">
-              <label htmlFor="attachments" className="form-label">Attachments</label>
+              <label htmlFor="summary" className="form-label">
+                Ticket Summary <span className="text-danger">*</span>
+              </label>
               <input
-                id="attachments"
-                type="file"
-                className={`form-control ${Object.keys(attachmentErrors).length > 0 ? "is-invalid" : ""}`}
-                multiple
-                accept=".jpg,.jpeg,.png,.webp,.pdf"
-                onChange={(e) => {
-                  const files = Array.from(e.target.files ?? []);
-                  setSelectedFiles(files);
-                  setAttachmentErrors(validateAttachments(files));
-                  setServerError(null);
-                }}
+                id="summary"
+                className={`form-control ${errors.summary ? "is-invalid" : ""}`}
+                value={fields.summary}
+                maxLength={SUMMARY_MAX}
+                onChange={(e) => setField("summary", e.target.value)}
+                placeholder="Enter a short summary of your issue"
               />
-              <div className="form-text">Optional · up to 5 files · 5 MB each · JPG, JPEG, PNG, WEBP or PDF.</div>
+              <div className="form-text text-end">{fields.summary.length}/{SUMMARY_MAX}</div>
+              {errors.summary && <div className="invalid-feedback d-block">{errors.summary}</div>}
+            </div>
+
+            <div className="col-12">
+              <label htmlFor="description" className="form-label">
+                Description <span className="text-danger">*</span>
+              </label>
+              <textarea
+                id="description"
+                className={`form-control ${errors.description ? "is-invalid" : ""}`}
+                rows={5}
+                value={fields.description}
+                maxLength={DESCRIPTION_MAX}
+                onChange={(e) => setField("description", e.target.value)}
+                placeholder="Provide detailed information about your request, including any relevant steps, errors, or impact."
+              />
+              <div className="form-text text-end">{fields.description.length}/{DESCRIPTION_MAX}</div>
+              {errors.description && (
+                <div className="invalid-feedback d-block">{errors.description}</div>
+              )}
+            </div>
+
+            <div className="col-12">
+              <label htmlFor="attachments" className="form-label">Attachments <span className="fw-normal text-secondary">(Optional)</span></label>
+              <div className="attachment-dropzone">
+                <div className="fw-semibold mb-2">↥ &nbsp;Tap to upload or browse</div>
+                <input
+                  id="attachments"
+                  type="file"
+                  className={`form-control ${Object.keys(attachmentErrors).length > 0 ? "is-invalid" : ""}`}
+                  multiple
+                  accept=".jpg,.jpeg,.png,.webp,.pdf"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files ?? []);
+                    setSelectedFiles(files);
+                    setAttachmentErrors(validateAttachments(files));
+                    setServerError(null);
+                  }}
+                />
+                <div className="attachment-hint">PDF, JPG, PNG, WEBP up to 5 MB each. Up to 5 files.</div>
+              </div>
               {selectedFiles.length > 0 && (
                 <div className="mt-2 d-flex flex-column gap-1">
                   {selectedFiles.map((file) => (
@@ -375,20 +378,36 @@ export default function CreateTicket({ onOpenTicket, onGoToTickets }: CreateTick
 
           {serverError && <div className="alert alert-danger mt-3 mb-1">{serverError}</div>}
 
-          <button
-            type="submit"
-            className="btn btn-success mt-4"
-            disabled={submitState === "busy"}
-          >
-            {submitState === "busy" ? (
-              <>
-                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
-                Creating…
-              </>
-            ) : (
-              "Create Ticket"
-            )}
-          </button>
+          <div className="d-flex flex-column flex-sm-row justify-content-end gap-2 mt-4 pt-3 border-top">
+            <button
+              type="button"
+              className="btn btn-outline-secondary px-4"
+              onClick={() => {
+                setFields(EMPTY);
+                setErrors({});
+                setSelectedFiles([]);
+                setAttachmentErrors({});
+                setServerError(null);
+                onGoToTickets?.();
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn btn-success px-4"
+              disabled={submitState === "busy"}
+            >
+              {submitState === "busy" ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                  Creating…
+                </>
+              ) : (
+                <>+&nbsp; Create Ticket</>
+              )}
+            </button>
+          </div>
         </form>
       )}
     </div>
