@@ -49,7 +49,7 @@ The Lab 2 handout specifies the following key requirements, interpreted and adop
 | Server-generated Ticket Number | Unique, deterministic format; not editable by user | `TKT-YYYY-NNNNN` per SDS v1.0 D-10; generated on POST only |
 | My Tickets with search/filter/sort/pagination | List scoped to acting requester; UI adapts across breakpoints | Prisma `where` scoped to requesterId; table (desktop) / cards (mobile) |
 | Ticket Detail (read-only) | Metadata + attachments; other requesters' IDs yield not-found | GET `/api/v1/tickets/:id` with ownership enforcement (BR-1) |
-| Attachment handling | Upload, download, soft-remove; enforced limits | SeaweedFS adapter; `removedAt` soft-delete field; max 5 MB × 5 files, jpg/jpeg/png/webp/pdf |
+| Attachment handling | Upload, download, soft-remove with a recorded reason; enforced limits | SeaweedFS adapter; `removedAt` + `removalReason` soft-removal metadata; max 5 MB × 5 files, jpg/jpeg/png/webp/pdf |
 | Zen Green theme | Consistent colour system across all screens | `#006B3C` / `#0B7A46` / `#EAF6EF`; Bootstrap overrides |
 | Responsive layout | No horizontal scroll on any supported viewport | Desktop (≥992px), Tablet (768–991px), Mobile (<768px) stacked/card |
 
@@ -65,7 +65,7 @@ The Lab 2 handout specifies the following key requirements, interpreted and adop
 | FR-6 | The user can open a read-only detail view of one of their own tickets. | Must |
 | FR-7 | The user can upload attachments to their own ticket within limits (see BR-4). | Must |
 | FR-8 | The user can download any non-removed attachment of their own ticket. | Must |
-| FR-9 | The user can soft-remove an attachment of their own ticket; removed items stay visible as metadata but cannot be downloaded. | Must |
+| FR-9 | The user can soft-remove an attachment of their own ticket after providing a non-blank removal reason; removed items and the reason stay visible as metadata but cannot be downloaded. | Must |
 
 ## 5. Business Rules
 
@@ -75,7 +75,7 @@ The Lab 2 handout specifies the following key requirements, interpreted and adop
 | BR-2 | Ticket Number format: `TKT-YYYY-NNNNN`, where `NNNNN` is a zero-padded sequence that resets annually, starting at `00001` (System-Level SDS v1.0, Decision D-10). Generated server-side only. |
 | BR-3 | Validation limits: Summary is required, max 100 characters; Description is required, max 2,000 characters; Category and Related System are required and must exist. |
 | BR-4 | Attachment limits: max **5 MB per file**, max **5 files per ticket**, allowed types: `jpg, jpeg, png, webp, pdf` only. Uploads exceeding limits are rejected with a validation error; no partial persistence of rejected batches. |
-| BR-5 | Attachment removal is **soft**: `removedAt` is set, the record remains listed as metadata (name, size, type), but download returns an error. |
+| BR-5 | Attachment removal is **soft** and requires a non-blank reason: `removedAt` and `removalReason` are recorded atomically, the record remains listed as metadata (name, size, type, reason), storage is retained, and download returns an error. |
 | BR-6 | Inactive requesters exist in the database for testing but are never returned by the requester list endpoint and cannot act as the acting requester. |
 | BR-7 | Tickets are created in status `New`; status transitions are out of scope for Lab 2. |
 
@@ -87,7 +87,7 @@ Full details in [`ui-spec.md`](./ui-spec.md).
 - **S1 — Select Development Requester:** Centered card with radio-style list of active requesters; Continue button disabled until selection. Stores choice in React context (`RequesterContext`).
 - **S2 — Create Ticket:** Form with Category, Related System, Summary (≤100), Description (≤2000), attachment dropzone. Responsive: Desktop multi-column, Tablet 2-column, Mobile stacked. Client-side validation with per-field messages below inputs.
 - **S3 — My Tickets:** Searchable, filterable, sortable table (desktop) / card list (mobile) with pagination. Empty state and no-results state handled.
-- **S4 — Ticket Detail:** Read-only definition-list of metadata + attachments section. Active files show Download/Remove buttons; removed files show muted metadata only.
+- **S4 — Ticket Detail:** Read-only definition-list of metadata + attachments section. Active files show Download/Remove buttons; removal prompts for a required reason and confirmation; removed files show muted metadata including the recorded reason.
 
 **Zen Green Theme:**
 | Token | Value | Usage |
@@ -122,7 +122,7 @@ Full details in [`api-spec.md`](./api-spec.md).
 
 **Ticket Number:** Generated server-side on `POST /api/v1/tickets` only, format `TKT-YYYY-NNNNN` (BR-2, SDS v1.0 D-10).
 
-**Attachment constraints (BR-4):** Types `jpg, jpeg, png, webp, pdf` only; ≤5 MB per file; ≤5 active files per ticket; multipart upload; `DELETE` is soft (`removedAt` set, metadata retained, download blocked).
+**Attachment constraints (BR-4/BR-5):** Types `jpg, jpeg, png, webp, pdf` only; ≤5 MB per file; ≤5 active files per ticket; multipart upload; `DELETE` requires a non-blank reason and is soft (`removedAt` + `removalReason` set, metadata/storage retained, download blocked).
 
 **Error shape:** `{ "error": { "message": string, "fields"?: Record<string, string> } }`.
 
@@ -138,7 +138,7 @@ Full details in [`api-spec.md`](./api-spec.md).
 | AC-6 | Search/filter/sort/pagination return correct subsets (verified against seeded data). | A-7–A-9 |
 | AC-7 | Detail view shows ticket metadata and its attachments; other requesters' ticket ids yield not-found. | A-5, E-3 |
 | AC-8 | Uploading within limits succeeds; exceeding size/count/type limits fails with a clear message. | A-10–A-12 |
-| AC-9 | Soft-removed attachments remain visible as metadata; downloading them fails. | A-13, E-5 |
+| AC-9 | Soft removal requires a reason; removed attachments remain visible with the recorded reason, concurrent removal is atomic, and downloading removed files fails. | A-13, A-13R, A-13C, UI-9, E-5 |
 | AC-10 | Layouts follow Zen Green theme and remain usable at Desktop/Tablet/Mobile widths without horizontal scroll. | Visual checks V-1–V-3 |
 
 ## 9. Assumptions & Decisions
@@ -157,9 +157,9 @@ Full details in [`api-spec.md`](./api-spec.md).
 
 Key schema decisions and their rationale:
 
-**1. Soft-delete for attachments (`removedAt` DateTime? field) instead of hard-delete**
+**1. Soft-delete for attachments (`removedAt` + `removalReason`) instead of hard-delete**
 
-The requirement (FR-9, BR-5) explicitly states that removed attachments must remain visible as metadata (filename, size, type) while blocking download. A hard-delete would destroy the record entirely, violating this requirement. Additionally:
+The requirement (FR-9, BR-5) explicitly states that removed attachments must remain visible as metadata while blocking download. Lab 2 submission evidence also requires a removal reason, so new removals require a non-blank reason and store it with the soft-removal timestamp. `removalReason` is nullable in the schema only so pre-migration historical rows remain valid. A hard-delete would destroy this audit metadata entirely. Additionally:
 - Soft-delete preserves an audit trail for future compliance or recovery needs.
 - Active attachment count validation (`BR-4`: max 5 per ticket) correctly counts only non-removed files (`removedAt IS NULL`), while the full history remains queryable for reporting.
 - Matches the established pattern from Lab 1's Category model where data integrity across the application is prioritized.
@@ -230,6 +230,7 @@ New entities added this lab (Category already exists from Lab 1):
 | sizeBytes | Int | ≤ 5 MB enforced (BR-4) |
 | storageKey | String | SeaweedFS file id / volume URL |
 | removedAt | DateTime? | Null = active; set = soft-removed (BR-5) |
+| removalReason | String? | Required by the API for new removals; nullable only for pre-migration historical rows |
 | ticketId | FK → Ticket | Max 5 active files per ticket (BR-4) |
 
 Seed additions (idempotent upsert): 4 Categories (existing), 6+ Related Systems, 4 Active + 1 Inactive Development Requesters.

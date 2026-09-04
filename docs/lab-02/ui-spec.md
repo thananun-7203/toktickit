@@ -63,9 +63,9 @@ Layout: definition-list of ticket metadata (number, status badge, requester, cat
 
 Attachments rows: icon · filename · size · type · actions:
 - Active → Download (secondary green outline button) + Remove (outline danger).
-- Removed (`removedAt` set) → muted style, strikethrough name, badge "Removed", **no download/remove actions** (metadata only, FR-9).
+- Removed (`removedAt` set) → muted style, strikethrough name, badge "Removed", recorded removal reason, **no download/remove actions** (metadata only, FR-9).
 
-States: Loading · NotFound (friendly panel + back link) · Remove confirm dialog before soft delete · Success toast after actions.
+States: Loading · NotFound (friendly panel + back link) · required removal-reason prompt followed by confirmation before soft delete · Success toast after actions. Cancelling either step leaves the attachment active; a blank reason is rejected before the API call.
 
 ## 3. Responsive & Accessibility Conventions
 

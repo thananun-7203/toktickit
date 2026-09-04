@@ -104,11 +104,11 @@ Header: `X-Dev-Requester-Id`.
   "...": "ticket fields",
   "attachments": [
     { "id": 3, "fileName": "screenshot.png", "mimeType": "image/png",
-      "sizeBytes": 2048, "removedAt": null }
+      "sizeBytes": 2048, "removedAt": null, "removalReason": null }
   ]
 }
 ```
-Removed attachments still appear (metadata) with non-null `removedAt` (BR-5).
+Removed attachments still appear with non-null `removedAt` and their recorded `removalReason` (BR-5).
 
 **Errors:** `404` when id does not exist **or belongs to another requester** (no existence leak, BR-1).
 
@@ -132,10 +132,15 @@ Header: `X-Dev-Requester-Id`. Streams file content via SeaweedFS proxy.
 
 ## 7. DELETE /api/v1/attachments/:id  *(soft remove)*
 
-Header: `X-Dev-Requester-Id`. Sets `removedAt`; keeps storage object and DB row (BR-5).
+Header: `X-Dev-Requester-Id`. Requires a non-blank reason, sets `removedAt` and `removalReason` atomically, and keeps the storage object and DB row (BR-5).
 
-**Response `200`:** attachment object with `removedAt` timestamp.
-**Errors:** `404`; `409` if already removed.
+**Request:**
+```json
+{ "reason": "Uploaded the wrong document" }
+```
+
+**Response `200`:** attachment object with `removedAt` timestamp and `removalReason`.
+**Errors:** `400` when reason is missing/blank; `404` unknown/not owned; `409` if already removed. Two simultaneous DELETEs yield exactly one `200` and one `409`.
 
 ## 8. GET /api/v1/categories
 

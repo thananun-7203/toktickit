@@ -282,9 +282,11 @@ describe("Ticket attachments", () => {
 
     const removed = await request(app)
       .delete(`/api/v1/attachments/${attachment.id}`)
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("X-Dev-Requester-Id", String(R1))
+      .send({ reason: "Duplicate evidence" });
     expect(removed.status).toBe(200);
     expect(removed.body.removedAt).toEqual(expect.any(String));
+    expect(removed.body.removalReason).toBe("Duplicate evidence");
 
     const blocked = await request(app)
       .get(`/api/v1/attachments/${attachment.id}/download`)
@@ -295,13 +297,48 @@ describe("Ticket attachments", () => {
       .get(`/api/v1/tickets/${ticket.id}`)
       .set("X-Dev-Requester-Id", String(R1));
     expect(detail.body.attachments[0].removedAt).not.toBeNull();
+    expect(detail.body.attachments[0].removalReason).toBe("Duplicate evidence");
     expect(storage.objects.size).toBe(1);
 
     const removedAgain = await request(app)
       .delete(`/api/v1/attachments/${attachment.id}`)
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("X-Dev-Requester-Id", String(R1))
+      .send({ reason: "Second attempt" });
     expect(removedAgain.status).toBe(409);
     expect(removedAgain.body.error.message).toMatch(/already removed/i);
+  });
+
+  it("A-13R: requires a non-blank removal reason and keeps the attachment active on validation failure", async () => {
+    const ticket = await createTicket(R1);
+    const upload = await request(app)
+      .post(`/api/v1/tickets/${ticket.id}/attachments`)
+      .set("X-Dev-Requester-Id", String(R1))
+      .attach("files", Buffer.from("reason required"), {
+        filename: "reason-required.pdf",
+        contentType: "application/pdf",
+      });
+    const attachmentId = upload.body[0].id as number;
+
+    const missing = await request(app)
+      .delete(`/api/v1/attachments/${attachmentId}`)
+      .set("X-Dev-Requester-Id", String(R1))
+      .send({});
+    expect(missing.status).toBe(400);
+    expect(missing.body.error.message).toMatch(/reason/i);
+
+    const blank = await request(app)
+      .delete(`/api/v1/attachments/${attachmentId}`)
+      .set("X-Dev-Requester-Id", String(R1))
+      .send({ reason: "   " });
+    expect(blank.status).toBe(400);
+    expect(blank.body.error.message).toMatch(/reason/i);
+
+    const detail = await request(app)
+      .get(`/api/v1/tickets/${ticket.id}`)
+      .set("X-Dev-Requester-Id", String(R1));
+    expect(detail.body.attachments[0].removedAt).toBeNull();
+    expect(detail.body.attachments[0].removalReason).toBeNull();
+    expect(storage.objects.size).toBe(1);
   });
 
   it("A-13C: two simultaneous removes return exactly one 200 and one 409", async () => {
@@ -318,10 +355,12 @@ describe("Ticket attachments", () => {
     const [removeA, removeB] = await Promise.all([
       request(app)
         .delete(`/api/v1/attachments/${attachmentId}`)
-        .set("X-Dev-Requester-Id", String(R1)),
+        .set("X-Dev-Requester-Id", String(R1))
+        .send({ reason: "Concurrent reason A" }),
       request(app)
         .delete(`/api/v1/attachments/${attachmentId}`)
-        .set("X-Dev-Requester-Id", String(R1)),
+        .set("X-Dev-Requester-Id", String(R1))
+        .send({ reason: "Concurrent reason B" }),
     ]);
 
     expect([removeA.status, removeB.status].sort()).toEqual([200, 409]);
@@ -330,6 +369,9 @@ describe("Ticket attachments", () => {
       .get(`/api/v1/tickets/${ticket.id}`)
       .set("X-Dev-Requester-Id", String(R1));
     expect(detail.body.attachments[0].removedAt).not.toBeNull();
+    expect(["Concurrent reason A", "Concurrent reason B"]).toContain(
+      detail.body.attachments[0].removalReason,
+    );
     expect(storage.objects.size).toBe(1);
   });
 
@@ -375,7 +417,8 @@ describe("Ticket attachments", () => {
 
     const remove = await request(app)
       .delete(`/api/v1/attachments/${id}`)
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("X-Dev-Requester-Id", String(R1))
+      .send({ reason: "Should not be accepted" });
     expect(remove.status).toBe(404);
   });
 });

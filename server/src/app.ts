@@ -298,6 +298,7 @@ app.get("/api/v1/tickets/:id", requireDevRequester, async (req: Request, res: Re
             mimeType: true,
             sizeBytes: true,
             removedAt: true,
+            removalReason: true,
           },
           orderBy: { id: "asc" },
         },
@@ -399,6 +400,7 @@ app.post(
           mimeType: string;
           sizeBytes: number;
           removedAt: Date | null;
+          removalReason: string | null;
         }>;
         for (const file of pending) {
           await storage.put(file.storageKey, file.source.buffer, file.source.mimetype);
@@ -418,6 +420,7 @@ app.post(
                 mimeType: true,
                 sizeBytes: true,
                 removedAt: true,
+                removalReason: true,
               },
             }),
           );
@@ -512,13 +515,19 @@ app.delete("/api/v1/attachments/:id", requireDevRequester, async (req: Request, 
       return;
     }
 
+    const reason = typeof req.body?.reason === "string" ? req.body.reason.trim() : "";
+    if (!reason) {
+      res.status(400).json({ error: { message: "Removal reason is required" } });
+      return;
+    }
+
     const removedAt = new Date();
     // Make the state transition atomic. With concurrent DELETEs, only the
     // first request can change removedAt from NULL; the loser updates zero rows
     // and therefore returns the documented 409 instead of a second 200.
     const result = await prisma.attachment.updateMany({
       where: { id, removedAt: null },
-      data: { removedAt },
+      data: { removedAt, removalReason: reason },
     });
     if (result.count === 0) {
       res.status(409).json({ error: { message: "Attachment already removed" } });
@@ -533,6 +542,7 @@ app.delete("/api/v1/attachments/:id", requireDevRequester, async (req: Request, 
         mimeType: true,
         sizeBytes: true,
         removedAt: true,
+        removalReason: true,
       },
     });
     if (!updated) {

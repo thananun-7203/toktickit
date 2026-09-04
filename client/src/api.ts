@@ -42,6 +42,7 @@ export interface Attachment {
   mimeType: string;
   sizeBytes: number;
   removedAt: string | null;
+  removalReason: string | null;
 }
 
 export interface TicketDetail extends Ticket {
@@ -214,8 +215,12 @@ export async function uploadAttachments(
   return data as Attachment[];
 }
 
-export async function removeAttachment(id: number, requesterId: number): Promise<Attachment> {
-  const res = await apiFetch(`/api/v1/attachments/${id}`, { method: "DELETE" }, requesterId);
+export async function removeAttachment(id: number, requesterId: number, reason: string): Promise<Attachment> {
+  const res = await apiFetch(
+    `/api/v1/attachments/${id}`,
+    { method: "DELETE", body: JSON.stringify({ reason }) },
+    requesterId,
+  );
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new ApiError(data?.error?.message ?? `Failed to remove attachment (${res.status})`, res.status);

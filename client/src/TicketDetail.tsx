@@ -79,12 +79,19 @@ export default function TicketDetail({ ticketId, requesterId, onBack }: TicketDe
   );
 
   async function handleRemove(attachment: Attachment) {
-    if (!window.confirm(`Remove ${attachment.fileName}? The metadata will remain visible.`)) return;
+    const enteredReason = window.prompt(`Why are you removing ${attachment.fileName}?`);
+    if (enteredReason === null) return;
+    const reason = enteredReason.trim();
+    if (!reason) {
+      setError("Removal reason is required");
+      return;
+    }
+    if (!window.confirm(`Remove ${attachment.fileName}? The metadata and removal reason will remain visible.`)) return;
     setRemovingId(attachment.id);
     setError(null);
     setNotice(null);
     try {
-      await removeAttachment(attachment.id, requesterId);
+      await removeAttachment(attachment.id, requesterId, reason);
       setNotice("Attachment removed successfully");
       await load();
     } catch (err) {
@@ -253,6 +260,11 @@ export default function TicketDetail({ ticketId, requesterId, onBack }: TicketDe
                     <div className={removed ? "text-decoration-line-through" : "fw-semibold"}>{attachment.fileName}</div>
                     <small>{formatSize(attachment.sizeBytes)} · {attachment.mimeType}</small>
                     {removed && <span className="badge text-bg-secondary ms-2">Removed</span>}
+                    {removed && (
+                      <div className="small mt-1">
+                        Removal reason: {attachment.removalReason ?? "Not recorded (legacy)"}
+                      </div>
+                    )}
                   </div>
                   {!removed && (
                     <div className="d-flex gap-2 align-items-center">

@@ -83,12 +83,21 @@ test("E1-E5 requester create/list/detail/isolation/attachment lifecycle", async 
     (a: { fileName: string }) => a.fileName === attachmentName,
   ).id as number;
 
-  // E-5: soft-remove; metadata stays, UI actions disappear, direct download is blocked.
-  page.once("dialog", (dialog) => dialog.accept());
+  // E-5: soft-remove with a recorded reason; metadata stays, UI actions
+  // disappear, and direct download is blocked.
+  const removalReason = "E2E evidence cleanup";
+  page.on("dialog", async (dialog) => {
+    if (dialog.type() === "prompt") {
+      await dialog.accept(removalReason);
+    } else {
+      await dialog.accept();
+    }
+  });
   await page.getByRole("button", { name: `Remove ${attachmentName}` }).click();
   await expect(page.getByText("Attachment removed successfully")).toBeVisible();
   const attachmentRow = page.getByTestId(`attachment-${attachmentId}`);
   await expect(attachmentRow).toContainText("Removed");
+  await expect(attachmentRow).toContainText(`Removal reason: ${removalReason}`);
   await expect(attachmentRow.getByRole("button")).toHaveCount(0);
 
   const blockedDownload = await request.get(`${API_URL}/api/v1/attachments/${attachmentId}/download`, {

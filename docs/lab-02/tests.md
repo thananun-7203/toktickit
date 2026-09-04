@@ -31,8 +31,9 @@ Test-first workflow: failing-first tests are run locally before implementation w
 | A-11 | `server/tests/lab-02/ticketDetail.api.test.ts` | BR-4 | Upload >5 MB or disallowed type | 400 naming offending file | Pass |
 | A-12 | `server/tests/lab-02/ticketDetail.api.test.ts` | BR-4 | Upload beyond 5 active files | 400; count stays ≤5 | Pass |
 | A-12C | `server/tests/lab-02/ticketDetail.api.test.ts` | BR-4 | 4 active files + 2 simultaneous one-file uploads | Exactly one upload succeeds; the capacity loser performs no storage write/cleanup; active metadata/storage stays at 5 | Pass |
-| A-13 | `server/tests/lab-02/ticketDetail.api.test.ts` | FR-9, BR-5 | DELETE attachment then download it | Remove → 200 w/ timestamp; download then fails; metadata still listed | Pass |
-| A-13C | `server/tests/lab-02/ticketDetail.api.test.ts` | FR-9, BR-5 | 2 simultaneous DELETEs for one active attachment | Exactly one 200 and one 409; `removedAt` retained; storage object remains | Pass |
+| A-13 | `server/tests/lab-02/ticketDetail.api.test.ts` | FR-9, BR-5 | DELETE with reason, then download it | Remove → 200 with `removedAt` + `removalReason`; download fails; metadata/reason remain listed | Pass |
+| A-13R | `server/tests/lab-02/ticketDetail.api.test.ts` | FR-9, BR-5 | DELETE with missing/blank reason | 400; attachment remains active; storage remains | Pass |
+| A-13C | `server/tests/lab-02/ticketDetail.api.test.ts` | FR-9, BR-5 | 2 simultaneous DELETEs with reasons for one active attachment | Exactly one 200 and one 409; winner's reason + `removedAt` retained; storage object remains | Pass |
 | A-14 | `server/tests/lab-02/reference-data.api.test.ts` | FR-3 | GET /api/v1/categories | 200; returns 4 active seeded categories | Planned |
 | A-15 | `server/tests/lab-02/reference-data.api.test.ts` | FR-3 | GET /api/v1/related-systems | 200; returns ≥6 active seeded related systems | Planned |
 
@@ -65,7 +66,7 @@ Test-first workflow: failing-first tests are run locally before implementation w
 | ID | File Path | Target | Scenario | Expected | Final |
 |---|---|---|---|---|---|
 | UI-6 | `client/tests/lab-02/TicketDetail.test.tsx` | FR-9 | Active attachment shows Download + Remove buttons | Two action buttons visible per active attachment row | Pass |
-| UI-9 | `client/tests/lab-02/TicketDetail.test.tsx` | FR-9, AC-9 | Removed attachment shows muted metadata only — no download/remove actions | `removedAt` non-null row: muted style, no action buttons; metadata fields (name, size, type) still present | Pass |
+| UI-9 | `client/tests/lab-02/TicketDetail.test.tsx` | FR-9, AC-9 | Removal requires a reason; removed attachment shows muted metadata + reason only | Prompt/confirm precede DELETE; blank reason blocks API call; removed row shows name/size/type/reason and no actions | Pass |
 
 ## 4. E2E Tests (Playwright)
 
@@ -75,7 +76,7 @@ Test-first workflow: failing-first tests are run locally before implementation w
 | E-2 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Create ticket via form | Success view shows TKT-number; ticket appears in My Tickets | Pass |
 | E-3 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Open own ticket detail | Fields + attachments section rendered correctly | Pass |
 | E-4 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Switch requester → list changes | Isolation proven end-to-end (AC-5) | Pass |
-| E-5 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Upload file → remove it → download attempt blocked | Soft-remove behaviour visible (AC-9) | Pass |
+| E-5 | `e2e/lab-02/requester-ticket-flow.spec.ts` | Upload file → remove with reason → download attempt blocked | Reason remains visible; soft-remove behaviour visible (AC-9) | Pass |
 
 ## 5. Visual Checks (manual screenshots)
 
@@ -99,7 +100,7 @@ Every Acceptance Criterion must map to at least one planned test.
 | AC-6 | Search/filter/sort/pagination return correct subsets | A-7, A-8, A-9 |
 | AC-7 | Detail shows ticket metadata + attachments; other requester's id = 404 | A-5, E-3 |
 | AC-8 | Upload within limits succeeds; exceeding limits fails clearly, including concurrent uploads | A-10, A-11, A-12, A-12C |
-| AC-9 | Soft-removed attachments visible as metadata; download blocked; concurrent removal is atomic | A-13, A-13C, UI-6, UI-9, E-5 |
+| AC-9 | Soft removal requires a reason; removed metadata/reason remain visible; download blocked; concurrent removal is atomic | A-13, A-13R, A-13C, UI-6, UI-9, E-5 |
 | AC-10 | Zen Green theme + responsive Desktop/Tablet/Mobile | V-1, V-2, V-3 |
 
 Every AC has ≥1 automated or manual test mapped.
@@ -116,6 +117,6 @@ Every AC has ≥1 automated or manual test mapped.
 | FR-6 | — | A-5 | — | E-3 |
 | FR-7 | — | A-10–A-12, A-12C | — | E-5 |
 | FR-8 | — | A-13 (download path) | — | E-5 |
-| FR-9 | — | A-13, A-13C | UI-6, UI-9 | E-5 |
+| FR-9 | — | A-13, A-13R, A-13C | UI-6, UI-9 | E-5 |
 
 Every Must-FR has ≥1 automated test; remaining gaps covered by Visual checks (V-1–V-3).

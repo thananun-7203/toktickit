@@ -21,6 +21,7 @@ const DETAIL: api.TicketDetail = {
       mimeType: "application/pdf",
       sizeBytes: 2048,
       removedAt: null,
+      removalReason: null,
     },
     {
       id: 4,
@@ -28,6 +29,7 @@ const DETAIL: api.TicketDetail = {
       mimeType: "image/png",
       sizeBytes: 1024,
       removedAt: "2026-09-01T09:00:00.000Z",
+      removalReason: "Duplicate screenshot",
     },
   ],
 };
@@ -54,6 +56,7 @@ describe("TicketDetail", () => {
     const removedRow = screen.getByTestId("attachment-4");
     expect(removedRow).toHaveTextContent("removed.png");
     expect(removedRow).toHaveTextContent("Removed");
+    expect(removedRow).toHaveTextContent("Removal reason: Duplicate screenshot");
     expect(removedRow.querySelector("button")).not.toBeInTheDocument();
   });
 
@@ -71,17 +74,23 @@ describe("TicketDetail", () => {
 
   it("confirms soft removal then refreshes detail", async () => {
     const user = userEvent.setup();
+    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("No longer needed");
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     const removeSpy = vi.spyOn(api, "removeAttachment").mockResolvedValue({
       ...DETAIL.attachments[0],
       removedAt: "2026-09-01T10:00:00.000Z",
+      removalReason: "No longer needed",
     });
     vi.spyOn(api, "getTicketDetail")
       .mockResolvedValueOnce(DETAIL)
       .mockResolvedValueOnce({
         ...DETAIL,
         attachments: [
-          { ...DETAIL.attachments[0], removedAt: "2026-09-01T10:00:00.000Z" },
+          {
+            ...DETAIL.attachments[0],
+            removedAt: "2026-09-01T10:00:00.000Z",
+            removalReason: "No longer needed",
+          },
           DETAIL.attachments[1],
         ],
       });
@@ -90,12 +99,29 @@ describe("TicketDetail", () => {
     await screen.findByText("active.pdf");
     await user.click(screen.getByRole("button", { name: "Remove active.pdf" }));
 
+    expect(promptSpy).toHaveBeenCalled();
     expect(confirmSpy).toHaveBeenCalled();
-    expect(removeSpy).toHaveBeenCalledWith(3, 1);
+    expect(removeSpy).toHaveBeenCalledWith(3, 1, "No longer needed");
     expect(await screen.findByText(/Attachment removed/i)).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByTestId("attachment-3")).toHaveTextContent("Removed");
+      expect(screen.getByTestId("attachment-3")).toHaveTextContent("Removal reason: No longer needed");
     });
+  });
+
+  it("does not remove when the removal reason is blank", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, "prompt").mockReturnValue("   ");
+    const confirmSpy = vi.spyOn(window, "confirm");
+    const removeSpy = vi.spyOn(api, "removeAttachment");
+
+    render(<TicketDetail ticketId={12} requesterId={1} onBack={vi.fn()} />);
+    await screen.findByText("active.pdf");
+    await user.click(screen.getByRole("button", { name: "Remove active.pdf" }));
+
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(removeSpy).not.toHaveBeenCalled();
+    expect(screen.getByText(/Removal reason is required/i)).toBeInTheDocument();
   });
 
   it("uploads selected valid attachments and refreshes detail", async () => {
