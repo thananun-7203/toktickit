@@ -1,96 +1,173 @@
-# Tok TickIT - IT Service Desk
+# TokTickIT — IT Service Desk
 
-A full-stack web application for managing IT service requests.
+TokTickIT is a full-stack IT service request application. Lab 2 delivers the requester-facing ticketing MVP: Development Requester selection, Create Ticket, My Tickets search/filter/sort/pagination, read-only Ticket Detail, attachment upload/download/soft removal with reason, requester ownership isolation, and the responsive Zen Green UI foundation.
 
 ## Tech Stack
-* **Frontend:** React, TypeScript, Vite, Bootstrap
-* **Backend:** Node.js, Express, TypeScript
-* **Database:** PostgreSQL, Prisma ORM
-* **Testing:** Vitest, Supertest
 
-## Prerequisites
-* Node.js
-* PostgreSQL (running locally, or a PostgreSQL container via Docker Desktop)
-* Git and GitHub account
+- **Frontend:** React, TypeScript, Vite, Bootstrap 5
+- **Backend:** Node.js, Express, TypeScript
+- **Database:** PostgreSQL + Prisma ORM
+- **Attachment storage:** SeaweedFS filer
+- **Testing:** Vitest, Supertest, Playwright
+- **Local services:** Docker Compose (`compose.lab2.yml`)
 
 ## Repository Structure
+
 ```text
 toktickit/
-├── client/                     # React frontend
-├── server/                     # Express API + Prisma
-│   ├── prisma/                 # Prisma schema and seed
-│   ├── src/                    # API source code
-│   └── tests/lab-01/          # Supertest API tests
-├── docs/lab-01/               # Lab 1 documentation
-├── .gitignore
+├── client/                         # React requester UI
+├── server/                         # Express API + Prisma
+│   ├── prisma/                     # schema, migrations, seed
+│   ├── src/
+│   └── tests/lab-02/
+├── e2e/                            # Playwright Lab 2 flow
+├── docs/lab-02/                    # spec, API/UI/test/review/AI evidence
+├── artifacts/lab-02/screenshots/   # final visual evidence
+├── compose.lab2.yml                # PostgreSQL + SeaweedFS
 └── README.md
 ```
 
-## Project Setup Instructions
+## Prerequisites
 
-### 1. Backend Setup
-Navigate to the server directory, install dependencies, and configure the database:
+- Node.js + npm
+- Git
+- Docker Desktop (recommended for PostgreSQL + SeaweedFS)
+
+## Recommended Lab 2 Local Setup
+
+### 1. Start PostgreSQL and SeaweedFS
+
+From the repository root:
+
+```bash
+docker compose -f compose.lab2.yml up -d
+```
+
+The compose file exposes:
+
+- PostgreSQL: `localhost:5433`
+- SeaweedFS master: `localhost:9333`
+- SeaweedFS filer: `localhost:8888`
+
+For this Docker database, use:
+
+```text
+postgresql://toktickit:toktickit@localhost:5433/toktickit?schema=public
+```
+
+### 2. Configure and prepare the server
+
 ```bash
 cd server
 npm install
-```
-
-Create `server/.env` from the template and fill in your own database credentials:
-```bash
 copy .env.example .env
 ```
 
-Example `DATABASE_URL`:
-```bash
-DATABASE_URL="postgresql://<user>:<password>@localhost:5432/<dbname>?schema=public"
+If using `compose.lab2.yml`, update `server/.env` so it contains:
+
+```env
+DATABASE_URL="postgresql://toktickit:toktickit@localhost:5433/toktickit?schema=public"
+PORT=3000
+SEAWEEDFS_FILER_URL="http://localhost:8888"
 ```
 
-Make sure PostgreSQL is running and the database exists, then apply migrations and seed the data:
+Apply the Prisma migrations, generate the client, and seed the reference data:
+
 ```bash
-npx prisma migrate dev
+npx prisma migrate deploy
+npx prisma generate
 npx prisma db seed
 ```
 
 Start the API:
+
 ```bash
 npm run dev
 ```
 
-The API will listen on `http://localhost:3000`.
+Default API URL: `http://localhost:3000`.
 
-### 2. Frontend Setup
-In a second terminal, navigate to the client directory, install dependencies, and start the development server:
+### 3. Configure and start the client
+
+In another terminal:
+
 ```bash
 cd client
 npm install
-```
-
-Create `client/.env` from the template if the API URL needs to be changed:
-```bash
 copy .env.example .env
-```
-
-Start the development server:
-```bash
 npm run dev
 ```
 
-Open `http://localhost:5173`.
+The default client environment points to `http://localhost:3000`. Open the Vite URL shown in the terminal (normally `http://localhost:5173`).
+
+## Development Requester Context
+
+Lab 2 intentionally does **not** implement real authentication. On entry, select an active Development Requester from the dropdown. Ticket-scoped requests send the simulated identity through:
+
+```text
+X-Dev-Requester-Id: <requesterId>
+```
+
+This is for development/testing and requester-isolation evidence only. Staff/Admin workflows and real authentication are outside Lab 2 scope.
 
 ## Running Tests
-Backend API tests (Supertest):
+
+### Server unit/API regression
+
 ```bash
 cd server
 npm test
+npm run build
+npx prisma validate
 ```
 
-Frontend UI tests (Vitest):
+### Client UI regression
+
 ```bash
 cd client
 npm test
+npm run build
 ```
 
+### Playwright E2E
+
+Install E2E dependencies once:
+
+```bash
+cd e2e
+npm install
+npx playwright install chromium
+```
+
+The Playwright configuration starts its own server on port `3001` and client on `5174`, but it expects PostgreSQL and SeaweedFS to already be available. By default it uses the Compose PostgreSQL database at port `5433`.
+
+Run:
+
+```bash
+npm test
+```
+
+To target another clean E2E database, set `E2E_DATABASE_URL` before running Playwright. Example PowerShell:
+
+```powershell
+$env:E2E_DATABASE_URL="postgresql://toktickit:toktickit@127.0.0.1:5433/toktickit_issue6?schema=public"
+npm test
+```
+
+## Lab 2 Documentation
+
+- `docs/lab-02/specification.md` — scope, FR/BR/AC, decisions, data design
+- `docs/lab-02/api-spec.md` — requester-ticket API contract
+- `docs/lab-02/ui-spec.md` — Zen Green screens and responsive behavior
+- `docs/lab-02/tests.md` — test plan, traceability, final regression record
+- `docs/lab-02/reviewer.md` — peer-review history and PR evidence
+- `docs/lab-02/ai-use.md` — LLM/model, selected prompts, assistance log, reflection
+- `docs/lab-02/evidence.md` — final screenshot/API/review evidence index
+
 ## Git Workflow
-- `main` — stable release
-- `lab1-staging` — integration branch
-- `feature/*` — one branch per GitHub Issue, merged into `lab1-staging` via PR after peer review
+
+- `main` — stable/released code
+- `lab2-staging` — Lab 2 integration branch
+- `feature/<issue>-...` — one feature branch per GitHub Issue
+
+Each feature branch is peer-reviewed through a PR into `lab2-staging`. The final Lab 2 release is a separate reviewed PR from `lab2-staging` to `main` after the Issue 8 release-readiness audit is complete.
