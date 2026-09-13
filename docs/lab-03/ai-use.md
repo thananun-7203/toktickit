@@ -55,6 +55,8 @@ Prepare the Sprint 3 engineering contract in detail before implementation.
 - Created detailed planned REST endpoints and safe error categories.
 - Created responsive UI/state specifications for Login, Change Password, authenticated shell, Requester extensions, Staff Queue, Staff Detail, and User Management.
 - Created planned unit/API/UI/security/migration/E2E/visual test inventory with AC traceability.
+- Re-ran the previously blocked Lab 2 database-backed baseline after Docker Desktop became available: all **49/49** server tests passed against a disposable PostgreSQL database, Client remained **25/25**, builds/Prisma validation passed, and the temporary baseline containers/volumes were removed afterward without touching the development database.
+- Opened PR [#41](https://github.com/thananun-7203/toktickit/pull/41) from `feature/1-sprint3-engineering-contract` to `lab3-staging` with the real baseline verification recorded in the PR description.
 
 ### Human oversight / decisions
 

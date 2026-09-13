@@ -11,7 +11,7 @@
 
 | Lab 3 Issue | GitHub Issue | Planned feature scope | PR | Reviewer / verdict |
 |---|---|---|---|---|
-| Issue 1 | [#33](https://github.com/thananun-7203/toktickit/issues/33) | Sprint 3 Engineering Contract & Test Plan | Pending | Pending |
+| Issue 1 | [#33](https://github.com/thananun-7203/toktickit/issues/33) | Sprint 3 Engineering Contract & Test Plan | [#41](https://github.com/thananun-7203/toktickit/pull/41) | Review requested / pending verdict |
 | Issue 2 | [#34](https://github.com/thananun-7203/toktickit/issues/34) | User Migration, Authentication & Authorization Foundation | Pending | Pending |
 | Issue 3 | [#35](https://github.com/thananun-7203/toktickit/issues/35) | Authenticated Requester & Lab 2 Regression | Pending | Pending |
 | Issue 4 | [#36](https://github.com/thananun-7203/toktickit/issues/36) | IT Staff Ticket Queue | Pending | Pending |
@@ -76,7 +76,13 @@ The first four documents are designed to exist before the main Lab 3 implementat
 
 ### Pull Request
 
-Pending. Fill this section only after the student explicitly authorizes commit/push/PR.
+- PR: [#41 — `[Lab 3] Issue 1: Sprint 3 Engineering Contract & Test Plan`](https://github.com/thananun-7203/toktickit/pull/41)
+- Head: `feature/1-sprint3-engineering-contract`
+- Base: `lab3-staging`
+- Initial commit: `afb88b6` (`docs(lab3): define sprint 3 engineering contract`)
+- PR opened after the Lab 2 baseline was rerun successfully on an isolated disposable PostgreSQL database.
+- PR description records Server **49/49**, Client **25/25**, Server build, Client build, Prisma validation, and inherited seed rerun evidence.
+- The PR uses `Closes #33`; Issue #33 should close only after the PR is merged.
 
 ### Reviewer feedback
 
