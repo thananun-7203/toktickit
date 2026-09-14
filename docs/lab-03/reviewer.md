@@ -86,11 +86,11 @@ The first four documents are designed to exist before the main Lab 3 implementat
 
 ### Reviewer feedback
 
-`Tanaboonnnnn` submitted **Changes requested**. The requested contract fixes are: make attachment permissions consistent across all documents; choose one Public Comment response/loading shape; make the bcrypt rule byte-safe for multibyte passwords; define how `Problem Appears Resolved` behaves when a Ticket is reopened; use the real staging/Issue-link workflow rather than relying on a closing keyword; choose absolute vs idle session expiry; define missing/`null` Origin behavior; strengthen seed idempotency so reruns do not reset mutable state; and leave the contract-agreement DoD item unchecked until re-review is approved.
+`Tanaboonnnnn` submitted **Changes requested**. The requested contract fixes are: make attachment permissions consistent across all documents; choose one Public Comment response/loading shape; make the bcrypt rule byte-safe for multibyte passwords; define how `Problem Appears Resolved` behaves when a Ticket is reopened; use the real staging/Issue-link workflow rather than relying on a closing keyword; remove or fully define the extra Unassign scope; choose absolute vs idle session expiry; define missing/`null` Origin behavior; strengthen seed idempotency so reruns do not reset mutable state; and leave the contract-agreement DoD item unchecked until re-review is approved.
 
 ### How I responded
 
-The requested contract changes are being resolved in PR #41 before Issue 2 implementation begins. The final response and verdict will be updated after the reviewer re-review occurs.
+The requested contract changes are being resolved in PR #41 before Issue 2 implementation begins. The extra Unassign action was removed from Lab 3 rather than expanding the workflow with additional status rules. The final response and verdict will be updated after the reviewer re-review occurs.
 
 ### Final verdict
 

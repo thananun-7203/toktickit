@@ -145,7 +145,7 @@ Lab 3 keeps Administrator and IT Staff responsibilities conceptually separate in
 |---|---|
 | FR-26 | IT Staff/Administrator can open operational Ticket Detail for any Ticket. |
 | FR-27 | Ticket Detail separates read-only Requester-submitted data from editable operational fields. |
-| FR-28 | IT Staff/Administrator can claim an unassigned Ticket, assign/reassign an owner, or clear ownership according to BR-20–BR-22. |
+| FR-28 | IT Staff/Administrator can claim an unassigned Ticket or assign/reassign an owner according to BR-20–BR-22. Lab 3 does not add an unassign action. |
 | FR-29 | IT Staff/Administrator can update IT Priority without modifying Requested Priority. |
 | FR-30 | IT Staff/Administrator can perform only status transitions permitted by the approved transition matrix. |
 | FR-31 | IT Staff/Administrator can read and append Public Comments. |

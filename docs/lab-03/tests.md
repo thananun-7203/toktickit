@@ -183,7 +183,6 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | ST-04 | AC-14 | same | assign active Administrator | allowed per matrix | Planned |
 | ST-05 | AC-14 | same | assign inactive user | rejected | Planned |
 | ST-06 | AC-14 | same | assign Requester as owner | rejected | Planned |
-| ST-07 | AC-14 | same | unassign | owner null | Planned |
 | ST-08 | AC-15 | same | update IT Priority | IT Priority changes, Requested Priority unchanged | Planned |
 | ST-09 | AC-15 | same | invalid IT Priority | `400`, no mutation | Planned |
 | ST-10 | AC-16 | same | each permitted status transition | succeeds | Planned |
@@ -370,7 +369,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | AC-11 | COM-08–COM-11, ST-13, UI-REQ-04/05, E2E-REQ-01 |
 | AC-12 | U-11/12, Q-01–Q-11, UI-Q-01–03, E2E-STAFF-01 |
 | AC-13 | Q-07/08/12, UI-Q-01/04, E2E-STAFF-01 |
-| AC-14 | ST-02–ST-07, UI-ST-02, E2E-STAFF-01 |
+| AC-14 | ST-02–ST-06, UI-ST-02, E2E-STAFF-01 |
 | AC-15 | REQ-13, ST-08/09, UI-ST-03, E2E-STAFF-01 |
 | AC-16 | U-09/10, ST-10–ST-12, UI-ST-04/09, E2E-STAFF-01/02 |
 | AC-17 | COM-04/05, UI-ST-05, E2E-STAFF-01 |

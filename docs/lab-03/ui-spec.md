@@ -361,7 +361,7 @@ Use clear sections so read-only Requester data cannot be confused with staff-edi
 - Current owner display.
 - `Claim` when unassigned / not current user.
 - Owner select for assign/reassign populated with active eligible assignees.
-- Optional `Unassign` when permitted.
+- No `Unassign` action in Lab 3; an assigned Ticket changes owner only through reassignment to another eligible owner.
 - Saving indicator and conflict/error feedback.
 
 #### IT Priority

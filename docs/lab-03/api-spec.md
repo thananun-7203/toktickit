@@ -486,17 +486,12 @@ Assign/reassign request:
 { "action": "assign", "ownerId": 12 }
 ```
 
-Unassign request:
-
-```json
-{ "action": "unassign" }
-```
-
 Rules:
 
 - Target owner active and role IT Staff/Admin.
 - Claim sets owner to authenticated user.
-- `ownerId` ignored/not allowed for claim/unassign.
+- `ownerId` is ignored/not allowed for claim.
+- Lab 3 does not expose an unassign action; once a Ticket is assigned, ownership changes by reassignment to another eligible owner.
 - Concurrency conflict should return `409` rather than silently overwrite when implementation detects stale/current-state mismatch.
 
 Success `200`: updated owner + `updatedAt`.
