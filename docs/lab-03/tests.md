@@ -68,9 +68,9 @@ The final implementation may consolidate closely related tests, but `tests.md` m
 | ID | Target | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
 | U-01 | BR-03 | `auth.unit.test.ts` | normalize email | trim/lowercase deterministic | Planned |
-| U-02 | BR-05 | `auth.unit.test.ts` | password below min / above max | rejected | Planned |
+| U-02 | BR-05 | `auth.unit.test.ts` | password below 10 chars / above 72 UTF-8 bytes | rejected | Planned |
 | U-03 | BR-05 | `auth.unit.test.ts` | password without letter or digit | rejected | Planned |
-| U-04 | BR-05 | `auth.unit.test.ts` | valid password boundary | accepted | Planned |
+| U-04 | BR-05 | `auth.unit.test.ts` | valid ASCII and multibyte password boundaries | accepted at ≤72 bytes; Thai/emoji input exceeding 72 bytes rejected even when under 72 characters | Planned |
 | U-05 | BR-06 | `auth.unit.test.ts` | new password confirmation mismatch | rejected | Planned |
 | U-06 | BR-06 | `auth.unit.test.ts` | new password equals current | rejected | Planned |
 | U-07 | BR-19 | `comments-notes.api.test.ts` or helper test | blank/whitespace comment/note | rejected | Planned |
@@ -94,10 +94,10 @@ The final implementation may consolidate closely related tests, but `tests.md` m
 | AUTH-08 | AC-04 | `auth.api.test.ts` | incorrect current password | rejected; old password still valid | Planned |
 | AUTH-09 | AC-05 | `auth.api.test.ts` | logout then reuse cookie | protected endpoint `401` | Planned |
 | AUTH-10 | AC-01 | `auth.api.test.ts` | `GET /auth/me` valid session | safe identity + role; no hash/token | Planned |
-| AUTH-11 | AC-05 | `auth.api.test.ts` | expired/unknown session | `401` | Planned |
+| AUTH-11 | AC-05 | `auth.api.test.ts` | absolute 8-hour expiry boundary / unknown session | request before expiry allowed; at/after expiry `401`; normal requests do not slide expiry | Planned |
 | AUTH-12 | AC-02 | `auth.api.test.ts` | 5 failed login attempts then next attempt | documented `429` within window | Planned |
 | AUTH-13 | AC-02 | `auth.api.test.ts` | successful login after failures (before limit) | counter cleared | Planned |
-| AUTH-14 | AC-06 | `authorization.api.test.ts` | wrong Origin on state-changing authenticated request | rejected safely | Planned |
+| AUTH-14 | AC-06 | `authorization.api.test.ts` | wrong, missing, or `null` Origin on state-changing authenticated request | each rejected `403` with no mutation; matching Origin allowed | Planned |
 | AUTH-15 | AC-03 | `auth.api.test.ts` | active session user is later deactivated | subsequent protected request denied/session invalidated | Planned |
 
 ## 5. Direct Authorization Matrix Tests
@@ -117,6 +117,8 @@ These tests intentionally call APIs directly rather than relying on hidden front
 | AZ-09 | AC-07 | same | Requester sends another `requesterId` in body/query/header | ignored/rejected; cannot impersonate | Planned |
 | AZ-10 | AC-07 | same | Requester opens another Requester's Ticket id | `404`, no existence leak | Planned |
 | AZ-11 | AC-09 | same | Requester opens/downloads another Requester's Attachment id | `404`, no existence leak | Planned |
+| AZ-12 | AC-20 | same | IT Staff/Admin downloads active attachment on any Ticket | allowed; file returned | Planned |
+| AZ-13 | AC-20 | same | IT Staff/Admin attempts Requester attachment upload or soft-remove | `403`; no attachment mutation | Planned |
 
 ## 6. Requester Regression API Tests
 
@@ -152,6 +154,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | COM-08 | AC-11 | same | own Requester marks Problem Appears Resolved | timestamp set, Ticket status unchanged | Planned |
 | COM-09 | AC-11 | same | repeat appears-resolved action | idempotent; original indication retained | Planned |
 | COM-10 | AC-11 | `authorization.api.test.ts` | Requester calls staff status API | `403` | Planned |
+| COM-11 | AC-11 | `staff-ticket-detail.api.test.ts` | staff transitions indicated Ticket to `Reopened` | status becomes Reopened and indication is cleared atomically | Planned |
 
 ## 8. IT Staff Queue API Tests
 
@@ -174,7 +177,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
-| ST-01 | AC-20 | `staff-ticket-detail.api.test.ts` | open operational detail | Ticket, requester, owner, priorities, status, attachments, communication data | Planned |
+| ST-01 | AC-20 | `staff-ticket-detail.api.test.ts` | open operational detail | Ticket, requester, owner, priorities, status, attachment metadata; comments/notes are fetched from dedicated endpoints | Planned |
 | ST-02 | AC-14 | same | claim unassigned Ticket | owner=current staff | Planned |
 | ST-03 | AC-14 | same | assign active IT Staff | owner updated | Planned |
 | ST-04 | AC-14 | same | assign active Administrator | allowed per matrix | Planned |
@@ -186,7 +189,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | ST-10 | AC-16 | same | each permitted status transition | succeeds | Planned |
 | ST-11 | AC-16 | same | each representative forbidden/self transition | `409`, status unchanged | Planned |
 | ST-12 | AC-16 | same | unknown status string | `400` | Planned |
-| ST-13 | AC-20 | same | detail after Requester resolution indication | indication visible independent of status | Planned |
+| ST-13 | AC-20/11 | same | detail after indication then transition to Reopened | indication visible before reopen, cleared after reopen | Planned |
 | ST-14 | AC-20 | same | historical null IT Priority | safe `null`/Not recorded, no crash | Planned |
 
 ## 10. Internal Notes API Tests
@@ -236,6 +239,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | MIG-07 | AC-28 | seed verification | run seed twice | no duplicate users/reference rows | Planned |
 | MIG-08 | AC-28 | seed verification | account counts | ≥4 active + 1 inactive Requester; ≥3 active + 1 inactive Staff; ≥1 active Admin | Planned |
 | MIG-09 | AC-28 | seed verification | seeded Tickets/comments/notes | realistic distribution; no sensitive content | Planned |
+| MIG-10 | AC-28 | seed verification | seed once → mutate seeded password/role/active state/Ticket status-owner-priority → seed again | no duplicate rows and mutable state is not reset to original demo values | Planned |
 | REG-01 | AC-08/09 | existing Lab 2 server suite adapted/retained | full Requester regression | green | Planned |
 | REG-02 | AC-08/09 | existing Lab 2 client suite adapted/retained | Requester UI regression | green | Planned |
 
@@ -358,12 +362,12 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | AC-03 | AUTH-04, AUTH-15, UI-AUTH-05, E2E-AUTH-02 |
 | AC-04 | U-02–U-06, AUTH-05–AUTH-08, AZ-07, UI-PWD-01–04, E2E-AUTH-01 |
 | AC-05 | AUTH-09, AUTH-11, UI-SHELL-04, E2E-AUTH-01 |
-| AC-06 | AZ-01–AZ-07, UI-SHELL-01–05, E2E-AUTH-01 |
+| AC-06 | AUTH-14, AZ-01–AZ-07, UI-SHELL-01–05, E2E-AUTH-01 |
 | AC-07 | AZ-09, AZ-10, REQ-03, E2E-REQ-02 |
 | AC-08 | REQ-01–REQ-06, REG-01, REG-02, E2E-REQ-01 |
 | AC-09 | AZ-11, REQ-07–REQ-12, REG-01/02, E2E-REQ-01/02 |
 | AC-10 | COM-01–COM-03, UI-REQ-01–03, E2E-REQ-01 |
-| AC-11 | COM-08–COM-10, UI-REQ-04/05, E2E-REQ-01 |
+| AC-11 | COM-08–COM-11, ST-13, UI-REQ-04/05, E2E-REQ-01 |
 | AC-12 | U-11/12, Q-01–Q-11, UI-Q-01–03, E2E-STAFF-01 |
 | AC-13 | Q-07/08/12, UI-Q-01/04, E2E-STAFF-01 |
 | AC-14 | ST-02–ST-07, UI-ST-02, E2E-STAFF-01 |
@@ -372,7 +376,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | AC-17 | COM-04/05, UI-ST-05, E2E-STAFF-01 |
 | AC-18 | AZ-08, NOTE-01–NOTE-05, UI-ST-05, E2E-STAFF-01/02 |
 | AC-19 | U-07/08, COM-06/07, NOTE-06/07, UI-REQ-02, UI-ST-06 |
-| AC-20 | ST-01/13/14, UI-ST-01/07/08, E2E-STAFF-01 |
+| AC-20 | AZ-12/13, ST-01/13/14, UI-ST-01/07/08, E2E-STAFF-01 |
 | AC-21 | ADM-01–04, UI-ADM-01/02, E2E-ADMIN-01 |
 | AC-22 | ADM-05–08, UI-ADM-03/04, E2E-ADMIN-01 |
 | AC-23 | ADM-09–11/15/16, UI-ADM-05/06, E2E-ADMIN-01 |
@@ -380,7 +384,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | AC-25 | ADM-13/14, UI-ADM-08, E2E-ADMIN-02 |
 | AC-26 | AZ-03–05, ADM-17, E2E-ADMIN-02 |
 | AC-27 | MIG-01–MIG-06, REG-01/02 |
-| AC-28 | MIG-07–MIG-09 |
+| AC-28 | MIG-07–MIG-10 |
 | AC-29 | UI-AUTH-07, UI-Q-05–08, UI-ST-09, UI-ADM-09, E2E-AUTH-02 |
 | AC-30 | V-01–V-08 plus responsive checks inside all four E2E files |
 

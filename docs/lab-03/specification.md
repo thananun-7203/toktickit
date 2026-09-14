@@ -71,7 +71,10 @@ Legend: **Y** = permitted, **Own** = only owned/submitted resource, **N** = forb
 | Create Ticket | Y | N | N |
 | List Requester tickets | Own | N | N |
 | Open Requester Ticket Detail | Own | N | N |
-| Upload/download/soft-remove Requester attachments | Own | N | N |
+| View attachment metadata | Own ticket | Any ticket | Any ticket |
+| Download active attachments | Own ticket | Any ticket | Any ticket |
+| Upload attachments | Own ticket | N | N |
+| Soft-remove attachments | Own ticket | N | N |
 | Read/post Public Comments | Own ticket | Any ticket | Any ticket |
 | Indicate `Problem Appears Resolved` | Own ticket | N | N |
 | Open IT Staff Ticket Queue | N | Y | Y |
@@ -175,7 +178,7 @@ Lab 3 keeps Administrator and IT Staff responsibilities conceptually separate in
 | BR-02 | A user marked `mustChangePassword=true` cannot enter normal application workflows until a valid replacement password is saved. |
 | BR-03 | User email is normalized with trim + lowercase for comparison/storage and must be unique case-insensitively. |
 | BR-04 | Passwords are never stored in plaintext; only a one-way password hash is persisted. |
-| BR-05 | Password policy: 10–72 characters after input validation, containing at least one letter and one digit; leading/trailing spaces are treated as part of the password rather than silently trimmed. |
+| BR-05 | Password policy: at least 10 characters, containing at least one letter and one digit, and no more than 72 UTF-8 bytes because Lab 3 uses bcrypt; leading/trailing spaces are treated as part of the password rather than silently trimmed. |
 | BR-06 | A new password must match confirmation and must differ from the current/initial password. |
 | BR-07 | Authentication errors use a generic message such as `Invalid email or password`; inactive-account UI may state that access is unavailable without exposing additional account details. |
 | BR-08 | Login attempts are limited to 5 failed attempts for the same normalized email within 15 minutes; the next attempt is rejected with `429` until the window expires. Successful authentication clears the failure counter. This is a local-lab protection, not a production anti-abuse system. |
@@ -217,7 +220,7 @@ Lab 3 keeps Administrator and IT Staff responsibilities conceptually separate in
 | ID | Rule |
 |---|---|
 | BR-26 | A Requester may set `problemAppearsResolvedAt` for their own Ticket. This is an indication only and does not change Ticket status. |
-| BR-27 | Repeating the action is idempotent: once set, the original indication timestamp remains unless a later Lab explicitly introduces clearing/reopening semantics. |
+| BR-27 | Repeating the action while the indication is already set is idempotent and retains the original timestamp. Any formal transition to `Reopened` clears `problemAppearsResolvedAt`; the Requester may set a fresh indication again afterward. |
 | BR-28 | Requesters cannot directly call the staff status-transition endpoint. |
 
 ### 6.6 Administrator Safety Rules
@@ -251,6 +254,7 @@ Additional rules:
 
 - No self-transition (`Open → Open`).
 - Unsupported transitions return `409 Conflict` with a safe message and do not mutate the Ticket.
+- Every transition whose target status is `Reopened` clears `problemAppearsResolvedAt` in the same mutation so a stale Requester-resolution indication is not shown after reopening.
 - Lab 3 does not require Actions Taken, therefore no Actions-Taken completion precondition is applied to `Resolved`/`Closed` in this sprint.
 - Status history/audit log is not required in Lab 3; only the current status and `updatedAt` are required.
 
@@ -266,7 +270,7 @@ Lab 3 will use an **opaque server-side session**:
 4. The cookie uses `SameSite=Lax`; `Secure` is enabled outside local HTTP development; the cookie path is `/`.
 5. The server resolves the cookie on protected requests and checks session expiry plus current user activation/password-change state.
 6. Logout deletes the active session row and expires the cookie.
-7. Sessions expire after 8 hours of inactivity/validity for this local lab; expiration is checked server-side.
+7. Sessions use an **absolute 8-hour lifetime from successful login**. The expiry is not extended by normal requests; expiration is checked server-side on every protected request.
 
 ### 8.2 Password Hashing
 
@@ -275,7 +279,8 @@ Lab 3 will use an **opaque server-side session**:
 
 ### 8.3 CSRF / Origin Considerations
 
-- Authentication is cookie-based, so state-changing requests must pass an allowed `Origin` check for the configured client origin in addition to `SameSite=Lax`.
+- Authentication is cookie-based, so state-changing requests (`POST`, `PUT`, `PATCH`, `DELETE`) must include an `Origin` header that exactly matches the configured client origin in addition to `SameSite=Lax`.
+- A missing `Origin`, `Origin: null`, or mismatched Origin on a state-changing authenticated request is rejected with `403` and no mutation. Read-only `GET` requests do not require this Origin check.
 - CORS must use an explicit client origin and `credentials: true`; wildcard origin is not allowed with credentialed requests.
 - GET endpoints must not perform state changes.
 
@@ -365,6 +370,8 @@ Recommended indexes: `requesterId`, `ownerId`, `status`, `itPriority`, `createdA
 
 Seed behavior must be idempotent and safe to run repeatedly.
 
+Idempotency means more than avoiding duplicate rows. Seed records use stable identifiers/natural keys and create missing demo data, but a rerun must not overwrite mutable application state that may have changed after the first seed. In particular, a rerun must not reset an existing seeded user's password hash, role, or activation state, and must not reset an existing Ticket's status, owner, or IT Priority merely to restore the original demo values.
+
 Minimum local-development accounts:
 
 - 4 active Requesters and 1 inactive Requester.
@@ -423,7 +430,7 @@ Error categories are deliberately distinct: `400` invalid input, `401` unauthent
 | AC-08 | All Lab 2 Requester create/list/detail/search/filter/sort/pagination behaviors work with authenticated identity. |
 | AC-09 | Lab 2 attachment upload/download/soft-removal/removal-reason and ownership protections still work after migration. |
 | AC-10 | Requester can post/read Public Comments on own Ticket; another Requester cannot read them. |
-| AC-11 | Requester can mark Problem Appears Resolved without changing formal Ticket status or gaining status-transition permission. |
+| AC-11 | Requester can mark Problem Appears Resolved without changing formal Ticket status or gaining status-transition permission; a later formal transition to `Reopened` clears the stale indication. |
 | AC-12 | IT Staff Queue supports documented search/filters/sort/pagination and returns consistent metadata. |
 | AC-13 | Queue distinguishes assigned/unassigned Tickets and shows Requested Priority, IT Priority, Status, and Owner consistently. |
 | AC-14 | IT Staff/Administrator can claim/assign/reassign only to an active permitted owner. |
@@ -432,7 +439,7 @@ Error categories are deliberately distinct: `400` invalid input, `401` unauthent
 | AC-17 | Public Comments are visible to permitted Requester/IT Staff/Admin users and record backend author/time. |
 | AC-18 | Internal Notes are visible only to IT Staff/Admin; Requester direct access is forbidden with no note content leakage. |
 | AC-19 | Empty/whitespace or over-limit comment/note content is rejected; valid content renders safely as text. |
-| AC-20 | Operational Ticket Detail preserves Attachment continuity and Requester-resolution indication. |
+| AC-20 | Operational Ticket Detail preserves Attachment continuity: IT Staff/Administrator can view metadata and download active attachments, but cannot upload or soft-remove them; Requester-resolution indication follows the reopen-clearing rule. |
 | AC-21 | Administrator list shows Name, Email, Role, Status, Edit and supports name/email search plus optional role filter. |
 | AC-22 | Administrator can create a user with exactly one valid role and initial password; duplicate email/invalid input is rejected. |
 | AC-23 | Administrator can edit name/email/role/activation and set a new initial password that forces next-login password change. |
@@ -440,7 +447,7 @@ Error categories are deliberately distinct: `400` invalid input, `401` unauthent
 | AC-25 | System rejects any operation that would leave zero active Administrators. |
 | AC-26 | Requester and IT Staff cannot access Admin User Management APIs/screens. |
 | AC-27 | Lab 2 → Lab 3 migration preserves existing Ticket/Attachment counts and logical Requester ownership. |
-| AC-28 | Lab 3 seed is idempotent and repeatedly produces at least the required active/inactive users without duplicates. |
+| AC-28 | Lab 3 seed is idempotent: reruns do not create duplicates, still satisfy required account/demo-data availability, and do not reset mutable password/role/activation/Ticket workflow state that was changed after the first seed. |
 | AC-29 | Major Lab 3 screens provide meaningful loading/validation/success/empty/no-results/forbidden/failure feedback. |
 | AC-30 | Major Lab 3 screens are usable at desktop, tablet, and mobile sizes with no page-level horizontal overflow and accessible labels/focus behavior. |
 
@@ -450,7 +457,7 @@ Every AC must map to at least one planned test in `tests.md` before implementati
 
 Sprint 3 is product-complete only when all applicable items below are true:
 
-- [x] `specification.md`, `tests.md`, `ui-spec.md`, and `api-spec.md` agree on roles, business rules, statuses, API behavior, UI states, and migration decisions for the Issue 1 contract; peer review may still revise approved design choices before implementation.
+- [ ] `specification.md`, `tests.md`, `ui-spec.md`, and `api-spec.md` agree on roles, business rules, statuses, API behavior, UI states, and migration decisions for the Issue 1 contract; mark complete only after the contract review is approved.
 - [x] Every AC has at least one planned test/evidence mapping in `tests.md`.
 - [x] Lab 2 baseline is recorded with a clean isolated DB verification: server **49/49**, client **25/25**, builds and Prisma validation pass; earlier environment-only failures are distinguished from code regressions.
 - [ ] Lab 2 data migration is verified on a disposable Lab 2-shaped database without losing Tickets or Attachments.
@@ -478,11 +485,11 @@ Sprint 3 is product-complete only when all applicable items below are true:
 | ID | Decision | Rationale |
 |---|---|---|
 | D-01 | Opaque DB-backed session in an HttpOnly cookie. | Supports logout invalidation and avoids storing authentication tokens in client JavaScript. |
-| D-02 | `bcrypt` cost 12, password length 10–72 with at least one letter and digit. | Simple, testable local-lab policy with one-way hashing and bounded input. |
+| D-02 | `bcrypt` cost 12; passwords require at least 10 characters, at least one letter and digit, and at most 72 UTF-8 bytes. | Keeps the policy compatible with bcrypt's 72-byte input limit, including multibyte Thai/emoji input. |
 | D-03 | Login rate limit 5 failures / 15 minutes per normalized email. | Satisfies the required login-attempt rule without implementing advanced account locking. |
 | D-04 | Admin is explicitly permitted by the authorization matrix to operational Ticket APIs, but User Management remains its primary UI responsibility. | Makes Lab wording about Admin visibility/owner/IT Priority explicit rather than relying on accidental privilege. |
 | D-05 | Comments/notes max 2,000 chars and render as plain text. | Prevents unbounded content and avoids raw-HTML injection complexity. |
-| D-06 | Requester resolution indication is a timestamp separate from Ticket status. | Preserves stakeholder rule that Requester may indicate resolution but IT Staff formally resolves/closes. |
+| D-06 | Requester resolution indication is a timestamp separate from Ticket status and is cleared on any transition to `Reopened`. | Preserves stakeholder rule that Requester may indicate resolution but IT Staff formally resolves/closes, while avoiding stale resolved indications after reopening. |
 | D-07 | Historical null Requested Priority / IT Priority stays `Not recorded` rather than being invented during migration. | Preserves historical data meaning. |
 | D-08 | User list pagination is not required in Lab 3. | Handout explicitly excludes mandatory Admin pagination. |
 | D-09 | Queue default order is most recently updated first, tie-break by id descending. | Operational queues prioritize recent activity and remain deterministic. |

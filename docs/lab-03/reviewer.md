@@ -82,15 +82,15 @@ The first four documents are designed to exist before the main Lab 3 implementat
 - Initial commit: `afb88b6` (`docs(lab3): define sprint 3 engineering contract`)
 - PR opened after the Lab 2 baseline was rerun successfully on an isolated disposable PostgreSQL database.
 - PR description records Server **49/49**, Client **25/25**, Server build, Client build, Prisma validation, and inherited seed rerun evidence.
-- The PR uses `Closes #33`; Issue #33 should close only after the PR is merged.
+- PR #41 targets `lab3-staging`, so the PR description references Issue #33 without a closing keyword. Issue #33 is linked manually through GitHub Development and remains open during review; it is closed only after the student confirms the merge workflow is complete.
 
 ### Reviewer feedback
 
-Pending.
+`Tanaboonnnnn` submitted **Changes requested**. The requested contract fixes are: make attachment permissions consistent across all documents; choose one Public Comment response/loading shape; make the bcrypt rule byte-safe for multibyte passwords; define how `Problem Appears Resolved` behaves when a Ticket is reopened; use the real staging/Issue-link workflow rather than relying on a closing keyword; choose absolute vs idle session expiry; define missing/`null` Origin behavior; strengthen seed idempotency so reruns do not reset mutable state; and leave the contract-agreement DoD item unchecked until re-review is approved.
 
 ### How I responded
 
-Pending.
+The requested contract changes are being resolved in PR #41 before Issue 2 implementation begins. The final response and verdict will be updated after the reviewer re-review occurs.
 
 ### Final verdict
 

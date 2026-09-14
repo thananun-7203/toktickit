@@ -153,9 +153,10 @@ Allow an authenticated user to replace an initial password before entering the n
 - New password.
 - Confirm new password.
 - Password-rules helper:
-  - 10–72 characters,
+  - at least 10 characters,
   - at least one letter,
-  - at least one digit.
+  - at least one digit,
+  - maximum 72 UTF-8 bytes (important for multibyte input such as Thai/emoji because Lab 3 uses bcrypt).
 - Primary `Continue` in mandatory mode or `Save Password` in profile mode.
 
 ### States
@@ -233,6 +234,7 @@ Add:
 
 - Section title `Public Comments`.
 - Helper text: comments are shared with support staff.
+- Comments are loaded from the dedicated `GET /api/v1/tickets/:id/public-comments` endpoint and posted through the matching `POST` endpoint; Ticket Detail responses do not inline the collection.
 - Chronological comment list.
 - Each comment displays:
   - author name,
@@ -262,6 +264,7 @@ If already indicated:
 
 - Informational Zen badge/panel `Requester indicated this problem appears resolved` plus timestamp.
 - Formal status remains shown independently.
+- If staff later moves the Ticket to `Reopened`, the indication is cleared and the Requester-facing action becomes available again for a future fresh indication.
 
 ## 7. S5 — IT Staff Ticket Queue
 
@@ -373,6 +376,7 @@ Use clear sections so read-only Requester data cannot be confused with staff-edi
 - Next-status control lists only transitions allowed by matrix.
 - Resolve/Close/Reopen/Cancel confirmations where specified.
 - Invalid transition conflict message if server state changed between load/save.
+- A successful transition to `Reopened` clears the Requester-resolution indication; after refresh, no stale `appears resolved` banner is shown.
 
 #### Requester Resolution Indication
 
@@ -388,6 +392,7 @@ These must be visually difficult to confuse.
 - Green/shared communication styling.
 - Label: `Visible to Requester`.
 - Same append-only author/timestamp/content pattern as Requester view.
+- Load/post through the dedicated Public Comment endpoints rather than relying on the operational Ticket Detail response.
 
 #### Internal Notes
 
@@ -395,12 +400,14 @@ These must be visually difficult to confuse.
 - Strong label: `Internal Notes — not visible to Requester`.
 - Composer should not be placed immediately adjacent to Public Comment composer without clear tab/heading distinction.
 - Plain text only.
+- Load/post through the dedicated `/api/v1/staff/tickets/:id/internal-notes` endpoints.
 
 ### Attachments
 
 - Preserve Lab 2 active/removed distinction.
-- Staff operational detail can view/download permitted active attachments.
-- Lab 3 does not require staff attachment deletion rules beyond preserved approved behavior; implementation must follow API authorization contract.
+- Staff/Admin operational detail can view attachment metadata and download active attachments.
+- Staff/Admin cannot upload attachments or soft-remove attachments in Lab 3; those mutation controls are Requester-only and must not appear in staff/admin UI.
+- Removed attachment metadata remains visible for continuity, but removed files cannot be downloaded.
 
 ## 9. S7 — Administrator User Management
 

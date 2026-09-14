@@ -21,7 +21,7 @@ This document defines the planned Sprint 3 REST contract before implementation. 
 ### 1.3 CORS / CSRF
 
 - Credentialed CORS uses an explicit configured client origin; wildcard origin is not allowed.
-- State-changing requests (`POST`, `PATCH`, `DELETE`) must pass the approved Origin check.
+- State-changing requests (`POST`, `PUT`, `PATCH`, `DELETE`) must include an `Origin` header exactly matching the configured client origin. Missing Origin, `Origin: null`, or a mismatched Origin is rejected with `403` before mutation.
 - Cookie uses `SameSite=Lax`; `Secure=true` outside local HTTP development.
 
 ### 1.4 Standard Success / Error Behavior
@@ -95,7 +95,7 @@ Request:
 Validation:
 
 - `email`: required string, trimmed/lowercased for lookup, syntactically valid email, max 254 chars.
-- `password`: required string; do not trim silently.
+- `password`: required string; do not trim silently; reject input whose UTF-8 byte length exceeds 72 so bcrypt never silently truncates credential input.
 
 Success `200`:
 
@@ -125,7 +125,7 @@ Errors:
 
 On success:
 
-- Create DB-backed session with 8-hour expiry.
+- Create DB-backed session with an absolute 8-hour expiry measured from successful login; normal requests do not extend it.
 - Set `toktickit_session` cookie.
 - Clear failed-login counter for that normalized email.
 
@@ -179,7 +179,7 @@ Request:
 Rules:
 
 - Current password must match.
-- New password 10–72 chars, at least one letter and one digit.
+- New password: at least 10 characters, at least one letter and one digit, and UTF-8 byte length ≤72 for bcrypt compatibility.
 - New password and confirmation must match.
 - New password must differ from current password.
 - On success set new hash and `mustChangePassword=false`.
@@ -289,7 +289,7 @@ Success `200` includes:
 - Attachments including removed metadata/reason.
 - `itPriority` and current `status` as read-only Requester-visible operational context.
 - `problemAppearsResolvedAt`.
-- Public Comments may be returned inline or retrieved through section 5; implementation must keep API spec internally consistent.
+- Public Comments are **not** embedded in this response. The client retrieves them only through `GET /api/v1/tickets/:id/public-comments` in section 5.
 
 Errors: `404` unknown or not owned.
 
@@ -311,9 +311,14 @@ Success `201`: created attachment metadata.
 
 ### 4.5 GET `/api/v1/attachments/:id/download`
 
-Requester can download only active attachment on own Ticket.
+Roles:
 
-Errors: `404` unknown/not owned, `409` removed, `502` storage failure.
+- Requester: active attachment on own Ticket only.
+- IT Staff/Administrator: active attachment on any Ticket.
+
+This is the only Attachment endpoint in section 4 intentionally shared with staff/admin; upload and soft-remove remain Requester-only.
+
+Errors: `403` role forbidden where applicable, `404` unknown/hidden resource, `409` removed, `502` storage failure.
 
 ### 4.6 DELETE `/api/v1/attachments/:id`
 
@@ -383,7 +388,8 @@ Behavior:
 
 - Set `problemAppearsResolvedAt` only when null.
 - Do **not** change status.
-- Repeated call is idempotent and returns current indication.
+- Repeated call while already set is idempotent and returns the existing indication.
+- If staff later transitions the Ticket to `Reopened`, that status mutation clears `problemAppearsResolvedAt`; the Requester may create a fresh indication afterward.
 
 Success `200`:
 
@@ -458,10 +464,9 @@ Success `200` includes:
 - status,
 - `problemAppearsResolvedAt`,
 - attachments including removed metadata,
-- Public Comments,
-- Internal Notes.
+- but **not** Public Comments or Internal Notes collections.
 
-This endpoint must never put Internal Notes into Requester-facing response serializers.
+Communication is loaded through the dedicated section 5 Public Comment endpoints and section 8 Internal Note endpoints. This endpoint must never put Internal Notes into Requester-facing response serializers.
 
 ## 7. IT Staff Ticket Operations
 
@@ -519,6 +524,8 @@ Request:
 ```
 
 Allowed transition checked against `specification.md` matrix.
+
+When the requested target status is `Reopened`, the same server-side mutation also sets `problemAppearsResolvedAt = null`.
 
 Success `200`: current status + `updatedAt`.
 
