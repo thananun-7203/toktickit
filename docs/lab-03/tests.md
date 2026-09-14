@@ -97,8 +97,9 @@ The final implementation may consolidate closely related tests, but `tests.md` m
 | AUTH-11 | AC-05 | `auth.api.test.ts` | absolute 8-hour expiry boundary / unknown session | request before expiry allowed; at/after expiry `401`; normal requests do not slide expiry | Planned |
 | AUTH-12 | AC-02 | `auth.api.test.ts` | 5 failed login attempts then next attempt | documented `429` within window | Planned |
 | AUTH-13 | AC-02 | `auth.api.test.ts` | successful login after failures (before limit) | counter cleared | Planned |
-| AUTH-14 | AC-06 | `authorization.api.test.ts` | wrong, missing, or `null` Origin on state-changing authenticated request | each rejected `403` with no mutation; matching Origin allowed | Planned |
+| AUTH-14 | AC-06 | `auth.api.test.ts` | direct `POST /api/v1/auth/login` with wrong, missing, or `null` Origin | each rejected `403` before credential/session processing; matching Origin reaches normal login behavior | Planned |
 | AUTH-15 | AC-03 | `auth.api.test.ts` | active session user is later deactivated | subsequent protected request denied/session invalidated | Planned |
+| AUTH-16 | AC-06 | `authorization.api.test.ts` | wrong, missing, or `null` Origin on another state-changing authenticated request | each rejected `403` with no mutation; matching Origin allowed | Planned |
 
 ## 5. Direct Authorization Matrix Tests
 
@@ -119,6 +120,7 @@ These tests intentionally call APIs directly rather than relying on hidden front
 | AZ-11 | AC-09 | same | Requester opens/downloads another Requester's Attachment id | `404`, no existence leak | Planned |
 | AZ-12 | AC-20 | same | IT Staff/Admin downloads active attachment on any Ticket | allowed; file returned | Planned |
 | AZ-13 | AC-20 | same | IT Staff/Admin attempts Requester attachment upload or soft-remove | `403`; no attachment mutation | Planned |
+| AZ-14 | AC-06 | same | unauthenticated request to Categories / Related Systems reference data | `401`; reference data remains authenticated-only | Planned |
 
 ## 6. Requester Regression API Tests
 
@@ -155,6 +157,8 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | COM-09 | AC-11 | same | repeat appears-resolved action | idempotent; original indication retained | Planned |
 | COM-10 | AC-11 | `authorization.api.test.ts` | Requester calls staff status API | `403` | Planned |
 | COM-11 | AC-11 | `staff-ticket-detail.api.test.ts` | staff transitions indicated Ticket to `Reopened` | status becomes Reopened and indication is cleared atomically | Planned |
+| COM-12 | AC-11 | `comments-notes.api.test.ts` | Requester marks own Ticket in `New`, `Open`, `In Progress`, `Waiting for Requester`, or `Reopened` | allowed; timestamp set without status change | Planned |
+| COM-13 | AC-11 | same | Requester attempts indication in `Resolved`, `Closed`, or `Cancelled` | `409 RESOLUTION_INDICATION_NOT_ALLOWED`; timestamp/status unchanged | Planned |
 
 ## 8. IT Staff Queue API Tests
 
@@ -224,6 +228,8 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | ADM-15 | AC-23 | same | set new initial password | flag true; old sessions invalidated | Planned |
 | ADM-16 | AC-23 | same | target user logs in with new initial password | must change before normal app | Planned |
 | ADM-17 | AC-26 | `authorization.api.test.ts` | Requester/IT Staff hit admin list/create/edit | `403` | Planned |
+| ADM-18 | AC-31 | `users-admin.api.test.ts` | deactivate an IT Staff/Admin who currently owns ≥1 Ticket | `409 ASSIGNED_TICKETS_REQUIRE_REASSIGNMENT`; user remains active and Ticket owner unchanged | Planned |
+| ADM-19 | AC-31 | same | change an assigned IT Staff/Admin role to `REQUESTER` | same `409`; role and Ticket owner unchanged until Tickets are reassigned | Planned |
 
 ## 12. Migration / Seed / Regression Tests
 
@@ -232,7 +238,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | MIG-01 | AC-27 | `migration-regression.test.ts` | apply Lab 3 migrations to disposable Lab 2-shaped DB | migration succeeds from zero/current Lab2 migrations | Planned |
 | MIG-02 | AC-27 | same | compare Ticket count before/after | unchanged | Planned |
 | MIG-03 | AC-27 | same | compare Attachment count/removal metadata | unchanged; removed reason retained | Planned |
-| MIG-04 | AC-27 | same | verify each old requester Ticket maps to User with same logical email/name | ownership preserved | Planned |
+| MIG-04 | AC-27 | same | verify each `DevelopmentRequester` becomes `User` with the exact same numeric id and each old Ticket still points to that id/logical email/name | numeric and logical ownership preserved | Planned |
 | MIG-05 | AC-27 | same | non-null Requested Priority → initial IT Priority | copied | Planned |
 | MIG-06 | AC-27 | same | historical null Requested Priority | remains readable; IT Priority null | Planned |
 | MIG-07 | AC-28 | seed verification | run seed twice | no duplicate users/reference rows | Planned |
@@ -325,6 +331,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | UI-ADM-07 | AC-24 | same | self-deactivation conflict | clear blocked feedback | Planned |
 | UI-ADM-08 | AC-25 | same | last-admin conflict | clear blocked feedback | Planned |
 | UI-ADM-09 | AC-29 | same | loading/empty/failure | meaningful states | Planned |
+| UI-ADM-10 | AC-31 | same | assigned owner deactivation/demotion conflict | clear `reassign tickets first` feedback; edited user state is not falsely shown as saved | Planned |
 
 ## 14. End-to-End Tests
 
@@ -337,7 +344,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | E2E-STAFF-01 | AC-12–20 | `staff-ticket-flow.spec.ts` | login Staff → Queue search/filter → open → claim/reassign → priority → status → Public Comment → Internal Note → attachment | operational flow works | Planned |
 | E2E-STAFF-02 | AC-16/18 | same | direct forbidden transition / Requester note endpoint evidence | backend rejects safely | Planned |
 | E2E-ADMIN-01 | AC-21–26 | `user-administration.spec.ts` | login Admin → search → create user → edit → initial password reset → new user forced change | Admin flow works | Planned |
-| E2E-ADMIN-02 | AC-24–26 | same | self-deactivate + last-admin protection + non-Admin direct access | safe blocks visible/API enforced | Planned |
+| E2E-ADMIN-02 | AC-24–26/31 | same | self-deactivate + last-admin protection + assigned-owner deactivate/demote + non-Admin direct access | safe blocks visible/API enforced; owner invariant preserved | Planned |
 
 ## 15. Responsive / Accessibility / Visual Tests
 
@@ -361,12 +368,12 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | AC-03 | AUTH-04, AUTH-15, UI-AUTH-05, E2E-AUTH-02 |
 | AC-04 | U-02–U-06, AUTH-05–AUTH-08, AZ-07, UI-PWD-01–04, E2E-AUTH-01 |
 | AC-05 | AUTH-09, AUTH-11, UI-SHELL-04, E2E-AUTH-01 |
-| AC-06 | AUTH-14, AZ-01–AZ-07, UI-SHELL-01–05, E2E-AUTH-01 |
+| AC-06 | AUTH-14, AUTH-16, AZ-01–AZ-07, AZ-14, UI-SHELL-01–05, E2E-AUTH-01 |
 | AC-07 | AZ-09, AZ-10, REQ-03, E2E-REQ-02 |
 | AC-08 | REQ-01–REQ-06, REG-01, REG-02, E2E-REQ-01 |
 | AC-09 | AZ-11, REQ-07–REQ-12, REG-01/02, E2E-REQ-01/02 |
 | AC-10 | COM-01–COM-03, UI-REQ-01–03, E2E-REQ-01 |
-| AC-11 | COM-08–COM-11, ST-13, UI-REQ-04/05, E2E-REQ-01 |
+| AC-11 | COM-08–COM-13, ST-13, UI-REQ-04/05, E2E-REQ-01 |
 | AC-12 | U-11/12, Q-01–Q-11, UI-Q-01–03, E2E-STAFF-01 |
 | AC-13 | Q-07/08/12, UI-Q-01/04, E2E-STAFF-01 |
 | AC-14 | ST-02–ST-06, UI-ST-02, E2E-STAFF-01 |
@@ -386,13 +393,14 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | AC-28 | MIG-07–MIG-10 |
 | AC-29 | UI-AUTH-07, UI-Q-05–08, UI-ST-09, UI-ADM-09, E2E-AUTH-02 |
 | AC-30 | V-01–V-08 plus responsive checks inside all four E2E files |
+| AC-31 | ADM-18/19, UI-ADM-10, E2E-ADMIN-02 |
 
 ## 17. Issue → Test Focus
 
 | Issue | Required test focus before PR approval |
 |---|---|
 | #33 Issue 1 | Contract/traceability review only; no implementation pass claim. |
-| #34 Issue 2 | U-01–06, AUTH-01–15, key AZ tests, MIG foundation. |
+| #34 Issue 2 | U-01–06, AUTH-01–16, key AZ tests, MIG foundation. |
 | #35 Issue 3 | REQ-01–13, COM Requester tests, Requester UI/E2E regression. |
 | #36 Issue 4 | Q-01–12, UI-Q suite, Queue responsive evidence. |
 | #37 Issue 5 | ST/NOTE/COM staff tests, UI-ST, Staff E2E. |

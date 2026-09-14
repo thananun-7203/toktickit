@@ -83,6 +83,8 @@ List APIs that paginate return:
 
 Purpose: authenticate an active user.
 
+Origin requirement: this state-changing unauthenticated endpoint is still covered by section 1.3. The server checks `Origin` **before** credential lookup/rate-limit/session work; wrong, missing, or `Origin: null` returns `403` and creates no session.
+
 Request:
 
 ```json
@@ -204,7 +206,7 @@ Errors: `400` field validation, `401` current password/session invalid, `500` sa
 
 ## 3. Reference Data API
 
-These endpoints continue to serve Create Ticket/filters. In Lab 3 they require an authenticated user unless an implementation PR explicitly documents a narrower public need.
+These endpoints continue to serve Create Ticket/filters. In Lab 3 they are authenticated-only and available to `REQUESTER`, `IT_STAFF`, and `ADMINISTRATOR`. Unauthenticated access returns `401`; an implementation PR must not make these endpoints public without a reviewed contract change.
 
 ### 3.1 GET `/api/v1/categories`
 
@@ -388,6 +390,8 @@ Behavior:
 
 - Set `problemAppearsResolvedAt` only when null.
 - Do **not** change status.
+- Allowed current statuses: `New`, `Open`, `In Progress`, `Waiting for Requester`, `Reopened`.
+- Current status `Resolved`, `Closed`, or `Cancelled` → `409 RESOLUTION_INDICATION_NOT_ALLOWED` with no mutation.
 - Repeated call while already set is idempotent and returns the existing indication.
 - If staff later transitions the Ticket to `Reopened`, that status mutation clears `problemAppearsResolvedAt`; the Requester may create a fresh indication afterward.
 
@@ -640,6 +644,7 @@ Rules:
 - Admin cannot set own `isActive=false` → `409 SELF_DEACTIVATION_FORBIDDEN`.
 - Changing/deactivating the last active Administrator so zero active Administrators remain → `409 LAST_ACTIVE_ADMIN_REQUIRED`.
 - Role change from Administrator to another role counts toward last-admin safety.
+- If the target user currently owns one or more Tickets, setting `isActive=false` or changing role to `REQUESTER` → `409 ASSIGNED_TICKETS_REQUIRE_REASSIGNMENT`; neither the user nor any Ticket is mutated. The Tickets must be reassigned through the staff owner endpoint first.
 - No delete behavior.
 
 Success `200`: updated safe user object.

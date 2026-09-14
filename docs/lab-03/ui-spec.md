@@ -255,10 +255,12 @@ States:
 
 ### Problem Appears Resolved
 
-If not yet indicated:
+If not yet indicated **and** current status is `New`, `Open`, `In Progress`, `Waiting for Requester`, or `Reopened`:
 
 - Secondary/outline action `Problem Appears Resolved`.
 - Confirmation dialog/panel explicitly states this does **not** formally close the Ticket.
+
+If current status is `Resolved`, `Closed`, or `Cancelled`, do not show the action. The formal staff status is already terminal for this indication contract; a direct API attempt is rejected with `409`.
 
 If already indicated:
 
@@ -479,6 +481,7 @@ Safety feedback:
 
 - self-deactivation blocked with explicit explanation.
 - last active Administrator role/deactivation blocked with explicit explanation.
+- deactivating or changing an assigned IT Staff/Administrator to Requester is blocked while that user owns Tickets; show a clear `Reassign owned tickets before changing this account` conflict message and keep the form/user state unchanged.
 - no Delete action anywhere in Lab 3.
 
 ### Mobile User Management

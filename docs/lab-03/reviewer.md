@@ -11,7 +11,7 @@
 
 | Lab 3 Issue | GitHub Issue | Planned feature scope | PR | Reviewer / verdict |
 |---|---|---|---|---|
-| Issue 1 | [#33](https://github.com/thananun-7203/toktickit/issues/33) | Sprint 3 Engineering Contract & Test Plan | [#41](https://github.com/thananun-7203/toktickit/pull/41) | Review requested / pending verdict |
+| Issue 1 | [#33](https://github.com/thananun-7203/toktickit/issues/33) | Sprint 3 Engineering Contract & Test Plan | [#41](https://github.com/thananun-7203/toktickit/pull/41) | Changes requested — round 2 fixes applied; re-review pending |
 | Issue 2 | [#34](https://github.com/thananun-7203/toktickit/issues/34) | User Migration, Authentication & Authorization Foundation | Pending | Pending |
 | Issue 3 | [#35](https://github.com/thananun-7203/toktickit/issues/35) | Authenticated Requester & Lab 2 Regression | Pending | Pending |
 | Issue 4 | [#36](https://github.com/thananun-7203/toktickit/issues/36) | IT Staff Ticket Queue | Pending | Pending |
@@ -86,11 +86,13 @@ The first four documents are designed to exist before the main Lab 3 implementat
 
 ### Reviewer feedback
 
-`Tanaboonnnnn` submitted **Changes requested**. The requested contract fixes are: make attachment permissions consistent across all documents; choose one Public Comment response/loading shape; make the bcrypt rule byte-safe for multibyte passwords; define how `Problem Appears Resolved` behaves when a Ticket is reopened; use the real staging/Issue-link workflow rather than relying on a closing keyword; remove or fully define the extra Unassign scope; choose absolute vs idle session expiry; define missing/`null` Origin behavior; strengthen seed idempotency so reruns do not reset mutable state; and leave the contract-agreement DoD item unchecked until re-review is approved.
+Round 1 — `Tanaboonnnnn` submitted **Changes requested**. The requested contract fixes were: make attachment permissions consistent across all documents; choose one Public Comment response/loading shape; make the bcrypt rule byte-safe for multibyte passwords; define how `Problem Appears Resolved` behaves when a Ticket is reopened; use the real staging/Issue-link workflow rather than relying on a closing keyword; remove or fully define the extra Unassign scope; choose absolute vs idle session expiry; define missing/`null` Origin behavior; strengthen seed idempotency so reruns do not reset mutable state; and leave the contract-agreement DoD item unchecked until re-review is approved.
+
+Round 2 — after those fixes, `Tanaboonnnnn` again submitted **Changes requested** with two blocking contradictions and four polish items: (1) preserve the Ticket-owner invariant when Admin deactivates/demotes an assigned owner, (2) remove the Reference Data API escape hatch and keep Categories/Related Systems authenticated-only, (3) choose one migration id strategy rather than preserve-id-or-map, (4) test Origin protection directly on Login POST, (5) define which Ticket statuses allow `Problem Appears Resolved`, and (6) update this review record so it no longer says the verdict is simply pending.
 
 ### How I responded
 
-The requested contract changes are being resolved in PR #41 before Issue 2 implementation begins. The extra Unassign action was removed from Lab 3 rather than expanding the workflow with additional status rules. The final response and verdict will be updated after the reviewer re-review occurs.
+Round 1 was resolved before Issue 2 implementation began, including removing the extra Unassign action rather than expanding the workflow. Round 2 is addressed by blocking deactivate/demote-to-Requester for users who still own Tickets (`409 ASSIGNED_TICKETS_REQUIRE_REASSIGNMENT`), locking Reference Data APIs to authenticated roles, preserving `DevelopmentRequester.id` exactly as migrated `User.id`, adding direct Login Origin tests, and limiting `Problem Appears Resolved` to `New`, `Open`, `In Progress`, `Waiting for Requester`, and `Reopened`. Final verdict remains pending until the next re-review is submitted.
 
 ### Final verdict
 

@@ -68,6 +68,7 @@ Legend: **Y** = permitted, **Own** = only owned/submitted resource, **N** = forb
 |---|---:|---:|---:|
 | Sign in / sign out / read own session | Y | Y | Y |
 | Change own password | Y | Y | Y |
+| Read Categories / Related Systems reference data | Y | Y | Y |
 | Create Ticket | Y | N | N |
 | List Requester tickets | Own | N | N |
 | Open Requester Ticket Detail | Own | N | N |
@@ -126,7 +127,7 @@ Lab 3 keeps Administrator and IT Staff responsibilities conceptually separate in
 | FR-16 | An authenticated Requester can list only their own Tickets with Lab 2 search/filter/sort/pagination behavior preserved. |
 | FR-17 | An authenticated Requester can open only their own Ticket Detail and use permitted Lab 2 attachment actions. |
 | FR-18 | A Requester can read and append Public Comments on their own Ticket. |
-| FR-19 | A Requester can indicate that their own reported problem appears resolved. |
+| FR-19 | A Requester can indicate that their own reported problem appears resolved only while the Ticket is in an allowed non-terminal status defined by BR-26. |
 | FR-20 | A Requester cannot formally set Ticket status to `Resolved` or `Closed`. |
 
 ### 5.4 IT Staff Ticket Queue
@@ -161,7 +162,7 @@ Lab 3 keeps Administrator and IT Staff responsibilities conceptually separate in
 | FR-36 | Administrator can list users showing Name, Email, Role, Status, and Edit action. |
 | FR-37 | Administrator can search users by name or email and optionally filter by role. |
 | FR-38 | Administrator can create a user with name, unique email, exactly one permitted role, activation state, and initial password. |
-| FR-39 | Administrator can edit user name, email, role, and activation state. |
+| FR-39 | Administrator can edit user name, email, role, and activation state subject to Administrator-safety and assigned-owner invariants. |
 | FR-40 | Administrator can set a new initial password that requires change at the user's next login. |
 | FR-41 | The system prevents duplicate email addresses and invalid role values. |
 | FR-42 | The system prevents an Administrator from deactivating their own account. |
@@ -219,7 +220,7 @@ Lab 3 keeps Administrator and IT Staff responsibilities conceptually separate in
 
 | ID | Rule |
 |---|---|
-| BR-26 | A Requester may set `problemAppearsResolvedAt` for their own Ticket. This is an indication only and does not change Ticket status. |
+| BR-26 | A Requester may set `problemAppearsResolvedAt` for their own Ticket only while status is `New`, `Open`, `In Progress`, `Waiting for Requester`, or `Reopened`. The indication does not change Ticket status. Requests in `Resolved`, `Closed`, or `Cancelled` return `409` with no mutation. |
 | BR-27 | Repeating the action while the indication is already set is idempotent and retains the original timestamp. Any formal transition to `Reopened` clears `problemAppearsResolvedAt`; the Requester may set a fresh indication again afterward. |
 | BR-28 | Requesters cannot directly call the staff status-transition endpoint. |
 
@@ -232,6 +233,7 @@ Lab 3 keeps Administrator and IT Staff responsibilities conceptually separate in
 | BR-31 | The system rejects deactivation or role change of the last active Administrator when it would leave zero active Administrators. |
 | BR-32 | Users are deactivated rather than deleted. User deletion is not exposed by the API. |
 | BR-33 | Setting a new initial password sets `mustChangePassword=true`; existing authenticated sessions for that target user are invalidated so the new credential state takes effect safely. |
+| BR-34 | If a user currently owns one or more Tickets, Administrator User Management cannot deactivate that user or change their role to `REQUESTER`. The operation returns `409 ASSIGNED_TICKETS_REQUIRE_REASSIGNMENT` with no user/Ticket mutation; all owned Tickets must be reassigned first. |
 
 ## 7. Ticket Status Transition Matrix
 
@@ -301,7 +303,7 @@ The Lab 2 database is evolved in place. Existing Ticket and Attachment rows are 
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | Int PK | Existing DevelopmentRequester ids should be preserved where migration permits so Ticket ownership remapping is deterministic. |
+| `id` | Int PK | Every existing `DevelopmentRequester.id` is preserved exactly as the corresponding migrated `User.id`; new Staff/Admin ids are allocated above the migrated maximum. |
 | `name` | String | Required, trimmed, 1–100 chars. |
 | `email` | String unique | Normalized lowercase. |
 | `passwordHash` | String | Never plaintext. |
@@ -348,7 +350,7 @@ Recommended indexes: `requesterId`, `ownerId`, `status`, `itPriority`, `createdA
 ### 9.2 Migration Steps
 
 1. Add User/role/password/session and operational Ticket/comment/note structures in a migration-safe form.
-2. Copy/evolve each Lab 2 `DevelopmentRequester` into a `User` with role `REQUESTER`, preserving ids or creating an explicit old→new id mapping.
+2. Copy/evolve each Lab 2 `DevelopmentRequester` into a `User` with role `REQUESTER` while preserving the numeric id exactly (`User.id = DevelopmentRequester.id`). After explicit-id inserts, advance the User id sequence/identity to at least the migrated maximum before creating new Staff/Admin users. Lab 3 does not use an alternate old→new requester-id mapping strategy.
 3. Assign documented local initial passwords as hashes and set `mustChangePassword=true` for migrated Requesters.
 4. Repoint each existing Ticket requester FK to the corresponding User; verify counts and ownership before removing the obsolete relation/model.
 5. Preserve existing Ticket Number, Summary, Description, Requested Priority, status, Category, Related System, timestamps, and Attachment rows.
@@ -363,6 +365,7 @@ Recommended indexes: `requesterId`, `ownerId`, `status`, `itPriority`, `createdA
 - Ticket count before migration = Ticket count after migration.
 - Attachment count before migration = Attachment count after migration.
 - Every pre-Lab-3 Ticket remains linked to the same logical Requester email/name.
+- Every migrated Requester keeps the same numeric id, so each pre-Lab-3 `Ticket.requesterId` continues to identify the same person after its FK is repointed to `User`.
 - Existing removed attachments keep `removedAt` and `removalReason`.
 - No plaintext password is introduced during migration/seed.
 
@@ -430,7 +433,7 @@ Error categories are deliberately distinct: `400` invalid input, `401` unauthent
 | AC-08 | All Lab 2 Requester create/list/detail/search/filter/sort/pagination behaviors work with authenticated identity. |
 | AC-09 | Lab 2 attachment upload/download/soft-removal/removal-reason and ownership protections still work after migration. |
 | AC-10 | Requester can post/read Public Comments on own Ticket; another Requester cannot read them. |
-| AC-11 | Requester can mark Problem Appears Resolved without changing formal Ticket status or gaining status-transition permission; a later formal transition to `Reopened` clears the stale indication. |
+| AC-11 | Requester can mark Problem Appears Resolved only in `New`, `Open`, `In Progress`, `Waiting for Requester`, or `Reopened`; the action never changes formal Ticket status, terminal-state attempts are rejected, and a later formal transition to `Reopened` clears any stale indication. |
 | AC-12 | IT Staff Queue supports documented search/filters/sort/pagination and returns consistent metadata. |
 | AC-13 | Queue distinguishes assigned/unassigned Tickets and shows Requested Priority, IT Priority, Status, and Owner consistently. |
 | AC-14 | IT Staff/Administrator can claim/assign/reassign only to an active permitted owner. |
@@ -450,6 +453,7 @@ Error categories are deliberately distinct: `400` invalid input, `401` unauthent
 | AC-28 | Lab 3 seed is idempotent: reruns do not create duplicates, still satisfy required account/demo-data availability, and do not reset mutable password/role/activation/Ticket workflow state that was changed after the first seed. |
 | AC-29 | Major Lab 3 screens provide meaningful loading/validation/success/empty/no-results/forbidden/failure feedback. |
 | AC-30 | Major Lab 3 screens are usable at desktop, tablet, and mobile sizes with no page-level horizontal overflow and accessible labels/focus behavior. |
+| AC-31 | If an active IT Staff/Administrator owns one or more Tickets, Administrator User Management rejects deactivation or demotion to `REQUESTER` with `409 ASSIGNED_TICKETS_REQUIRE_REASSIGNMENT` until those Tickets are reassigned. |
 
 Every AC must map to at least one planned test in `tests.md` before implementation PRs are completed.
 
@@ -494,3 +498,5 @@ Sprint 3 is product-complete only when all applicable items below are true:
 | D-08 | User list pagination is not required in Lab 3. | Handout explicitly excludes mandatory Admin pagination. |
 | D-09 | Queue default order is most recently updated first, tie-break by id descending. | Operational queues prioritize recent activity and remain deterministic. |
 | D-10 | Issue 1 documents planned contracts; final statuses/evidence are updated only from actual implementation/test/review results. | Prevents documentation from claiming work before it exists. |
+| D-11 | Lab 2 Requester ids are preserved exactly during `DevelopmentRequester → User` migration. | Removes migration ambiguity, keeps existing `Ticket.requesterId` values stable, and makes ownership verification deterministic. |
+| D-12 | `Problem Appears Resolved` is allowed only in non-terminal workflow states: `New`, `Open`, `In Progress`, `Waiting for Requester`, and `Reopened`. | Prevents a Requester from adding a redundant/confusing resolution indication after staff has already formally resolved, closed, or cancelled the Ticket. |
