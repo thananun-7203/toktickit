@@ -2,15 +2,15 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import crypto from "node:crypto";
 import multer from "multer";
+import { UserRole } from "@prisma/client";
 import { getPrisma } from "./prisma.js";
-import { filterActiveRequesters } from "./requesterFilter.js";
-import { requireDevRequester } from "./devRequester.js";
 import { authRouter } from "./authRoutes.js";
 import {
   CLIENT_ORIGIN,
   requireApprovedOrigin,
   requireAuth,
   requirePasswordChanged,
+  requireRole,
 } from "./auth.js";
 import { generateTicketNumber, isTicketNumberConflict } from "./ticketNumber.js";
 import { validateTicketInput } from "./ticketValidation.js";
@@ -21,22 +21,6 @@ import {
   safeStorageFileName,
   validateAttachmentFiles,
 } from "./attachmentValidation.js";
-
-type DevRequester = {
-  id: number;
-  name: string;
-  email: string;
-  isActive: boolean;
-};
-
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace Express {
-    interface Locals {
-      devRequester?: DevRequester;
-    }
-  }
-}
 
 // The Express app is exported separately from app.listen() (see index.ts) so
 // Supertest can import `app` without opening a port. Do not merge these files.
@@ -103,29 +87,6 @@ app.get("/api/categories", requireAuth, requirePasswordChanged, async (_req: Req
   }
 });
 
-// ---------------------------------------------------------------------------
-// Issue 2 — temporary Development Requester compatibility context.
-// IMPORTANT: this now reads the real User table and therefore must be removed
-// together with the selector/header identity bridge in Issue #35 before final
-// Lab 3 integration. It remains only to preserve the Lab 2 UI during Issue 2.
-// ---------------------------------------------------------------------------
-app.get("/api/v1/requesters", async (_req: Request, res: Response) => {
-  try {
-    const prisma = getPrisma();
-    const requesters = await prisma.user.findMany({
-      where: { role: "REQUESTER" },
-      select: { id: true, name: true, email: true, isActive: true },
-      orderBy: { id: "asc" },
-    });
-    // Only active requesters are returned (BR-6); the inactive one is used for
-    // isolation testing and must not be selectable.
-    const active = filterActiveRequesters(requesters);
-    res.json(active);
-  } catch {
-    res.status(500).json({ error: "Unable to load requesters" });
-  }
-});
-
 app.get("/api/v1/categories", requireAuth, requirePasswordChanged, async (_req: Request, res: Response) => {
   try {
     const prisma = getPrisma();
@@ -153,15 +114,17 @@ app.get("/api/v1/related-systems", requireAuth, requirePasswordChanged, async (_
 });
 
 // ---------------------------------------------------------------------------
-// Issue 3 — Create Ticket
+// Lab 3 Issue 3 — Create Ticket under authenticated Requester identity.
 // POST /api/v1/tickets validates the payload (BR-3), generates the official
 // Ticket Number (BR-2), and persists a New ticket owned by the acting requester
-// (BR-1/BR-7). Identity is provided by the requireDevRequester middleware.
+// (BR-1/BR-7). Client-supplied requester identity is never trusted.
 // ---------------------------------------------------------------------------
 app.post(
   "/api/v1/tickets",
   requireApprovedOrigin,
-  requireDevRequester,
+  requireAuth,
+  requirePasswordChanged,
+  requireRole(UserRole.REQUESTER),
   async (req: Request, res: Response) => {
     try {
       const errors = validateTicketInput(req.body);
@@ -190,7 +153,7 @@ app.post(
         return;
       }
 
-      const requester = res.locals.devRequester!;
+      const requester = res.locals.authUser!;
 
       // Race-safe create: if two concurrent requests allocate the same
       // TKT-YYYY-NNNNN, the unique constraint (P2002) will reject the second.
@@ -241,7 +204,12 @@ app.post(
 // Query: search (summary contains, case-insensitive), categoryId,
 // relatedSystemId, sort (newest|oldest|summary_asc), page, pageSize.
 // ---------------------------------------------------------------------------
-app.get("/api/v1/tickets", requireDevRequester, async (req: Request, res: Response) => {
+app.get(
+  "/api/v1/tickets",
+  requireAuth,
+  requirePasswordChanged,
+  requireRole(UserRole.REQUESTER),
+  async (req: Request, res: Response) => {
   try {
     const { errors, parsed } = validateTicketQuery(req.query as Record<string, unknown>);
     if (Object.keys(errors).length > 0) {
@@ -250,7 +218,7 @@ app.get("/api/v1/tickets", requireDevRequester, async (req: Request, res: Respon
     }
     const q = parsed!;
     const prisma = getPrisma();
-    const requester = res.locals.devRequester!;
+    const requester = res.locals.authUser!;
 
     const where: Record<string, unknown> = { requesterId: requester.id };
     if (q.search) {
@@ -293,9 +261,15 @@ app.get("/api/v1/tickets", requireDevRequester, async (req: Request, res: Respon
   } catch {
     res.status(500).json({ error: { message: "Unable to load tickets" } });
   }
-});
+  },
+);
 
-app.get("/api/v1/tickets/:id", requireDevRequester, async (req: Request, res: Response) => {
+app.get(
+  "/api/v1/tickets/:id",
+  requireAuth,
+  requirePasswordChanged,
+  requireRole(UserRole.REQUESTER),
+  async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     if (!Number.isInteger(id) || id <= 0) {
@@ -304,7 +278,7 @@ app.get("/api/v1/tickets/:id", requireDevRequester, async (req: Request, res: Re
     }
 
     const prisma = getPrisma();
-    const requester = res.locals.devRequester!;
+    const requester = res.locals.authUser!;
     const ticket = await prisma.ticket.findFirst({
       where: { id, requesterId: requester.id },
       include: {
@@ -334,13 +308,16 @@ app.get("/api/v1/tickets/:id", requireDevRequester, async (req: Request, res: Re
   } catch {
     res.status(500).json({ error: { message: "Unable to load ticket" } });
   }
-});
+  },
+);
 
 // Issue 5 — Upload attachments to an owned ticket.
 app.post(
   "/api/v1/tickets/:id/attachments",
   requireApprovedOrigin,
-  requireDevRequester,
+  requireAuth,
+  requirePasswordChanged,
+  requireRole(UserRole.REQUESTER),
   parseAttachmentUpload,
   async (req: Request, res: Response) => {
     const writtenKeys: string[] = [];
@@ -352,7 +329,7 @@ app.post(
       }
 
       const prisma = getPrisma();
-      const requester = res.locals.devRequester!;
+      const requester = res.locals.authUser!;
       const ticket = await prisma.ticket.findFirst({
         where: { id: ticketId, requesterId: requester.id },
         select: { id: true },
@@ -473,7 +450,8 @@ app.post(
 // Issue 5 — Download an active owned attachment via the storage proxy.
 app.get(
   "/api/v1/attachments/:id/download",
-  requireDevRequester,
+  requireAuth,
+  requirePasswordChanged,
   async (req: Request, res: Response) => {
     try {
       const id = Number(req.params.id);
@@ -482,9 +460,11 @@ app.get(
         return;
       }
 
-      const requester = res.locals.devRequester!;
+      const user = res.locals.authUser!;
       const attachment = await getPrisma().attachment.findFirst({
-        where: { id, ticket: { requesterId: requester.id } },
+        where: user.role === UserRole.REQUESTER
+          ? { id, ticket: { requesterId: user.id } }
+          : { id },
       });
       if (!attachment) {
         res.status(404).json({ error: { message: "Attachment not found" } });
@@ -517,7 +497,9 @@ app.get(
 app.delete(
   "/api/v1/attachments/:id",
   requireApprovedOrigin,
-  requireDevRequester,
+  requireAuth,
+  requirePasswordChanged,
+  requireRole(UserRole.REQUESTER),
   async (req: Request, res: Response) => {
     try {
       const id = Number(req.params.id);
@@ -527,7 +509,7 @@ app.delete(
       }
 
       const prisma = getPrisma();
-      const requester = res.locals.devRequester!;
+      const requester = res.locals.authUser!;
       const attachment = await prisma.attachment.findFirst({
         where: { id, ticket: { requesterId: requester.id } },
       });
@@ -577,6 +559,215 @@ app.delete(
       res.json(updated);
     } catch {
       res.status(500).json({ error: { message: "Unable to remove attachment" } });
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Lab 3 Issue 3 — Public Comments.
+// Requesters may read/post only on their own Ticket. Staff/Admin access to the
+// same public channel is allowed by the approved authorization matrix so later
+// operational UI can reuse the endpoint without changing its security model.
+// ---------------------------------------------------------------------------
+app.get(
+  "/api/v1/tickets/:id/public-comments",
+  requireAuth,
+  requirePasswordChanged,
+  async (req: Request, res: Response) => {
+    try {
+      const ticketId = Number(req.params.id);
+      if (!Number.isInteger(ticketId) || ticketId <= 0) {
+        res.status(404).json({ error: { message: "Ticket not found" } });
+        return;
+      }
+
+      const user = res.locals.authUser!;
+      const prisma = getPrisma();
+      const ticket = await prisma.ticket.findFirst({
+        where: user.role === UserRole.REQUESTER
+          ? { id: ticketId, requesterId: user.id }
+          : { id: ticketId },
+        select: { id: true },
+      });
+      if (!ticket) {
+        res.status(404).json({ error: { message: "Ticket not found" } });
+        return;
+      }
+
+      const items = await prisma.publicComment.findMany({
+        where: { ticketId },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          author: { select: { id: true, name: true, role: true } },
+        },
+      });
+      res.json({ items });
+    } catch {
+      res.status(500).json({ error: { message: "Unable to load public comments" } });
+    }
+  },
+);
+
+app.post(
+  "/api/v1/tickets/:id/public-comments",
+  requireApprovedOrigin,
+  requireAuth,
+  requirePasswordChanged,
+  async (req: Request, res: Response) => {
+    try {
+      const ticketId = Number(req.params.id);
+      if (!Number.isInteger(ticketId) || ticketId <= 0) {
+        res.status(404).json({ error: { message: "Ticket not found" } });
+        return;
+      }
+
+      const user = res.locals.authUser!;
+      const prisma = getPrisma();
+      const ticket = await prisma.ticket.findFirst({
+        where: user.role === UserRole.REQUESTER
+          ? { id: ticketId, requesterId: user.id }
+          : { id: ticketId },
+        select: { id: true },
+      });
+      if (!ticket) {
+        res.status(404).json({ error: { message: "Ticket not found" } });
+        return;
+      }
+
+      const content = typeof req.body?.content === "string" ? req.body.content.trim() : "";
+      if (!content || content.length > 2000) {
+        res.status(400).json({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Validation failed",
+            fields: {
+              content: !content
+                ? "Comment is required"
+                : "Comment must be at most 2000 characters",
+            },
+          },
+        });
+        return;
+      }
+
+      const created = await prisma.publicComment.create({
+        data: { ticketId, authorId: user.id, content },
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          author: { select: { id: true, name: true, role: true } },
+        },
+      });
+      res.status(201).json(created);
+    } catch {
+      res.status(500).json({ error: { message: "Unable to post public comment" } });
+    }
+  },
+);
+
+const RESOLUTION_INDICATION_ALLOWED_STATUSES = new Set([
+  "New",
+  "Open",
+  "In Progress",
+  "Waiting for Requester",
+  "Reopened",
+]);
+
+app.post(
+  "/api/v1/tickets/:id/problem-appears-resolved",
+  requireApprovedOrigin,
+  requireAuth,
+  requirePasswordChanged,
+  requireRole(UserRole.REQUESTER),
+  async (req: Request, res: Response) => {
+    try {
+      const ticketId = Number(req.params.id);
+      if (!Number.isInteger(ticketId) || ticketId <= 0) {
+        res.status(404).json({ error: { message: "Ticket not found" } });
+        return;
+      }
+
+      const requester = res.locals.authUser!;
+      const prisma = getPrisma();
+      const ticket = await prisma.ticket.findFirst({
+        where: { id: ticketId, requesterId: requester.id },
+        select: { id: true, status: true, problemAppearsResolvedAt: true },
+      });
+      if (!ticket) {
+        res.status(404).json({ error: { message: "Ticket not found" } });
+        return;
+      }
+
+      if (!RESOLUTION_INDICATION_ALLOWED_STATUSES.has(ticket.status)) {
+        res.status(409).json({
+          error: {
+            code: "RESOLUTION_INDICATION_NOT_ALLOWED",
+            message: "Resolution indication is not allowed for the current Ticket status",
+          },
+        });
+        return;
+      }
+
+      if (ticket.problemAppearsResolvedAt) {
+        res.json({
+          ticketId: ticket.id,
+          problemAppearsResolvedAt: ticket.problemAppearsResolvedAt,
+          status: ticket.status,
+        });
+        return;
+      }
+
+      const indicatedAt = new Date();
+      const updated = await prisma.ticket.updateMany({
+        where: {
+          id: ticket.id,
+          requesterId: requester.id,
+          problemAppearsResolvedAt: null,
+          status: { in: Array.from(RESOLUTION_INDICATION_ALLOWED_STATUSES) },
+        },
+        data: { problemAppearsResolvedAt: indicatedAt },
+      });
+
+      // A concurrent staff transition can change status between the initial
+      // read and this guarded write. Re-read and return a safe conflict rather
+      // than setting an indication against a terminal state.
+      if (updated.count === 0) {
+        const current = await prisma.ticket.findFirst({
+          where: { id: ticket.id, requesterId: requester.id },
+          select: { id: true, status: true, problemAppearsResolvedAt: true },
+        });
+        if (!current) {
+          res.status(404).json({ error: { message: "Ticket not found" } });
+          return;
+        }
+        if (!RESOLUTION_INDICATION_ALLOWED_STATUSES.has(current.status)) {
+          res.status(409).json({
+            error: {
+              code: "RESOLUTION_INDICATION_NOT_ALLOWED",
+              message: "Resolution indication is not allowed for the current Ticket status",
+            },
+          });
+          return;
+        }
+        res.json({
+          ticketId: current.id,
+          problemAppearsResolvedAt: current.problemAppearsResolvedAt,
+          status: current.status,
+        });
+        return;
+      }
+
+      res.json({
+        ticketId: ticket.id,
+        problemAppearsResolvedAt: indicatedAt,
+        status: ticket.status,
+      });
+    } catch {
+      res.status(500).json({ error: { message: "Unable to record resolution indication" } });
     }
   },
 );

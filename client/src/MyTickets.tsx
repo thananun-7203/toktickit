@@ -16,7 +16,6 @@ import {
 type LoadState = "idle" | "loading" | "success" | "error";
 
 interface MyTicketsProps {
-  requesterId: number;
   onCreateTicket?: () => void;
   onOpenTicket?: (ticketId: number) => void;
 }
@@ -30,7 +29,7 @@ function statusClass(status: string): string {
   return `status-${status.toLowerCase().replace(/\s+/g, "-")}`;
 }
 
-export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }: MyTicketsProps) {
+export default function MyTickets({ onCreateTicket, onOpenTicket }: MyTicketsProps) {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [totalItems, setTotalItems] = useState(0);
@@ -88,7 +87,7 @@ export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }:
     if (filterCategory) params.categoryId = Number(filterCategory);
     if (filterSystem) params.relatedSystemId = Number(filterSystem);
     try {
-      const res = await getTickets(params, requesterId);
+      const res = await getTickets(params);
       setTickets(res.items);
       setTotalItems(res.totalItems);
       setTotalPages(res.totalPages);
@@ -97,7 +96,7 @@ export default function MyTickets({ requesterId, onCreateTicket, onOpenTicket }:
       setErrorMsg(err instanceof Error ? err.message : "Unable to load tickets");
       setLoadState("error");
     }
-  }, [debouncedSearch, filterCategory, filterSystem, sort, page, pageSize, requesterId]);
+  }, [debouncedSearch, filterCategory, filterSystem, sort, page, pageSize]);
 
   useEffect(() => {
     fetchTickets();

@@ -39,10 +39,11 @@ describe("TicketDetail", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.spyOn(api, "getTicketDetail").mockResolvedValue(DETAIL);
+    vi.spyOn(api, "getPublicComments").mockResolvedValue([]);
   });
 
   it("UI-6/UI-9/UI-12: renders Requested Priority and attachment states", async () => {
-    render(<TicketDetail ticketId={12} requesterId={1} onBack={vi.fn()} />);
+    render(<TicketDetail ticketId={12} onBack={vi.fn()} />);
 
     expect(await screen.findByText("TKT-2026-00012")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Ticket Detail/i })).toBeInTheDocument();
@@ -71,7 +72,7 @@ describe("TicketDetail", () => {
     vi.spyOn(api, "getTicketDetail").mockRejectedValue(new api.ApiError("Ticket not found", 404));
     const user = userEvent.setup();
 
-    render(<TicketDetail ticketId={999} requesterId={1} onBack={onBack} />);
+    render(<TicketDetail ticketId={999} onBack={onBack} />);
 
     expect(await screen.findByText(/Ticket not found/i)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Back to My Tickets/i }));
@@ -101,13 +102,13 @@ describe("TicketDetail", () => {
         ],
       });
 
-    render(<TicketDetail ticketId={12} requesterId={1} onBack={vi.fn()} />);
+    render(<TicketDetail ticketId={12} onBack={vi.fn()} />);
     await screen.findByText("active.pdf");
     await user.click(screen.getByRole("button", { name: "Remove active.pdf" }));
 
     expect(promptSpy).toHaveBeenCalled();
     expect(confirmSpy).toHaveBeenCalled();
-    expect(removeSpy).toHaveBeenCalledWith(3, 1, "No longer needed");
+    expect(removeSpy).toHaveBeenCalledWith(3, "No longer needed");
     expect(await screen.findByText(/Attachment removed/i)).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByTestId("attachment-3")).toHaveTextContent("Removed");
@@ -121,7 +122,7 @@ describe("TicketDetail", () => {
     const confirmSpy = vi.spyOn(window, "confirm");
     const removeSpy = vi.spyOn(api, "removeAttachment");
 
-    render(<TicketDetail ticketId={12} requesterId={1} onBack={vi.fn()} />);
+    render(<TicketDetail ticketId={12} onBack={vi.fn()} />);
     await screen.findByText("active.pdf");
     await user.click(screen.getByRole("button", { name: "Remove active.pdf" }));
 
@@ -133,14 +134,14 @@ describe("TicketDetail", () => {
   it("uploads selected valid attachments and refreshes detail", async () => {
     const user = userEvent.setup();
     const uploadSpy = vi.spyOn(api, "uploadAttachments").mockResolvedValue(DETAIL.attachments);
-    render(<TicketDetail ticketId={12} requesterId={1} onBack={vi.fn()} />);
+    render(<TicketDetail ticketId={12} onBack={vi.fn()} />);
     await screen.findByText("TKT-2026-00012");
 
     const file = new File(["pdf bytes"], "evidence.pdf", { type: "application/pdf" });
     await user.upload(screen.getByLabelText(/Add attachments/i), file);
     await user.click(screen.getByRole("button", { name: /Upload selected/i }));
 
-    expect(uploadSpy).toHaveBeenCalledWith(12, [file], 1);
+    expect(uploadSpy).toHaveBeenCalledWith(12, [file]);
     expect(await screen.findByText(/Attachment upload complete/i)).toBeInTheDocument();
   });
 });

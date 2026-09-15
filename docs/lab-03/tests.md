@@ -77,8 +77,8 @@ The final implementation may consolidate closely related tests, but `tests.md` m
 | U-04 | BR-05 | `auth.unit.test.ts` | valid ASCII and multibyte password boundaries | accepted at ≤72 bytes; Thai/emoji input exceeding 72 bytes rejected even when under 72 characters | **Pass** |
 | U-05 | BR-06 | `auth.unit.test.ts` | new password confirmation mismatch | rejected | **Pass via AUTH-07 API coverage** |
 | U-06 | BR-06 | `auth.unit.test.ts` | new password equals current | rejected | **Pass via `auth.api.test.ts`** |
-| U-07 | BR-19 | `comments-notes.api.test.ts` or helper test | blank/whitespace comment/note | rejected | Planned |
-| U-08 | BR-19 | helper test | 2,000 chars accepted / 2,001 rejected | correct boundary | Planned |
+| U-07 | BR-19 | `comments-notes.api.test.ts` | blank/whitespace Public Comment | rejected | **Pass** |
+| U-08 | BR-19 | `comments-notes.api.test.ts` | 2,000 chars accepted / 2,001 rejected for Public Comment | correct boundary | **Pass** |
 | U-09 | status matrix | `staff-ticket-detail.api.test.ts` or helper | each allowed transition | helper returns allowed | Planned |
 | U-10 | status matrix | same | disallowed/self transition | helper rejects | Planned |
 | U-11 | Queue spec | `staff-queue.api.test.ts` or helper | valid queue query parsing/defaults | deterministic parsed query | Planned |
@@ -119,9 +119,9 @@ These tests intentionally call APIs directly rather than relying on hidden front
 | AZ-06 | AC-06 | same | IT Staff → Staff Queue | allowed | Planned |
 | AZ-07 | AC-06 | same | user requiring password change → normal protected API | `403 PASSWORD_CHANGE_REQUIRED` | **Pass** |
 | AZ-08 | AC-18 | same | Requester → Internal Notes endpoint | `403`, no note content | Planned |
-| AZ-09 | AC-07 | same | Requester sends another `requesterId` in body/query/header | ignored/rejected; cannot impersonate | Planned |
-| AZ-10 | AC-07 | same | Requester opens another Requester's Ticket id | `404`, no existence leak | Planned |
-| AZ-11 | AC-09 | same | Requester opens/downloads another Requester's Attachment id | `404`, no existence leak | Planned |
+| AZ-09 | AC-07 | `requester-regression.api.test.ts` | Requester sends another `requesterId` in body/query/header, including retired development header | ignored for ownership; no session means `401`; cannot impersonate | **Pass** |
+| AZ-10 | AC-07 | `requester-regression.api.test.ts` | Requester opens another Requester's Ticket id | `404`, no existence leak | **Pass** |
+| AZ-11 | AC-09 | adapted `ticketDetail.api.test.ts` | Requester opens/downloads another Requester's Attachment id | `404`, no existence leak | **Pass** |
 | AZ-12 | AC-20 | same | IT Staff/Admin downloads active attachment on any Ticket | allowed; file returned | Planned |
 | AZ-13 | AC-20 | same | IT Staff/Admin attempts Requester attachment upload or soft-remove | `403`; no attachment mutation | Planned |
 | AZ-14 | AC-06 | same | unauthenticated request to `/api/categories`, `/api/v1/categories`, or `/api/v1/related-systems` | `401`; legacy alias and v1 reference data remain authenticated-only | **Pass** |
@@ -132,37 +132,37 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
-| REQ-01 | AC-08 | `requester-regression.api.test.ts` | create valid Ticket as Requester | `201`, generated number, status New, requester=session user | Planned |
-| REQ-02 | AC-08 | same | invalid required fields/lengths/priority | `400` field errors | Planned |
-| REQ-03 | AC-08 | same | My Tickets requester isolation | only own items | Planned |
-| REQ-04 | AC-08 | same | search Summary / Ticket Number | correct own subset | Planned |
-| REQ-05 | AC-08 | same | Category/System filter + sort + pagination | existing Lab 2 semantics preserved | Planned |
-| REQ-06 | AC-08 | same | owned Ticket Detail | metadata returned | Planned |
-| REQ-07 | AC-09 | same | valid attachment upload | succeeds; active metadata visible | Planned |
-| REQ-08 | AC-09 | same | invalid type / >5MB / >5 active | rejected, no invalid partial persistence | Planned |
-| REQ-09 | AC-09 | same | concurrent capacity race | maximum remains 5, no orphan storage for loser | Planned |
-| REQ-10 | AC-09 | same | soft remove with reason | metadata/reason retained; download blocked | Planned |
-| REQ-11 | AC-09 | same | blank removal reason | rejected; attachment active | Planned |
-| REQ-12 | AC-09 | same | concurrent removal | one success, one conflict | Planned |
-| REQ-13 | AC-15 | same | new Ticket creation | IT Priority initially equals Requested Priority | Planned |
+| REQ-01 | AC-08 | `requester-regression.api.test.ts` + adapted `tickets.api.test.ts` | create valid Ticket as Requester | `201`, generated number, status New, requester=session user | **Pass** |
+| REQ-02 | AC-08 | adapted `tickets.api.test.ts` | invalid required fields/lengths/priority | `400` field errors | **Pass** |
+| REQ-03 | AC-08 | `requester-regression.api.test.ts` + adapted `myTickets.api.test.ts` | My Tickets requester isolation | only own items | **Pass** |
+| REQ-04 | AC-08 | adapted `myTickets.api.test.ts` | search Summary / Ticket Number | correct own subset | **Pass** |
+| REQ-05 | AC-08 | adapted `myTickets.api.test.ts` | Category/System filter + sort + pagination | existing Lab 2 semantics preserved | **Pass** |
+| REQ-06 | AC-08 | `requester-regression.api.test.ts` + adapted `ticketDetail.api.test.ts` | owned Ticket Detail | metadata returned | **Pass** |
+| REQ-07 | AC-09 | adapted `ticketDetail.api.test.ts` | valid attachment upload | succeeds; active metadata visible | **Pass** |
+| REQ-08 | AC-09 | adapted `ticketDetail.api.test.ts` | invalid type / >5MB / >5 active | rejected, no invalid partial persistence | **Pass** |
+| REQ-09 | AC-09 | adapted `ticketDetail.api.test.ts` | concurrent capacity race | maximum remains 5, no orphan storage for loser | **Pass** |
+| REQ-10 | AC-09 | adapted `ticketDetail.api.test.ts` | soft remove with reason | metadata/reason retained; download blocked | **Pass** |
+| REQ-11 | AC-09 | adapted `ticketDetail.api.test.ts` | blank removal reason | rejected; attachment active | **Pass** |
+| REQ-12 | AC-09 | adapted `ticketDetail.api.test.ts` | concurrent removal | one success, one conflict | **Pass** |
+| REQ-13 | AC-15 | `requester-regression.api.test.ts` | new Ticket creation | IT Priority initially equals Requested Priority | **Pass** |
 
 ## 7. Public Comments / Requester Resolution API Tests
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
-| COM-01 | AC-10 | `comments-notes.api.test.ts` | Requester posts Public Comment to own Ticket | `201`, backend author/time | Planned |
-| COM-02 | AC-10 | same | Requester reads own Public Comments | chronological list | Planned |
-| COM-03 | AC-10 | same | other Requester reads/posts to protected Ticket | `404` | Planned |
-| COM-04 | AC-17 | same | IT Staff posts Public Comment | visible later to owning Requester | Planned |
-| COM-05 | AC-17 | same | Admin reads/posts Public Comment | allowed per matrix | Planned |
-| COM-06 | AC-19 | same | blank/whitespace comment | `400` | Planned |
-| COM-07 | AC-19 | same | comment length boundary | 2,000 accepted; 2,001 rejected | Planned |
-| COM-08 | AC-11 | same | own Requester marks Problem Appears Resolved | timestamp set, Ticket status unchanged | Planned |
-| COM-09 | AC-11 | same | repeat appears-resolved action | idempotent; original indication retained | Planned |
+| COM-01 | AC-10 | `comments-notes.api.test.ts` | Requester posts Public Comment to own Ticket | `201`, backend author/time | **Pass** |
+| COM-02 | AC-10 | same | Requester reads own Public Comments | chronological list | **Pass** |
+| COM-03 | AC-10 | same | other Requester reads/posts to protected Ticket | `404` | **Pass** |
+| COM-04 | AC-17 | same | IT Staff posts Public Comment | visible later to owning Requester | **Pass** |
+| COM-05 | AC-17 | same | Admin reads/posts Public Comment | allowed per matrix | **Pass** |
+| COM-06 | AC-19 | same | blank/whitespace comment | `400` | **Pass** |
+| COM-07 | AC-19 | same | comment length boundary | 2,000 accepted; 2,001 rejected | **Pass** |
+| COM-08 | AC-11 | same | own Requester marks Problem Appears Resolved | timestamp set, Ticket status unchanged | **Pass** |
+| COM-09 | AC-11 | same | repeat appears-resolved action | idempotent; original indication retained | **Pass** |
 | COM-10 | AC-11 | `authorization.api.test.ts` | Requester calls staff status API | `403` | Planned |
 | COM-11 | AC-11 | `staff-ticket-detail.api.test.ts` | staff transitions indicated Ticket to `Reopened` | status becomes Reopened and indication is cleared atomically | Planned |
-| COM-12 | AC-11 | `comments-notes.api.test.ts` | Requester marks own Ticket in `New`, `Open`, `In Progress`, `Waiting for Requester`, or `Reopened` | allowed; timestamp set without status change | Planned |
-| COM-13 | AC-11 | same | Requester attempts indication in `Resolved`, `Closed`, or `Cancelled` | `409 RESOLUTION_INDICATION_NOT_ALLOWED`; timestamp/status unchanged | Planned |
+| COM-12 | AC-11 | `comments-notes.api.test.ts` | Requester marks own Ticket in `New`, `Open`, `In Progress`, `Waiting for Requester`, or `Reopened` | allowed; timestamp set without status change | **Pass** |
+| COM-13 | AC-11 | same | Requester attempts indication in `Resolved`, `Closed`, or `Cancelled` | `409 RESOLUTION_INDICATION_NOT_ALLOWED`; timestamp/status unchanged | **Pass** |
 
 ## 8. IT Staff Queue API Tests
 
@@ -254,8 +254,8 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | MIG-10 | AC-28 | `seed-regression.test.ts` | seed once → mutate seeded password/role/active state/Ticket status-owner-priority → seed again | no duplicate rows and mutable state is not reset to original demo values | **Pass** |
 | MIG-11 | AC-27 | manual isolated PostgreSQL rehearsal; fixture `server/tests/lab-03/fixtures/lab2-email-collision.sql`; exact commands in §18 | Lab 2-shaped DB contains two distinct Development Requesters whose emails collide after trim+lowercase | migration aborts explicitly before User/Ticket mutation; no silent merge/overwrite/partial ownership rewrite | **Pass — manual isolated collision preflight evidence** |
 | MIG-12 | AC-27 | manual injected-failure rehearsal in §18 | force a SQL error after the Lab 3 migration has already created/copied/altered data but before `COMMIT` | whole migration transaction rolls back: no `User` table, original `DevelopmentRequester` + Ticket/Attachment rows remain, no Lab 3 Ticket columns survive | **Pass — manual post-mutation rollback evidence** |
-| REG-01 | AC-08/09 | existing Lab 2 server suite adapted/retained | full Requester regression | green | **Pass for retained Lab 2 compatibility; session-identity adaptation remains Issue #35** |
-| REG-02 | AC-08/09 | existing Lab 2 client suite adapted/retained | Requester UI regression | green | **Pass — 25/25** |
+| REG-01 | AC-08/09 | existing Lab 2 server suite adapted/retained + Lab 3 Requester regression tests | full Requester regression under authenticated session identity | green | **Pass — included in 91/91 server tests** |
+| REG-02 | AC-08/09 | existing Lab 2 client suite adapted/retained + Lab 3 Requester UI tests | Requester UI regression under authenticated shell | green | **Pass — 41/41 client tests** |
 
 ## 13. Client UI Tests
 
@@ -263,42 +263,42 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
-| UI-AUTH-01 | AC-01 | `Login.test.tsx` | render | email/password/sign-in labels | Planned |
-| UI-AUTH-02 | AC-02 | same | invalid input | field validation; no request | Planned |
-| UI-AUTH-03 | AC-01 | same | submit pending | button disabled + busy text | Planned |
-| UI-AUTH-04 | AC-02 | same | `401` | generic error | Planned |
-| UI-AUTH-05 | AC-03 | same | inactive response | safe inactive feedback | Planned |
-| UI-AUTH-06 | AC-02 | same | `429` | rate-limit feedback | Planned |
+| UI-AUTH-01 | AC-01 | `Login.test.tsx` | render | email/password/sign-in labels | **Pass** |
+| UI-AUTH-02 | AC-02 | same | invalid input | field validation; no request | **Pass** |
+| UI-AUTH-03 | AC-01 | same | submit pending | button disabled + busy text | **Pass** |
+| UI-AUTH-04 | AC-02 | same | `401` | generic error | **Pass** |
+| UI-AUTH-05 | AC-03 | same | inactive response | safe inactive feedback | **Pass** |
+| UI-AUTH-06 | AC-02 | same | `429` | rate-limit feedback | **Pass** |
 | UI-AUTH-07 | AC-29 | same | `500` | safe failure; email preserved, password cleared/prevented exposure | Planned |
 
 ### 13.2 Change Password
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
-| UI-PWD-01 | AC-04 | `ChangePassword.test.tsx` | mandatory mode | rule guidance + Logout; normal nav absent | Planned |
-| UI-PWD-02 | AC-04 | same | mismatch/weak password | inline validation | Planned |
-| UI-PWD-03 | AC-04 | same | valid submit busy/success | continue to role app | Planned |
-| UI-PWD-04 | AC-04 | same | server validation/failure | safe feedback | Planned |
+| UI-PWD-01 | AC-04 | `ChangePassword.test.tsx` | mandatory mode | rule guidance + Logout; normal nav absent | **Pass** |
+| UI-PWD-02 | AC-04 | same | mismatch/weak password | inline validation | **Pass** |
+| UI-PWD-03 | AC-04 | same | valid submit busy/success | continue to role app | **Pass** |
+| UI-PWD-04 | AC-04 | same | server validation/failure | safe feedback | **Pass** |
 
 ### 13.3 Authenticated Shell
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
-| UI-SHELL-01 | AC-06 | `AuthenticatedShell.test.tsx` | Requester | only Requester nav + name/role/logout | Planned |
+| UI-SHELL-01 | AC-06 | `AuthenticatedShell.test.tsx` | Requester | only Requester nav + name/role/logout | **Pass** |
 | UI-SHELL-02 | AC-06 | same | IT Staff | Staff nav; no Admin Users | Planned |
 | UI-SHELL-03 | AC-06 | same | Admin | Admin Users + approved destinations | Planned |
-| UI-SHELL-04 | AC-05 | same | logout | auth state cleared/login rendered | Planned |
-| UI-SHELL-05 | AC-04 | same | must-change account | Change Password gate | Planned |
+| UI-SHELL-04 | AC-05 | same | logout | auth state cleared/login rendered | **Pass** |
+| UI-SHELL-05 | AC-04 | `Login.test.tsx` + `ChangePassword.test.tsx` | must-change account | Change Password gate | **Pass** |
 
 ### 13.4 Requester Ticket Detail Extensions
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
-| UI-REQ-01 | AC-10 | `RequesterTicketDetail.test.tsx` | comments render | author/role/time/content | Planned |
-| UI-REQ-02 | AC-10/19 | same | blank comment | inline validation; no API post | Planned |
-| UI-REQ-03 | AC-10 | same | comment post failure | content preserved | Planned |
-| UI-REQ-04 | AC-11 | same | appears-resolved confirmation | explains not formal close | Planned |
-| UI-REQ-05 | AC-11 | same | indicated state | timestamp badge; status independent | Planned |
+| UI-REQ-01 | AC-10 | `RequesterTicketDetail.test.tsx` | comments render | author/role/time/content | **Pass** |
+| UI-REQ-02 | AC-10/19 | same | blank comment | inline validation; no API post | **Pass** |
+| UI-REQ-03 | AC-10 | same | comment post failure | content preserved | **Pass** |
+| UI-REQ-04 | AC-11 | same | appears-resolved confirmation | explains not formal close | **Pass** |
+| UI-REQ-05 | AC-11 | same | indicated state | timestamp badge; status independent | **Pass** |
 
 ### 13.5 Staff Queue
 
@@ -348,8 +348,8 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 |---|---|---|---|---|---|
 | E2E-AUTH-01 | AC-01–06 | `authentication.spec.ts` | invalid login → valid initial login → mandatory change → role app → logout → direct access | each auth boundary enforced | Planned |
 | E2E-AUTH-02 | AC-03/29 | same | inactive login + simulated safe backend failure | visible safe feedback | Planned |
-| E2E-REQ-01 | AC-07–11 | `requester-regression.spec.ts` | login Requester → create → list/search → detail → attachment → public comment → appears resolved | Lab2 behavior + Lab3 extension works under authenticated identity | Planned |
-| E2E-REQ-02 | AC-07/09 | same | second Requester attempts first Requester's Ticket/Attachment | protected/not found | Planned |
+| E2E-REQ-01 | AC-07–11 | `e2e/lab-03/requester-regression.spec.ts` with `playwright.lab3.config.ts` | login Requester → mandatory password change → create → list/search → detail → attachment upload/download → public comment → appears resolved → logout | Lab 2 behavior + Lab 3 extension works under authenticated identity | **Pass** |
+| E2E-REQ-02 | AC-07/09 | same | second Requester searches for first Requester's Ticket, then directly requests first Requester's Ticket/Attachment using the second Requester's browser session | UI shows no result; direct Ticket and Attachment requests return `404` | **Pass** |
 | E2E-STAFF-01 | AC-12–20 | `staff-ticket-flow.spec.ts` | login Staff → Queue search/filter → open → claim/reassign → priority → status → Public Comment → Internal Note → attachment | operational flow works | Planned |
 | E2E-STAFF-02 | AC-16/18 | same | direct forbidden transition / Requester note endpoint evidence | backend rejects safely | Planned |
 | E2E-ADMIN-01 | AC-21–26 | `user-administration.spec.ts` | login Admin → search → create user → edit → initial password reset → new user forced change | Admin flow works | Planned |
@@ -592,6 +592,50 @@ The same transaction-wrapped migration also passed the normal preservation rehea
 - Prisma schema validation: **Pass**.
 - Production dependency audit (`npm audit --omit=dev`): **0 vulnerabilities reported** after using `bcrypt` 6 and current compatible Express transitive patches. Development-tool audit findings are not claimed resolved by Issue 2 and do not alter this production-dependency result.
 - Hosted CI: **not claimed green here**; use the actual PR check result after the Issue 2 PR exists.
+
+### Issue 3 verification — Authenticated Requester & Lab 2 regression
+
+Issue #35 was verified with the existing development PostgreSQL database left untouched. DB-backed server tests used the disposable PostgreSQL 16 container `toktickit-lab3-issue3-test` on local port `5435` and the isolated database `toktickit_test_issue3`. The final browser run used a separately created fresh database `toktickit_e2e_issue3_20260915d` in the same disposable container plus an isolated SeaweedFS Compose project named `toktickit-lab3-issue3-e2e`.
+
+Final Issue 3 evidence:
+
+- **Authenticated Requester ownership:** `requester-regression.api.test.ts` proves session identity wins over client-supplied `requesterId` values in body/query and over the retired `X-Dev-Requester-Id` header. The header alone cannot authenticate, and `GET /api/v1/requesters` is retired (`404`). Runtime source scan across `client/src` and `server/src` found **0** references to the retired Development Requester selector/header/context/filter path.
+- **Lab 2 Requester regression:** adapted create/list/search/filter/sort/pagination/detail/attachment tests now use real authenticated sessions. `REQ-01`–`REQ-13` are green, including attachment capacity/removal concurrency and Requested Priority → initial IT Priority continuity.
+- **Public Comments / Requester resolution:** `COM-01`–`COM-09`, `COM-12`, and `COM-13` are green. Requesters are ownership-scoped, comment author/time comes from the backend, blank/over-limit input is rejected, allowed resolution-indication statuses preserve formal Ticket status, repeat indication is idempotent, and terminal statuses return the documented conflict. `COM-10`/`COM-11` remain intentionally planned because the formal Staff status API is Issue #37 scope.
+- **Client auth/requester UI:** Login, mandatory Change Password, authenticated shell, Requester Ticket Detail comments, comment-failure draft preservation, and resolution-indication UI are covered. The Login screen intentionally has no Forgot Password action in current scope.
+- **Server Vitest/Supertest:** **91/91 passed (14/14 test files)** using `TEST_DATABASE_URL` on the isolated Issue 3 test database.
+- **Client Vitest:** **41/41 passed (8/8 test files)**.
+- **Requester Playwright E2E:** **1/1 passed** using `e2e/playwright.lab3.config.ts`. The flow covers Requester login → mandatory password change → Create Ticket with attachment → My Tickets search → Ticket Detail → attachment download → Public Comment → Problem Appears Resolved without formal status change → responsive no-horizontal-overflow smoke checks → logout → second Requester isolation. The second Requester's browser session receives `404` for direct access to the first Requester's Ticket and active Attachment.
+- **E2E default:** running `npm test` from `e2e/` now targets the Lab 3 configuration; the old Lab 2 browser flow is retained only as explicit historical `npm run test:lab2` evidence.
+- **Server TypeScript build:** **Pass**.
+- **Client production build:** **Pass**.
+- **Prisma schema validation:** **Pass**.
+- **Production dependency audit:** `npm audit --omit=dev` reports **0 vulnerabilities** for both server and client.
+- **Disposable environment cleanup:** the Issue 3 PostgreSQL container and isolated SeaweedFS containers/volumes/network were removed after verification; the normal development PostgreSQL container/database was not reset or removed.
+- **Hosted CI / PR:** not claimed yet because the user requested that the Issue 3 PR remain unopened until explicitly authorized.
+
+Representative final commands:
+
+```powershell
+# Server regression (separate test DB only)
+$env:TEST_DATABASE_URL='postgresql://toktickit:toktickit@127.0.0.1:5435/toktickit_test_issue3?schema=public'
+cd server
+npm test
+npm run build
+npx prisma validate
+npm audit --omit=dev
+
+# Client regression
+cd ../client
+npm test -- --run
+npm run build
+npm audit --omit=dev
+
+# Browser regression — E2E_DATABASE_URL must point to a fresh migrated/seeded E2E DB
+cd ../e2e
+$env:E2E_DATABASE_URL='postgresql://toktickit:toktickit@127.0.0.1:5435/toktickit_e2e_issue3_20260915d?schema=public'
+npm test
+```
 
 ### Final Lab 3 regression template
 
