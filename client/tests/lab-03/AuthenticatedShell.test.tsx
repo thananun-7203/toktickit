@@ -72,6 +72,23 @@ describe("Lab 3 authenticated application shell", () => {
     expect(screen.queryByRole("navigation", { name: /Primary navigation/i })).not.toBeInTheDocument();
   });
 
+  it("keeps the authenticated UI when server logout fails and shows a retryable error", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, "getCurrentUser").mockResolvedValue(REQUESTER);
+    const logoutSpy = vi.spyOn(api, "logout").mockRejectedValue(
+      new api.ApiError("Unable to sign out", 500, "LOGOUT_FAILED"),
+    );
+    renderApp();
+    const menu = await screen.findByLabelText(/User menu for Authenticated Requester/i);
+    await user.click(menu);
+    await user.click(screen.getByRole("button", { name: /^Logout$/i }));
+
+    expect(logoutSpy).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/session may still be active/i);
+    expect(screen.getByRole("navigation", { name: /Primary navigation/i })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Sign in to your account/i })).not.toBeInTheDocument();
+  });
+
   it("does not expose Requester navigation to IT Staff or Administrator", async () => {
     for (const role of ["IT_STAFF", "ADMINISTRATOR"] as const) {
       vi.restoreAllMocks();

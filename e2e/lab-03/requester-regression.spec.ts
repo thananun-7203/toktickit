@@ -1,7 +1,16 @@
 import { expect, test, type Page } from "@playwright/test";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const API_URL = "http://127.0.0.1:3001";
+const E2E_DATABASE_URL =
+  process.env.E2E_DATABASE_URL ??
+  "postgresql://toktickit:toktickit@127.0.0.1:5435/toktickit_e2e_issue3?schema=public";
+const serverDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "server");
+let requesterOneEmail = "";
+let requesterTwoEmail = "";
 
 function requesterInitialPassword(): string {
   if (process.env.E2E_REQUESTER_INITIAL_PASSWORD) return process.env.E2E_REQUESTER_INITIAL_PASSWORD;
@@ -10,6 +19,32 @@ function requesterInitialPassword(): string {
   if (!match) throw new Error("Unable to resolve the documented local Requester initial password");
   return match[1];
 }
+
+function createDedicatedE2eRequesters(suffix: string): void {
+  const tsxCli = path.join(serverDir, "node_modules", "tsx", "dist", "cli.mjs");
+  const fixtureScript = path.join(serverDir, "scripts", "create-e2e-requesters.ts");
+  execFileSync(process.execPath, [tsxCli, fixtureScript], {
+    cwd: serverDir,
+    env: {
+      ...process.env,
+      DATABASE_URL: E2E_DATABASE_URL,
+      E2E_FIXTURE_CREATE_ALLOWED: "1",
+      E2E_REQUESTER_INITIAL_PASSWORD: requesterInitialPassword(),
+      E2E_USER_SUFFIX: suffix,
+    },
+    stdio: "inherit",
+  });
+  requesterOneEmail = `e2e.requester.one.${suffix}@toktick.it`;
+  requesterTwoEmail = `e2e.requester.two.${suffix}@toktick.it`;
+}
+
+test.beforeEach(async ({}, testInfo) => {
+  // beforeEach executes again on every Playwright retry. A fresh pair of E2E
+  // Requesters therefore starts each attempt with the documented initial
+  // password and mustChangePassword=true, independent of an earlier attempt.
+  const suffix = `${Date.now()}-${testInfo.retry}-${testInfo.workerIndex}`;
+  createDedicatedE2eRequesters(suffix);
+});
 
 async function expectNoHorizontalOverflow(page: Page) {
   const hasHorizontalOverflow = await page.evaluate(
@@ -44,9 +79,9 @@ test("E2E-REQ-01/02 authenticated Requester regression", async ({ page }) => {
   const somsriPassword = `SomsriE2E${stamp}B2`;
 
   await page.setViewportSize({ width: 1280, height: 800 });
-  await loginAndCompleteMandatoryChange(page, "somchai@toktick.it", somchaiPassword);
+  await loginAndCompleteMandatoryChange(page, requesterOneEmail, somchaiPassword);
 
-  await expect(page.getByLabel(/User menu for Somchai Jaidee/i)).toBeVisible();
+  await expect(page.getByLabel(/User menu for E2E Requester One/i)).toBeVisible();
   await expect(page.getByText(/Development Requester/i)).toHaveCount(0);
   await expectNoHorizontalOverflow(page);
 
@@ -124,11 +159,11 @@ test("E2E-REQ-01/02 authenticated Requester regression", async ({ page }) => {
   }
 
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.getByLabel(/User menu for Somchai Jaidee/i).click();
+  await page.getByLabel(/User menu for E2E Requester One/i).click();
   await page.getByRole("button", { name: "Logout" }).click();
   await expect(page.getByRole("heading", { name: "Sign in to your account" })).toBeVisible();
 
-  await loginAndCompleteMandatoryChange(page, "somsri@toktick.it", somsriPassword);
+  await loginAndCompleteMandatoryChange(page, requesterTwoEmail, somsriPassword);
   await page.getByLabel("Search").fill(unique);
   await expect(page.getByText("No results")).toBeVisible();
   await expect(page.getByText(unique)).toHaveCount(0);

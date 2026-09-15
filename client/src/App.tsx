@@ -67,6 +67,7 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [logoutBusy, setLogoutBusy] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -95,11 +96,14 @@ export default function App() {
   async function handleLogout() {
     if (logoutBusy) return;
     setLogoutBusy(true);
+    setLogoutError(null);
     try {
       await signOut();
+      setMobileMenuOpen(false);
+    } catch {
+      setLogoutError("Logout failed. Your session may still be active. Please try again.");
     } finally {
       setLogoutBusy(false);
-      setMobileMenuOpen(false);
     }
   }
 
@@ -213,6 +217,11 @@ export default function App() {
       </header>
 
       <main className="app-content">
+        {logoutError && (
+          <div className="alert alert-danger" role="alert">
+            {logoutError}
+          </div>
+        )}
         {!isRequester ? (
           <section className="zen-card content-card role-placeholder">
             <h1 className="page-title">{user.role === "IT_STAFF" ? "Ticket Queue" : "User Management"}</h1>

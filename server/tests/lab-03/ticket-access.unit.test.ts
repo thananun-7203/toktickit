@@ -1,7 +1,7 @@
 import { UserRole } from "@prisma/client";
 import { describe, expect, it } from "vitest";
 import type { AuthUser } from "../../src/auth.js";
-import { ticketVisibilityWhere } from "../../src/ticketAccess.js";
+import { sharedResourceTicketVisibilityWhere } from "../../src/ticketAccess.js";
 
 function user(role: UserRole, id = 42): AuthUser {
   return {
@@ -16,16 +16,16 @@ function user(role: UserRole, id = 42): AuthUser {
 
 describe("shared Ticket visibility policy", () => {
   it("scopes Requester visibility to the authenticated owner", () => {
-    expect(ticketVisibilityWhere(user(UserRole.REQUESTER, 77))).toEqual({ requesterId: 77 });
+    expect(sharedResourceTicketVisibilityWhere(user(UserRole.REQUESTER, 77))).toEqual({ requesterId: 77 });
   });
 
   it("explicitly allows IT Staff and Administrator to shared Ticket resources", () => {
-    expect(ticketVisibilityWhere(user(UserRole.IT_STAFF))).toEqual({});
-    expect(ticketVisibilityWhere(user(UserRole.ADMINISTRATOR))).toEqual({});
+    expect(sharedResourceTicketVisibilityWhere(user(UserRole.IT_STAFF))).toEqual({});
+    expect(sharedResourceTicketVisibilityWhere(user(UserRole.ADMINISTRATOR))).toEqual({});
   });
 
   it("denies an unknown runtime role instead of treating it as non-Requester access", () => {
     const invalid = { ...user(UserRole.REQUESTER), role: "UNKNOWN" as UserRole };
-    expect(() => ticketVisibilityWhere(invalid)).toThrow(/Unsupported user role/);
+    expect(() => sharedResourceTicketVisibilityWhere(invalid)).toThrow(/Unsupported user role/);
   });
 });

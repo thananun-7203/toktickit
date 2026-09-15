@@ -21,7 +21,7 @@ import {
   safeStorageFileName,
   validateAttachmentFiles,
 } from "./attachmentValidation.js";
-import { ticketVisibilityWhere } from "./ticketAccess.js";
+import { sharedResourceTicketVisibilityWhere } from "./ticketAccess.js";
 
 // The Express app is exported separately from app.listen() (see index.ts) so
 // Supertest can import `app` without opening a port. Do not merge these files.
@@ -463,7 +463,7 @@ app.get(
 
       const user = res.locals.authUser!;
       const attachment = await getPrisma().attachment.findFirst({
-        where: { id, ticket: ticketVisibilityWhere(user) },
+        where: { id, ticket: sharedResourceTicketVisibilityWhere(user) },
       });
       if (!attachment) {
         res.status(404).json({ error: { message: "Attachment not found" } });
@@ -583,7 +583,7 @@ app.get(
       const user = res.locals.authUser!;
       const prisma = getPrisma();
       const ticket = await prisma.ticket.findFirst({
-        where: { id: ticketId, ...ticketVisibilityWhere(user) },
+        where: { id: ticketId, ...sharedResourceTicketVisibilityWhere(user) },
         select: { id: true },
       });
       if (!ticket) {
@@ -624,7 +624,7 @@ app.post(
       const user = res.locals.authUser!;
       const prisma = getPrisma();
       const ticket = await prisma.ticket.findFirst({
-        where: { id: ticketId, ...ticketVisibilityWhere(user) },
+        where: { id: ticketId, ...sharedResourceTicketVisibilityWhere(user) },
         select: { id: true },
       });
       if (!ticket) {

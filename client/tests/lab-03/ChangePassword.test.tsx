@@ -128,4 +128,19 @@ describe("Lab 3 Change Password UI", () => {
     expect(await screen.findByRole("heading", { name: /My Tickets/i })).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByText(/must change your initial password/i)).not.toBeInTheDocument());
   });
+
+  it("does not leave mandatory password-change mode when Logout fails", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, "logout").mockRejectedValue(
+      new api.ApiError("Unable to sign out", 500, "LOGOUT_FAILED"),
+    );
+    renderApp();
+    expect(await screen.findByRole("heading", { name: /Change Your Password/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^Logout$/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/session may still be active/i);
+    expect(screen.getByRole("heading", { name: /Change Your Password/i })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Sign in to your account/i })).not.toBeInTheDocument();
+  });
 });

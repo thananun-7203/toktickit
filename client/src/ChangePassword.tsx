@@ -36,6 +36,7 @@ export default function ChangePassword({ mandatory, onDone, onCancel }: Props) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [alert, setAlert] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [logoutBusy, setLogoutBusy] = useState(false);
   const currentRef = useRef<HTMLInputElement>(null);
   const newRef = useRef<HTMLInputElement>(null);
   const confirmRef = useRef<HTMLInputElement>(null);
@@ -92,6 +93,19 @@ export default function ChangePassword({ mandatory, onDone, onCancel }: Props) {
     }
   }
 
+  async function handleLogout() {
+    if (busy || logoutBusy) return;
+    setLogoutBusy(true);
+    setAlert(null);
+    try {
+      await signOut();
+    } catch {
+      setAlert("Logout failed. Your session may still be active. Please try again.");
+    } finally {
+      setLogoutBusy(false);
+    }
+  }
+
   const requirements = [
     { met: Array.from(newPassword).length >= 10, text: "At least 10 characters" },
     { met: /\p{L}/u.test(newPassword), text: "Include at least one letter" },
@@ -108,8 +122,8 @@ export default function ChangePassword({ mandatory, onDone, onCancel }: Props) {
             <span>TokTickIT</span>
           </div>
           {mandatory && (
-            <button type="button" className="auth-logout" disabled={busy} onClick={() => void signOut()}>
-              Logout
+            <button type="button" className="auth-logout" disabled={busy || logoutBusy} onClick={() => void handleLogout()}>
+              {logoutBusy ? "Logging out…" : "Logout"}
             </button>
           )}
         </div>

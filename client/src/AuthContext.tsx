@@ -65,12 +65,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return result.user;
     },
     async signOut() {
-      try {
-        await logoutApi();
-      } finally {
-        setUser(null);
-        setState("unauthenticated");
-      }
+      await logoutApi();
+      setUser(null);
+      setState("unauthenticated");
+      setBootstrapError(null);
     },
     async changePassword(input) {
       const result = await changePasswordApi(input);

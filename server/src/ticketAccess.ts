@@ -9,7 +9,7 @@ import type { AuthUser } from "./auth.js";
  * Keep this as an explicit allow-list. A new/unknown role must never gain
  * access simply because it is "not a Requester".
  */
-export function ticketVisibilityWhere(user: AuthUser): Prisma.TicketWhereInput {
+export function sharedResourceTicketVisibilityWhere(user: AuthUser): Prisma.TicketWhereInput {
   switch (user.role) {
     case UserRole.REQUESTER:
       return { requesterId: user.id };
