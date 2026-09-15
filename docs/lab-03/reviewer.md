@@ -153,6 +153,7 @@ The reviewer confirmed all Round 1 fixes at exact head `848f39d`, then found two
 - Changed canonical demo Ticket `TKT-2025-90003` to `ownerId=null`; seed regression now asserts the canonical demo set contains both assigned and unassigned Tickets while preserving rerun safety.
 - Marked `/api/v1/requesters` in code as a temporary Issue 2 compatibility endpoint that **must** be removed with the selector/header bridge in Issue #35; it is not being represented as final Lab 3 behavior.
 - Updated README/`.env.example` with isolated test-database setup and safety behavior.
+- Synced the live PR #42 description from the stale **75/75 (11/11)** server result to the current **80/80 (12/12)** result and added the guarded test-target / whole-migration rollback / assigned-unassigned seed evidence.
 - Reran verification after the Round 2 fixes: Server **80/80** (12/12 files), Client **25/25** (5/5 files), Server build **Pass**, Client build **Pass**, Prisma validate **Pass**, production dependency audit **0 vulnerabilities**, normal migration preservation **Pass**, normalized-email collision rollback **Pass**, and injected post-mutation transaction rollback **Pass**.
 - Hosted CI is still not claimed green because PR #42 currently reports no hosted checks.
 
