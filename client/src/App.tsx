@@ -31,8 +31,35 @@ function AuthLoading() {
   );
 }
 
+function AuthBootstrapError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="auth-page">
+      <header className="auth-header">
+        <div className="auth-header-inner">
+          <div className="brand-lockup" aria-label="TokTickIT">
+            <span className="brand-mark" aria-hidden="true" />
+            <span>TokTickIT</span>
+          </div>
+        </div>
+      </header>
+      <main className="auth-main">
+        <section className="auth-card" aria-labelledby="session-error-title">
+          <h1 id="session-error-title">Unable to verify your session</h1>
+          <p className="auth-subtitle">{message}</p>
+          <div className="alert alert-danger auth-alert" role="alert">
+            TokTickIT could not reach the authentication service. Your sign-in state has not been changed.
+          </div>
+          <button type="button" className="btn btn-success auth-primary" onClick={onRetry}>
+            Retry
+          </button>
+        </section>
+      </main>
+    </div>
+  );
+}
+
 export default function App() {
-  const { state: authState, user, signOut } = useAuth();
+  const { state: authState, user, signOut, refresh, bootstrapError } = useAuth();
   const [state, setState] = useState<UiState>("idle");
   const [categories, setCategories] = useState<Category[]>([]);
   const [view, setView] = useState<View>("my-tickets");
@@ -51,6 +78,14 @@ export default function App() {
   }, [user?.id]);
 
   if (authState === "loading") return <AuthLoading />;
+  if (authState === "error") {
+    return (
+      <AuthBootstrapError
+        message={bootstrapError ?? "Unable to verify your session. Please try again."}
+        onRetry={() => void refresh()}
+      />
+    );
+  }
   if (!user) return <Login />;
   if (user.mustChangePassword) return <ChangePassword mandatory />;
   if (showChangePassword) {

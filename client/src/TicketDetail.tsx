@@ -24,6 +24,7 @@ const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const MAX_ACTIVE_FILES = 5;
 const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".pdf"];
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+const PUBLIC_COMMENT_MAX_CHARACTERS = 2000;
 
 function formatSize(size: number): string {
   if (size < 1024) return `${size} B`;
@@ -115,6 +116,7 @@ export default function TicketDetail({ ticketId, onBack }: TicketDetailProps) {
     () => ticket?.attachments.filter((attachment) => !attachment.removedAt).length ?? 0,
     [ticket],
   );
+  const commentCharacterCount = Array.from(commentDraft).length;
 
   async function handleRemove(attachment: Attachment) {
     const enteredReason = window.prompt(`Why are you removing ${attachment.fileName}?`);
@@ -188,8 +190,8 @@ export default function TicketDetail({ ticketId, onBack }: TicketDetailProps) {
       setCommentError("Comment is required");
       return;
     }
-    if (content.length > 2000) {
-      setCommentError("Comment must be at most 2000 characters");
+    if (Array.from(content).length > PUBLIC_COMMENT_MAX_CHARACTERS) {
+      setCommentError(`Comment must be at most ${PUBLIC_COMMENT_MAX_CHARACTERS} characters`);
       return;
     }
 
@@ -483,7 +485,6 @@ export default function TicketDetail({ ticketId, onBack }: TicketDetailProps) {
             id="publicComment"
             className={`form-control ${commentError ? "is-invalid" : ""}`}
             rows={4}
-            maxLength={2000}
             value={commentDraft}
             disabled={postingComment}
             onChange={(e) => {
@@ -494,7 +495,7 @@ export default function TicketDetail({ ticketId, onBack }: TicketDetailProps) {
           />
           <div className="d-flex justify-content-between gap-3 mt-1">
             <div>{commentError && <div className="invalid-feedback d-block">{commentError}</div>}</div>
-            <small className="text-secondary">{commentDraft.length}/2000</small>
+            <small className="text-secondary">{commentCharacterCount}/{PUBLIC_COMMENT_MAX_CHARACTERS}</small>
           </div>
           <div className="text-end mt-3">
             <button

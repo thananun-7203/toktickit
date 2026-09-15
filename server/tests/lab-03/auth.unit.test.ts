@@ -22,6 +22,10 @@ describe("Lab 3 authentication helpers", () => {
     expect(validatePassword(`${"😀".repeat(5)}A1`).valid).toBe(false);
   });
 
+  it("U-03: treats a Unicode decimal digit consistently as a password digit", () => {
+    expect(validatePassword("Password๑x").valid).toBe(true);
+  });
+
   it("U-04: applies the bcrypt boundary in UTF-8 bytes, not character count", () => {
     const valid = `${"a".repeat(61)}1234567890x`;
     expect(utf8ByteLength(valid)).toBe(PASSWORD_MAX_UTF8_BYTES);

@@ -15,10 +15,14 @@ let requesterAId = 0;
 let requesterBId = 0;
 let staffId = 0;
 let adminId = 0;
+let mustChangeRequesterId = 0;
+let inactiveRequesterId = 0;
 let requesterACookie = "";
 let requesterBCookie = "";
 let staffCookie = "";
 let adminCookie = "";
+let mustChangeRequesterCookie = "";
+let inactiveRequesterCookie = "";
 let categoryId = 0;
 let relatedSystemId = 0;
 const ticketIds: number[] = [];
@@ -51,22 +55,35 @@ beforeAll(async () => {
   categoryId = category.id;
   relatedSystemId = relatedSystem.id;
 
-  const [requesterA, requesterB, staff, admin] = await Promise.all([
+  const [requesterA, requesterB, staff, admin, mustChangeRequester, inactiveRequester] = await Promise.all([
     createTestUser({ name: "Comment Requester A", mustChangePassword: false }),
     createTestUser({ name: "Comment Requester B", mustChangePassword: false }),
     createTestUser({ name: "Comment Staff", role: UserRole.IT_STAFF, mustChangePassword: false }),
     createTestUser({ name: "Comment Admin", role: UserRole.ADMINISTRATOR, mustChangePassword: false }),
+    createTestUser({ name: "Comment Must Change", mustChangePassword: true }),
+    createTestUser({ name: "Comment Inactive", isActive: false, mustChangePassword: false }),
   ]);
   requesterAId = requesterA.id;
   requesterBId = requesterB.id;
   staffId = staff.id;
   adminId = admin.id;
+  mustChangeRequesterId = mustChangeRequester.id;
+  inactiveRequesterId = inactiveRequester.id;
 
-  [requesterACookie, requesterBCookie, staffCookie, adminCookie] = await Promise.all([
+  [
+    requesterACookie,
+    requesterBCookie,
+    staffCookie,
+    adminCookie,
+    mustChangeRequesterCookie,
+    inactiveRequesterCookie,
+  ] = await Promise.all([
     createSessionCookie(requesterAId).then((session) => session.cookie),
     createSessionCookie(requesterBId).then((session) => session.cookie),
     createSessionCookie(staffId).then((session) => session.cookie),
     createSessionCookie(adminId).then((session) => session.cookie),
+    createSessionCookie(mustChangeRequesterId).then((session) => session.cookie),
+    createSessionCookie(inactiveRequesterId).then((session) => session.cookie),
   ]);
 });
 
@@ -81,7 +98,14 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
-  await cleanupTestUsers([requesterAId, requesterBId, staffId, adminId].filter(Boolean));
+  await cleanupTestUsers([
+    requesterAId,
+    requesterBId,
+    staffId,
+    adminId,
+    mustChangeRequesterId,
+    inactiveRequesterId,
+  ].filter(Boolean));
 });
 
 describe("Lab 3 Public Comments", () => {
@@ -145,7 +169,7 @@ describe("Lab 3 Public Comments", () => {
     expect(requesterView.body.items).toHaveLength(2);
   });
 
-  it("COM-06/COM-07: blank and 2,001-char comments are rejected; 2,000 chars is accepted", async () => {
+  it("COM-06/COM-07: blank and over-limit comments are rejected; 2,000 Unicode characters are accepted", async () => {
     const ticket = await createTicket();
     for (const content of ["   ", "x".repeat(2001)]) {
       const invalid = await request(app)
@@ -157,13 +181,56 @@ describe("Lab 3 Public Comments", () => {
       expect(invalid.body.error.code).toBe("VALIDATION_ERROR");
     }
 
+    const boundaryText = "😀".repeat(2000);
     const boundary = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/public-comments`)
       .set("Origin", TEST_ORIGIN)
       .set("Cookie", requesterACookie)
-      .send({ content: "x".repeat(2000) });
+      .send({ content: boundaryText });
     expect(boundary.status).toBe(201);
-    expect(boundary.body.content).toHaveLength(2000);
+    expect(Array.from(boundary.body.content)).toHaveLength(2000);
+
+    const unicodeOverLimit = await request(app)
+      .post(`/api/v1/tickets/${ticket.id}/public-comments`)
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", requesterACookie)
+      .send({ content: "😀".repeat(2001) });
+    expect(unicodeOverLimit.status).toBe(400);
+    expect(unicodeOverLimit.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("security: Public Comment POST rejects missing/null/wrong Origin with zero mutation", async () => {
+    const ticket = await createTicket();
+    for (const origin of [undefined, "null", "http://evil.example"] as const) {
+      let pending = request(app)
+        .post(`/api/v1/tickets/${ticket.id}/public-comments`)
+        .set("Cookie", requesterACookie);
+      if (origin !== undefined) pending = pending.set("Origin", origin);
+      const res = await pending.send({ content: "Must not be written" });
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe("ORIGIN_FORBIDDEN");
+    }
+    expect(await getPrisma().publicComment.count({ where: { ticketId: ticket.id } })).toBe(0);
+  });
+
+  it("security: Public Comment POST enforces password-change gate and inactive-session denial", async () => {
+    const ticket = await createTicket();
+    const mustChange = await request(app)
+      .post(`/api/v1/tickets/${ticket.id}/public-comments`)
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", mustChangeRequesterCookie)
+      .send({ content: "Must not be written" });
+    expect(mustChange.status).toBe(403);
+    expect(mustChange.body.error.code).toBe("PASSWORD_CHANGE_REQUIRED");
+
+    const inactive = await request(app)
+      .post(`/api/v1/tickets/${ticket.id}/public-comments`)
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", inactiveRequesterCookie)
+      .send({ content: "Must not be written" });
+    expect(inactive.status).toBe(401);
+    expect(inactive.body.error.code).toBe("UNAUTHENTICATED");
+    expect(await getPrisma().publicComment.count({ where: { ticketId: ticket.id } })).toBe(0);
   });
 });
 
@@ -185,19 +252,53 @@ describe("Lab 3 Problem Appears Resolved", () => {
     }
   });
 
-  it("COM-09: repeating the indication is idempotent and retains the original timestamp", async () => {
+  it("COM-09: concurrent repeated indications are idempotent and return the same timestamp", async () => {
     const ticket = await createTicket("Open");
-    const first = await request(app)
-      .post(`/api/v1/tickets/${ticket.id}/problem-appears-resolved`)
-      .set("Origin", TEST_ORIGIN)
-      .set("Cookie", requesterACookie);
-    const second = await request(app)
-      .post(`/api/v1/tickets/${ticket.id}/problem-appears-resolved`)
-      .set("Origin", TEST_ORIGIN)
-      .set("Cookie", requesterACookie);
+    const [first, second] = await Promise.all([
+      request(app)
+        .post(`/api/v1/tickets/${ticket.id}/problem-appears-resolved`)
+        .set("Origin", TEST_ORIGIN)
+        .set("Cookie", requesterACookie),
+      request(app)
+        .post(`/api/v1/tickets/${ticket.id}/problem-appears-resolved`)
+        .set("Origin", TEST_ORIGIN)
+        .set("Cookie", requesterACookie),
+    ]);
     expect(first.status).toBe(200);
     expect(second.status).toBe(200);
     expect(second.body.problemAppearsResolvedAt).toBe(first.body.problemAppearsResolvedAt);
+  });
+
+  it("security: Problem Appears Resolved rejects missing/null/wrong Origin with zero mutation", async () => {
+    const ticket = await createTicket("New");
+    for (const origin of [undefined, "null", "http://evil.example"] as const) {
+      let pending = request(app)
+        .post(`/api/v1/tickets/${ticket.id}/problem-appears-resolved`)
+        .set("Cookie", requesterACookie);
+      if (origin !== undefined) pending = pending.set("Origin", origin);
+      const res = await pending;
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe("ORIGIN_FORBIDDEN");
+    }
+    expect((await getPrisma().ticket.findUnique({ where: { id: ticket.id } }))?.problemAppearsResolvedAt).toBeNull();
+  });
+
+  it("security: Problem Appears Resolved enforces password-change gate and inactive-session denial", async () => {
+    const ticket = await createTicket("New");
+    const mustChange = await request(app)
+      .post(`/api/v1/tickets/${ticket.id}/problem-appears-resolved`)
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", mustChangeRequesterCookie);
+    expect(mustChange.status).toBe(403);
+    expect(mustChange.body.error.code).toBe("PASSWORD_CHANGE_REQUIRED");
+
+    const inactive = await request(app)
+      .post(`/api/v1/tickets/${ticket.id}/problem-appears-resolved`)
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", inactiveRequesterCookie);
+    expect(inactive.status).toBe(401);
+    expect(inactive.body.error.code).toBe("UNAUTHENTICATED");
+    expect((await getPrisma().ticket.findUnique({ where: { id: ticket.id } }))?.problemAppearsResolvedAt).toBeNull();
   });
 
   it("COM-13: terminal statuses return 409 with no indication or status mutation", async () => {

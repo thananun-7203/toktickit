@@ -81,6 +81,22 @@ describe("Lab 3 Change Password UI", () => {
     expect(screen.getByText(/at most 72 UTF-8 bytes/i)).toBeInTheDocument();
   });
 
+  it("accepts the same Unicode decimal-digit semantics as the server", async () => {
+    const user = userEvent.setup();
+    const changeSpy = vi.spyOn(api, "changePassword").mockResolvedValue({
+      user: { ...MUST_CHANGE_USER, mustChangePassword: false },
+    });
+    renderApp();
+    await screen.findByRole("heading", { name: /Change Your Password/i });
+
+    await user.type(screen.getByLabelText(/^Current password$/i), "InitialPass1");
+    await user.type(screen.getByLabelText(/^New password$/i), "Replacement๑x");
+    await user.type(screen.getByLabelText(/^Confirm new password$/i), "Replacement๑x");
+    await user.click(screen.getByRole("button", { name: /^Continue$/i }));
+
+    await waitFor(() => expect(changeSpy).toHaveBeenCalledTimes(1));
+  });
+
   it("maps incorrect current password to the Current password field", async () => {
     const user = userEvent.setup();
     vi.spyOn(api, "changePassword").mockRejectedValue(

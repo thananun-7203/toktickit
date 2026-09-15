@@ -8,7 +8,7 @@ import {
   logout as logoutApi,
 } from "./api.js";
 
-type AuthState = "loading" | "authenticated" | "unauthenticated";
+type AuthState = "loading" | "authenticated" | "unauthenticated" | "error";
 
 interface AuthContextValue {
   state: AuthState;
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       setBootstrapError("Unable to verify your session. Please try again.");
-      setState("unauthenticated");
+      setState("error");
     }
   }, []);
 

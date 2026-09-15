@@ -21,6 +21,7 @@ import {
   safeStorageFileName,
   validateAttachmentFiles,
 } from "./attachmentValidation.js";
+import { ticketVisibilityWhere } from "./ticketAccess.js";
 
 // The Express app is exported separately from app.listen() (see index.ts) so
 // Supertest can import `app` without opening a port. Do not merge these files.
@@ -462,9 +463,7 @@ app.get(
 
       const user = res.locals.authUser!;
       const attachment = await getPrisma().attachment.findFirst({
-        where: user.role === UserRole.REQUESTER
-          ? { id, ticket: { requesterId: user.id } }
-          : { id },
+        where: { id, ticket: ticketVisibilityWhere(user) },
       });
       if (!attachment) {
         res.status(404).json({ error: { message: "Attachment not found" } });
@@ -584,9 +583,7 @@ app.get(
       const user = res.locals.authUser!;
       const prisma = getPrisma();
       const ticket = await prisma.ticket.findFirst({
-        where: user.role === UserRole.REQUESTER
-          ? { id: ticketId, requesterId: user.id }
-          : { id: ticketId },
+        where: { id: ticketId, ...ticketVisibilityWhere(user) },
         select: { id: true },
       });
       if (!ticket) {
@@ -627,9 +624,7 @@ app.post(
       const user = res.locals.authUser!;
       const prisma = getPrisma();
       const ticket = await prisma.ticket.findFirst({
-        where: user.role === UserRole.REQUESTER
-          ? { id: ticketId, requesterId: user.id }
-          : { id: ticketId },
+        where: { id: ticketId, ...ticketVisibilityWhere(user) },
         select: { id: true },
       });
       if (!ticket) {
@@ -638,7 +633,8 @@ app.post(
       }
 
       const content = typeof req.body?.content === "string" ? req.body.content.trim() : "";
-      if (!content || content.length > 2000) {
+      const contentLength = Array.from(content).length;
+      if (!content || contentLength > 2000) {
         res.status(400).json({
           error: {
             code: "VALIDATION_ERROR",

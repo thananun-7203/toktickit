@@ -454,7 +454,7 @@ describe("Ticket attachments", () => {
     expect(download.body.error.message).toMatch(/storage/i);
   });
 
-  it("does not expose another requester's attachment", async () => {
+  it("AZ-11: direct attachment ids stay hidden from another Requester in active and removed states", async () => {
     const ticket = await createTicket(R2);
     const upload = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
@@ -474,5 +474,24 @@ describe("Ticket attachments", () => {
       .set("Cookie", r1Cookie)
       .send({ reason: "Should not be accepted" });
     expect(remove.status).toBe(404);
+
+    const ownerRemove = await request(app)
+      .delete(`/api/v1/attachments/${id}`)
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r2Cookie)
+      .send({ reason: "Owner removed private attachment" });
+    expect(ownerRemove.status).toBe(200);
+
+    const removedDownload = await request(app)
+      .get(`/api/v1/attachments/${id}/download`)
+      .set("Cookie", r1Cookie);
+    expect(removedDownload.status).toBe(404);
+
+    const removedAgain = await request(app)
+      .delete(`/api/v1/attachments/${id}`)
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie)
+      .send({ reason: "Still must stay hidden" });
+    expect(removedAgain.status).toBe(404);
   });
 });

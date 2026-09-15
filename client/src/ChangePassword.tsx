@@ -12,7 +12,7 @@ function utf8Bytes(value: string): number {
 function validateNewPassword(value: string): string | null {
   if (Array.from(value).length < 10) return "Password must be at least 10 characters";
   if (!/\p{L}/u.test(value)) return "Password must include at least one letter";
-  if (!/\d/.test(value)) return "Password must include at least one number";
+  if (!/\p{Nd}/u.test(value)) return "Password must include at least one number";
   if (utf8Bytes(value) > 72) return "Password must be at most 72 UTF-8 bytes";
   return null;
 }
@@ -95,7 +95,7 @@ export default function ChangePassword({ mandatory, onDone, onCancel }: Props) {
   const requirements = [
     { met: Array.from(newPassword).length >= 10, text: "At least 10 characters" },
     { met: /\p{L}/u.test(newPassword), text: "Include at least one letter" },
-    { met: /\d/.test(newPassword), text: "Include at least one number" },
+    { met: /\p{Nd}/u.test(newPassword), text: "Include at least one number" },
     { met: utf8Bytes(newPassword) <= 72, text: "Maximum 72 UTF-8 bytes" },
   ];
 

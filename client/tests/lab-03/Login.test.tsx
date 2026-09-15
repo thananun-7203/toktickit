@@ -46,6 +46,20 @@ describe("Lab 3 Login UI", () => {
     expect(screen.queryByRole("navigation", { name: /Primary navigation/i })).not.toBeInTheDocument();
   });
 
+  it("keeps bootstrap failure separate from logged-out state and lets the user retry", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.getCurrentUser)
+      .mockRejectedValueOnce(new api.ApiError("Backend unavailable", 500, "AUTHENTICATION_FAILED"))
+      .mockResolvedValueOnce(BASE_USER);
+
+    renderApp();
+    expect(await screen.findByRole("heading", { name: /Unable to verify your session/i })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Sign in to your account/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^Retry$/i }));
+    expect(await screen.findByRole("heading", { name: /My Tickets/i })).toBeInTheDocument();
+  });
+
   it("validates required/email fields before calling the Login API", async () => {
     const user = userEvent.setup();
     const loginSpy = vi.spyOn(api, "login");

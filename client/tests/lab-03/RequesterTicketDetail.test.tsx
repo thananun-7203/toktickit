@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import TicketDetail from "../../src/TicketDetail.js";
 import * as api from "../../src/api.js";
@@ -34,8 +34,30 @@ describe("Lab 3 Requester Ticket Detail extensions", () => {
     expect(screen.getByText("Medium")).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: /Public Comments/i })).toBeInTheDocument();
     expect(screen.getByText(/No public comments yet/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Add a public comment/i)).toHaveAttribute("maxlength", "2000");
+    expect(screen.getByLabelText(/Add a public comment/i)).not.toHaveAttribute("maxlength");
+    expect(screen.getByText("0/2000")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Problem Appears Resolved/i })).toBeInTheDocument();
+  });
+
+  it("counts Public Comment characters by Unicode code point", async () => {
+    const postSpy = vi.spyOn(api, "postPublicComment").mockResolvedValue({
+      id: 702,
+      content: "ok",
+      createdAt: "2026-09-15T10:06:00.000Z",
+      author: { id: 301, name: "Authenticated Requester", role: "REQUESTER" },
+    });
+    render(<TicketDetail ticketId={DETAIL.id} onBack={vi.fn()} />);
+    await screen.findByRole("heading", { name: /Public Comments/i });
+    const textarea = screen.getByLabelText(/Add a public comment/i);
+    const atLimit = "😀".repeat(2000);
+    fireEvent.change(textarea, { target: { value: atLimit } });
+    expect(screen.getByText("2000/2000")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Post Comment/i }));
+    await waitFor(() => expect(postSpy).toHaveBeenCalledWith(DETAIL.id, atLimit));
+
+    fireEvent.change(textarea, { target: { value: `${atLimit}😀` } });
+    fireEvent.click(screen.getByRole("button", { name: /Post Comment/i }));
+    expect(screen.getByText(/Comment must be at most 2000 characters/i)).toBeInTheDocument();
   });
 
   it("posts a Public Comment and refreshes the dedicated comment list without resetting Ticket Detail", async () => {
