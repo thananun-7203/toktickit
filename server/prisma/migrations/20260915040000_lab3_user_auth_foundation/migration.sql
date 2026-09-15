@@ -2,6 +2,11 @@
 -- Existing DevelopmentRequester numeric ids are preserved as User ids so the
 -- current Ticket.requesterId values continue to identify the same people.
 
+-- Prisma Migrate does not wrap every PostgreSQL migration file in one transaction
+-- automatically. Keep the full Lab 3 evolution atomic so a failure after any
+-- CREATE/ALTER/data-copy step rolls the entire migration back.
+BEGIN;
+
 -- Preflight before any Lab 3 mutation. Two distinct Lab 2 requesters must not
 -- silently merge when email is normalized by trim + lowercase.
 DO $$
@@ -160,3 +165,5 @@ BEGIN
 END $$;
 
 DROP TABLE "DevelopmentRequester";
+
+COMMIT;

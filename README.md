@@ -127,6 +127,14 @@ The database stores only bcrypt hashes, never these plaintext values. Additional
 
 ### Server unit/API regression
 
+Server tests are deliberately blocked from using the normal development database. Configure a separate test target in `server/.env` (see `.env.example`):
+
+```env
+TEST_DATABASE_URL="postgresql://toktickit:toktickit@localhost:5435/toktickit_test?schema=public"
+```
+
+`npm test` fails before Prisma opens a connection when `TEST_DATABASE_URL` is missing, its database name does not contain `test`, or it resolves to the same database/schema as `DATABASE_URL`. Migrate and seed that isolated test database before running the DB-backed suite.
+
 ```bash
 cd server
 npm test

@@ -109,6 +109,13 @@ describe("Lab 3 seed regression", () => {
     expect(await prisma.user.count({ where: { role: "IT_STAFF", isActive: false } })).toBeGreaterThanOrEqual(1);
     expect(await prisma.user.count({ where: { role: "ADMINISTRATOR", isActive: true } })).toBeGreaterThanOrEqual(1);
 
+    const demoOwnership = await prisma.ticket.findMany({
+      where: { ticketNumber: { in: demoTicketNumbers } },
+      select: { ownerId: true },
+    });
+    expect(demoOwnership.some((ticket) => ticket.ownerId === null)).toBe(true);
+    expect(demoOwnership.some((ticket) => ticket.ownerId !== null)).toBe(true);
+
     const requester = await prisma.user.findUniqueOrThrow({ where: { email: "somchai@toktick.it" } });
     const staff = await prisma.user.findUniqueOrThrow({ where: { email: "narin.staff@toktick.it" } });
     const admin = await prisma.user.findUniqueOrThrow({ where: { email: "admin.one@toktick.it" } });

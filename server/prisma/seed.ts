@@ -131,7 +131,9 @@ async function main() {
       itPriority: "Low",
       status: "Resolved",
       requesterId: requester3.id,
-      ownerId: staff1.id,
+      // Keep one canonical unassigned ticket for Queue/Claim coverage in later
+      // Lab 3 issues while the other demo tickets remain assigned.
+      ownerId: null,
       categoryId: category.id,
       relatedSystemId: reportPortal.id,
     },

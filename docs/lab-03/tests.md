@@ -30,6 +30,7 @@ server/tests/lab-03/
 ├── auth.unit.test.ts
 ├── auth.api.test.ts
 ├── authorization.api.test.ts
+├── test-database-guard.unit.test.ts
 ├── fixtures/
 │   ├── lab2-migration-preservation.sql
 │   └── lab2-email-collision.sql
@@ -249,9 +250,10 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | MIG-06 | AC-27 | same manual rehearsal | historical null Requested Priority | remains readable; IT Priority null | **Pass** |
 | MIG-07 | AC-28 | `seed-regression.test.ts` | run seed twice | no duplicate users/reference rows | **Pass** |
 | MIG-08 | AC-28 | `seed-regression.test.ts` | account counts | ≥4 active + 1 inactive Requester; ≥3 active + 1 inactive Staff; ≥1 active Admin | **Pass** |
-| MIG-09 | AC-28 | `seed-regression.test.ts` | seeded Tickets/comments/notes | realistic distribution; no sensitive content | **Pass** |
+| MIG-09 | AC-28 | `seed-regression.test.ts` | seeded Tickets/comments/notes | realistic distribution; assigned and unassigned Tickets both present; no sensitive content | **Pass** |
 | MIG-10 | AC-28 | `seed-regression.test.ts` | seed once → mutate seeded password/role/active state/Ticket status-owner-priority → seed again | no duplicate rows and mutable state is not reset to original demo values | **Pass** |
 | MIG-11 | AC-27 | manual isolated PostgreSQL rehearsal; fixture `server/tests/lab-03/fixtures/lab2-email-collision.sql`; exact commands in §18 | Lab 2-shaped DB contains two distinct Development Requesters whose emails collide after trim+lowercase | migration aborts explicitly before User/Ticket mutation; no silent merge/overwrite/partial ownership rewrite | **Pass — manual isolated collision preflight evidence** |
+| MIG-12 | AC-27 | manual injected-failure rehearsal in §18 | force a SQL error after the Lab 3 migration has already created/copied/altered data but before `COMMIT` | whole migration transaction rolls back: no `User` table, original `DevelopmentRequester` + Ticket/Attachment rows remain, no Lab 3 Ticket columns survive | **Pass — manual post-mutation rollback evidence** |
 | REG-01 | AC-08/09 | existing Lab 2 server suite adapted/retained | full Requester regression | green | **Pass for retained Lab 2 compatibility; session-identity adaptation remains Issue #35** |
 | REG-02 | AC-08/09 | existing Lab 2 client suite adapted/retained | Requester UI regression | green | **Pass — 25/25** |
 
@@ -396,7 +398,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | AC-24 | ADM-12, UI-ADM-07, E2E-ADMIN-02 |
 | AC-25 | ADM-13/14, UI-ADM-08, E2E-ADMIN-02 |
 | AC-26 | AZ-03–05, ADM-17, E2E-ADMIN-02 |
-| AC-27 | MIG-01–MIG-06, MIG-11, REG-01/02 |
+| AC-27 | MIG-01–MIG-06, MIG-11, MIG-12, REG-01/02 |
 | AC-28 | MIG-07–MIG-10 |
 | AC-29 | UI-AUTH-07, UI-Q-05–08, UI-ST-09, UI-ADM-09, E2E-AUTH-02 |
 | AC-30 | V-01–V-08 plus responsive checks inside all four E2E files |
@@ -530,6 +532,48 @@ docker rm -f $name
 
 It exited non-zero with `LAB3_MIGRATION_EMAIL_COLLISION`. The follow-up query returned no `User` table, the original `DevelopmentRequester` table still present, and **2** source requester rows, confirming the preflight failed before Lab 3 mutation. The disposable container was then removed.
 
+#### Round 2 safety re-review — isolated test target + whole-migration rollback
+
+The second PR #42 re-review identified two repository-safety gaps. Both were reworked and re-verified against a fresh PostgreSQL 16 container named `toktickit-lab3-pr42-r2-pg` on local port `5435`; the normal development database on port `5432` was not migrated, reset, seeded, or deleted.
+
+- **Test-database guard:** `npm test` now starts through `server/scripts/run-tests.ts`. Before Vitest/Prisma starts, it requires `TEST_DATABASE_URL`, requires the database name to contain `test`, rejects a test target that resolves to the same host/port/database/schema as the development `DATABASE_URL`, preserves the development URL only for comparison, then switches `DATABASE_URL` to the approved test target. `getPrisma()` repeats the same safety configuration for direct Vitest/test-seed processes before creating a Prisma client.
+- `.env.example` now documents a distinct `TEST_DATABASE_URL`, and `test-database-guard.unit.test.ts` covers missing target, non-test database name, dev/test collision (including `localhost` vs `127.0.0.1`), and the valid switch case.
+- Manual fail-fast checks of the real test launcher returned exit code `1` for all three unsafe cases: missing `TEST_DATABASE_URL`, database name `scratch`, and a test URL resolving to the same database/schema as the development URL. No Vitest suite/Prisma connection started in those rejected cases.
+- **Whole migration transaction:** `20260915040000_lab3_user_auth_foundation/migration.sql` now explicitly wraps the complete preflight → schema/data copy → FK changes → verification → old-table removal sequence in `BEGIN; ... COMMIT;`.
+
+To prove rollback after mutation had already begun, the Lab 2 schema + preservation fixture were loaded into `tok_rollback_test`, then the committed migration text was used with a temporary in-memory fault inserted immediately before its final `COMMIT`:
+
+```powershell
+$name = 'toktickit-lab3-pr42-r2-pg'
+$migration = Get-Content -Raw server/prisma/migrations/20260915040000_lab3_user_auth_foundation/migration.sql
+$faulted = [regex]::Replace(
+  $migration,
+  '(?m)^COMMIT;\s*$',
+  "SELECT 1 / 0;`nCOMMIT;"
+)
+
+$faulted |
+  docker exec -i $name psql -U toktickit -d tok_rollback_test -v ON_ERROR_STOP=1
+$rollbackExit = $LASTEXITCODE
+if ($rollbackExit -eq 0) { throw 'Expected injected post-mutation failure' }
+
+@"
+SELECT to_regclass('public."User"') AS user_table,
+       to_regclass('public."DevelopmentRequester"') AS dev_requester_table,
+       EXISTS (
+         SELECT 1 FROM information_schema.columns
+         WHERE table_schema='public' AND table_name='Ticket' AND column_name='ownerId'
+       ) AS owner_column_exists,
+       (SELECT COUNT(*) FROM "DevelopmentRequester") AS dev_requesters,
+       (SELECT COUNT(*) FROM "Ticket") AS tickets,
+       (SELECT COUNT(*) FROM "Attachment") AS attachments;
+"@ | docker exec -i $name psql -U toktickit -d tok_rollback_test -v ON_ERROR_STOP=1 -P pager=off
+```
+
+The injected failure occurred only **after** the migration had already executed `CREATE TYPE`, `CREATE TABLE`, data copy, Ticket `ALTER/UPDATE`, FK changes, comment/note tables, verification, and `DROP TABLE "DevelopmentRequester"` inside the open transaction. PostgreSQL then disconnected on the deliberate division-by-zero error and rolled the transaction back. The verification result was: `User` table absent, `DevelopmentRequester` present, `ownerId` column absent, and original counts still **2 Development Requesters / 2 Tickets / 2 Attachments**. The disposable `toktickit-lab3-pr42-r2-pg` container was removed after the final verification; the existing development PostgreSQL container remained running and untouched.
+
+The same transaction-wrapped migration also passed the normal preservation rehearsal: exact requester ids `1`/`2`, Ticket ownership, removal metadata, and priority/null behavior were unchanged. The normalized-email collision case still failed before mutation and rolled back cleanly.
+
 - **Lab 2-shaped migration preservation:** a disposable database was built from the four inherited Lab 1/Lab 2 migrations, then populated with 2 Development Requesters, 2 Tickets, and 2 Attachments before applying `20260915040000_lab3_user_auth_foundation`.
   - Development Requester numeric ids `1` and `2` became `User.id` `1` and `2` exactly.
   - Both Ticket rows retained the same `requesterId` values and statuses.
@@ -537,11 +581,11 @@ It exited non-zero with `LAB3_MIGRATION_EMAIL_COLLISION`. The follow-up query re
   - Attachment count remained **2 → 2**, including the pre-existing `removedAt`/`Duplicate upload` removal metadata.
   - The migrated initial requester hash successfully verified against the documented local-only `RequesterInit123` credential and `mustChangePassword=true`.
 - **Normalized-email collision preflight:** a separate Lab 2-shaped database containing `Test.User@TokTick.IT` and ` test.user@toktick.it ` aborted with `LAB3_MIGRATION_EMAIL_COLLISION` before the `User` table or any Lab 3 mutation was created. No silent merge/overwrite occurred.
-- **Clean migration + seed:** a fresh `toktickit_issue2_final` database applied all five migrations successfully. The seed then ran twice with the same required logical result: **4 active + 1 inactive Requester, 3 active + 1 inactive IT Staff, 2 active Administrators, 3 demo Tickets, 2 Public Comments, and 1 Internal Note**.
+- **Clean migration + seed:** a fresh isolated test database applied all five migrations successfully. The seed then ran repeatedly with the same required logical result: **4 active + 1 inactive Requester, 3 active + 1 inactive IT Staff, 2 active Administrators, 3 demo Tickets, 2 Public Comments, and 1 Internal Note**. The three canonical demo Tickets include both **assigned and unassigned** ownership, and the seed regression asserts both states exist.
 - **Seed state preservation:** automated `MIG-10` mutates a seeded password hash/role/activation state and Ticket status/owner/IT Priority, reruns the seed, and confirms the mutable state is not reset. Seed tests also verify the documented local Requester/Staff/Admin initial credentials against their bcrypt cost-12 hashes.
 - **Authentication/security:** `AUTH-01–AUTH-16` pass, including generic invalid credentials, inactive-account denial, mandatory password change, old-session invalidation/rotation, absolute 8-hour session expiry, login rate limiting, inactive-session invalidation, and wrong/missing/`null` Origin rejection. Origin checks now run before all currently implemented state-changing routes: auth mutations plus legacy Requester Ticket creation, attachment upload, and attachment soft-remove. Session JSON never exposes password hashes/tokens; the cookie is `HttpOnly`, `SameSite=Lax`, and the database stores only SHA-256 token hashes.
 - **Authorization foundation:** password-change gating and authenticated-only Categories/Related Systems pass direct API tests, including the legacy `/api/categories` alias that previously bypassed the Lab 3 reference-data rule; reusable role middleware is covered. Requester ownership/session conversion remains intentionally scoped to Issue #35, so the Lab 2 development-requester compatibility bridge is temporary rather than being misreported as final Lab 3 ownership behavior.
-- Server Vitest/Supertest: **76/76 passed (11/11 test files)** against the isolated final database after the PR #42 review fixes.
+- Server Vitest/Supertest: **80/80 passed (12/12 test files)** against `TEST_DATABASE_URL` after the second PR #42 safety-review fixes, including the 4 test-target guard cases.
 - Client Vitest regression: **25/25 passed (5/5 test files)**.
 - Server TypeScript build: **Pass**.
 - Client production build: **Pass**.

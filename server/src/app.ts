@@ -104,8 +104,10 @@ app.get("/api/categories", requireAuth, requirePasswordChanged, async (_req: Req
 });
 
 // ---------------------------------------------------------------------------
-// Issue 2 — Development Requester Context
-// Reference-data endpoints under /api/v1/ per api-spec.md.
+// Issue 2 — temporary Development Requester compatibility context.
+// IMPORTANT: this now reads the real User table and therefore must be removed
+// together with the selector/header identity bridge in Issue #35 before final
+// Lab 3 integration. It remains only to preserve the Lab 2 UI during Issue 2.
 // ---------------------------------------------------------------------------
 app.get("/api/v1/requesters", async (_req: Request, res: Response) => {
   try {
