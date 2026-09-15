@@ -68,6 +68,7 @@ If using `compose.lab2.yml`, update `server/.env` so it contains:
 ```env
 DATABASE_URL="postgresql://toktickit:toktickit@localhost:5433/toktickit?schema=public"
 PORT=3000
+CLIENT_ORIGIN="http://localhost:5173"
 SEAWEEDFS_FILER_URL="http://localhost:8888"
 ```
 
@@ -109,6 +110,18 @@ X-Dev-Requester-Id: <requesterId>
 ```
 
 This is for development/testing and requester-isolation evidence only. Staff/Admin workflows and real authentication are outside Lab 2 scope.
+
+## Lab 3 Local Authentication Seed
+
+Lab 3 adds real `User` accounts and DB-backed sessions. The seed creates local-only demo accounts whose initial passwords must be changed on first login. These credentials are intentionally non-production test data:
+
+| Role | Example seeded email | Initial password |
+|---|---|---|
+| Requester | `somchai@toktick.it` | `RequesterInit123` |
+| IT Staff | `narin.staff@toktick.it` | `StaffInit123` |
+| Administrator | `admin.one@toktick.it` | `AdminInit123` |
+
+The database stores only bcrypt hashes, never these plaintext values. Additional seeded users of the same role use the same local initial password for course testing. The Lab 2 `X-Dev-Requester-Id` compatibility path remains temporarily available during Lab 3 Issue 2 and is removed from the normal workflow in Issue 3.
 
 ## Running Tests
 
