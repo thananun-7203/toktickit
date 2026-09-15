@@ -9,7 +9,11 @@ import { getPrisma } from "./prisma.js";
 
 export const DEV_REQUESTER_HEADER = "x-dev-requester-id";
 
-// Attaches the acting DevelopmentRequester to `res.locals.devRequester`.
+// Temporary Lab 2 compatibility bridge for Issue 2 only. The persisted
+// DevelopmentRequester model has been migrated to User, but legacy Requester
+// routes keep the old header until Issue 3 replaces the normal flow with the
+// authenticated session identity.
+// Attaches the acting Requester User to `res.locals.devRequester`.
 // Responds 401 when the header is missing, not a number, or refers to an
 // unknown / inactive requester (BR-6).
 export async function requireDevRequester(
@@ -30,8 +34,8 @@ export async function requireDevRequester(
     }
 
     const prisma = getPrisma();
-    const requester = await prisma.developmentRequester.findUnique({
-      where: { id },
+    const requester = await prisma.user.findFirst({
+      where: { id, role: "REQUESTER" },
       select: { id: true, name: true, email: true, isActive: true },
     });
 

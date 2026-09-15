@@ -5,6 +5,8 @@ import multer from "multer";
 import { getPrisma } from "./prisma.js";
 import { filterActiveRequesters } from "./requesterFilter.js";
 import { requireDevRequester } from "./devRequester.js";
+import { authRouter } from "./authRoutes.js";
+import { CLIENT_ORIGIN, requireAuth, requirePasswordChanged } from "./auth.js";
 import { generateTicketNumber, isTicketNumberConflict } from "./ticketNumber.js";
 import { validateTicketInput } from "./ticketValidation.js";
 import { toPrismaOrderBy, validateTicketQuery } from "./ticketQuery.js";
@@ -36,12 +38,15 @@ declare global {
 export const app = express();
 
 app.use(cors({
+  origin: CLIENT_ORIGIN,
+  credentials: true,
   // Attachment downloads are fetched by the Vite client, so expose the
   // filename header to browser JavaScript instead of letting it be hidden by
   // CORS. The client uses it to preserve the original attachment filename.
   exposedHeaders: ["Content-Disposition"],
 }));
 app.use(express.json());
+app.use("/api/v1/auth", authRouter);
 
 const attachmentUpload = multer({
   storage: multer.memoryStorage(),
@@ -100,7 +105,8 @@ app.get("/api/categories", async (_req: Request, res: Response) => {
 app.get("/api/v1/requesters", async (_req: Request, res: Response) => {
   try {
     const prisma = getPrisma();
-    const requesters = await prisma.developmentRequester.findMany({
+    const requesters = await prisma.user.findMany({
+      where: { role: "REQUESTER" },
       select: { id: true, name: true, email: true, isActive: true },
       orderBy: { id: "asc" },
     });
@@ -113,7 +119,7 @@ app.get("/api/v1/requesters", async (_req: Request, res: Response) => {
   }
 });
 
-app.get("/api/v1/categories", async (_req: Request, res: Response) => {
+app.get("/api/v1/categories", requireAuth, requirePasswordChanged, async (_req: Request, res: Response) => {
   try {
     const prisma = getPrisma();
     const categories = await prisma.category.findMany({
@@ -126,7 +132,7 @@ app.get("/api/v1/categories", async (_req: Request, res: Response) => {
   }
 });
 
-app.get("/api/v1/related-systems", async (_req: Request, res: Response) => {
+app.get("/api/v1/related-systems", requireAuth, requirePasswordChanged, async (_req: Request, res: Response) => {
   try {
     const prisma = getPrisma();
     const systems = await prisma.relatedSystem.findMany({
@@ -192,6 +198,7 @@ app.post(
               summary: summary.trim(),
               description: description.trim(),
               requestedPriority: requestedPriority.trim(),
+              itPriority: requestedPriority.trim(),
               status: "New",
               requesterId: requester.id,
               categoryId,
