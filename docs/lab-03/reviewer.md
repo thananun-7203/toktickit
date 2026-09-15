@@ -192,8 +192,11 @@ Required review focus when this Issue starts:
 - Round 1 reviewer: `Tanaboonnnnn`.
 - Round 1 reviewed head: `25b191bdf06c84b7af7beb4ffe6b20a06afc0f03`.
 - Round 1 submitted: 2026-09-15T17:27:40Z.
+- Round 2 reviewer: `Tanaboonnnnn`.
+- Round 2 reviewed head: `a02a8c32e0543e047257541fd43bb041911fc28b`.
+- Round 2 submitted: 2026-09-15T18:19:19Z.
 - Reviewer state: **Changes requested**.
-- Verdict: **Re-review pending after Round 1 fixes.**
+- Verdict: **Re-review pending after Round 2 fixes.**
 
 ### Round 1 reviewer feedback
 
@@ -214,6 +217,25 @@ Non-blocking follow-ups requested by the reviewer were: keep `/auth/me` bootstra
 - Added simultaneous Problem Appears Resolved coverage and verifies both responses retain one persisted timestamp.
 - Expanded Attachment direct-id isolation to prove another Requester cannot download/remove either active or already-removed attachments.
 - Verification after the fixes: Server **99/99 (15/15 files)**, Client **44/44 (8/8 files)**, Server build **Pass**, Client build **Pass**, Prisma validate **Pass**, production dependency audit **0 vulnerabilities** for both server/client, `git diff --check` **Pass**, and Lab 3 Requester Playwright E2E **1/1 Pass** on a fresh isolated database/SeaweedFS environment.
+
+### Round 2 reviewer feedback
+
+The reviewer confirmed the Round 1 authorization/counting/security fixes and corrected the earlier 200-vs-2,000 Public Comment misunderstanding. Two new blockers remained:
+
+1. **Logout failure safety:** `AuthContext.signOut()` cleared local auth state in `finally`, so a server-side `LOGOUT_FAILED` / session-revocation failure could still make the browser look logged out while the server session remained valid.
+2. **Playwright retry reproducibility:** the E2E flow changed the seeded Somchai/Somsri initial passwords. A failed first attempt followed by a Playwright retry would reuse the already-mutated database and fail the next attempt at initial login; rerunning the suite on the same DB was also not deterministic.
+
+The reviewer also suggested renaming the shared Ticket visibility helper so its name communicates that it is specifically for resources intentionally visible across Requester/Staff/Admin roles.
+
+### Response to Round 2
+
+- Changed `signOut()` so client auth state is cleared **only after** `logoutApi()` succeeds. On `LOGOUT_FAILED`/network failure the current authenticated user remains in memory and the UI shows `Logout failed. Your session may still be active. Please try again.` instead of pretending logout succeeded.
+- Applied the same failure-safe behavior to the mandatory Change Password screen's Logout action. Client tests now cover both the normal authenticated shell and mandatory-password-change mode when Logout rejects.
+- Replaced seeded-user password mutation in Playwright with **fresh dedicated E2E Requesters per attempt**. `test.beforeEach` creates a new pair of active Requesters with the documented initial password and `mustChangePassword=true`; Playwright executes `beforeEach` again on retries, so every attempt receives fresh credentials and ownership state instead of inheriting a previous attempt's password change or Ticket.
+- Added `server/scripts/create-e2e-requesters.ts` with an explicit `E2E_FIXTURE_CREATE_ALLOWED=1` gate plus an E2E database-name guard before fixture creation. The normal development database is not an eligible target.
+- Renamed the policy helper to `sharedResourceTicketVisibilityWhere` to reduce the risk of a later issue treating it as a universal Ticket-access policy.
+- Round 2 fix implementation commit: `36b4f0b` (`fix(lab3): harden logout and e2e retry isolation`).
+- Verification after Round 2 fixes: Server **99/99 (15/15 files)**, Client **46/46 (8/8 files)**, Server build **Pass**, Client build **Pass**, Prisma validate **Pass**, production dependency audit **0 vulnerabilities** on both server/client, and `git diff --check` **Pass**. The Requester Playwright E2E passed **twice consecutively against the same isolated E2E database**, with each run creating a fresh dedicated Requester pair; this demonstrates local rerun reproducibility in addition to per-attempt retry isolation.
 
 Required review focus:
 

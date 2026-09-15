@@ -255,7 +255,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | MIG-11 | AC-27 | manual isolated PostgreSQL rehearsal; fixture `server/tests/lab-03/fixtures/lab2-email-collision.sql`; exact commands in §18 | Lab 2-shaped DB contains two distinct Development Requesters whose emails collide after trim+lowercase | migration aborts explicitly before User/Ticket mutation; no silent merge/overwrite/partial ownership rewrite | **Pass — manual isolated collision preflight evidence** |
 | MIG-12 | AC-27 | manual injected-failure rehearsal in §18 | force a SQL error after the Lab 3 migration has already created/copied/altered data but before `COMMIT` | whole migration transaction rolls back: no `User` table, original `DevelopmentRequester` + Ticket/Attachment rows remain, no Lab 3 Ticket columns survive | **Pass — manual post-mutation rollback evidence** |
 | REG-01 | AC-08/09 | existing Lab 2 server suite adapted/retained + Lab 3 Requester regression tests | full Requester regression under authenticated session identity | green | **Pass — included in 99/99 server tests** |
-| REG-02 | AC-08/09 | existing Lab 2 client suite adapted/retained + Lab 3 Requester UI tests | Requester UI regression under authenticated shell | green | **Pass — 44/44 client tests** |
+| REG-02 | AC-08/09 | existing Lab 2 client suite adapted/retained + Lab 3 Requester UI tests | Requester UI regression under authenticated shell | green | **Pass — 46/46 client tests** |
 
 ## 13. Client UI Tests
 
@@ -279,6 +279,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | UI-PWD-02 | AC-04 | same | mismatch/weak password | inline validation | **Pass** |
 | UI-PWD-03 | AC-04 | same | valid submit busy/success | continue to role app | **Pass** |
 | UI-PWD-04 | AC-04 | same | server validation/failure | safe feedback | **Pass** |
+| UI-PWD-05 | AC-05 | same | mandatory-mode Logout API failure | remain authenticated/in password-change gate; show retryable logout failure | **Pass** |
 
 ### 13.3 Authenticated Shell
 
@@ -289,6 +290,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | UI-SHELL-03 | AC-06 | same | Admin | Admin Users + approved destinations | Planned |
 | UI-SHELL-04 | AC-05 | same | logout | auth state cleared/login rendered | **Pass** |
 | UI-SHELL-05 | AC-04 | `Login.test.tsx` + `ChangePassword.test.tsx` | must-change account | Change Password gate | **Pass** |
+| UI-SHELL-06 | AC-05/29 | `AuthenticatedShell.test.tsx` | Logout API rejects / revoke not confirmed | authenticated UI remains; explicit retryable failure; no false Login state | **Pass** |
 
 ### 13.4 Requester Ticket Detail Extensions
 
@@ -604,7 +606,7 @@ Final Issue 3 evidence:
 - **Public Comments / Requester resolution:** `COM-01`–`COM-09`, `COM-12`, and `COM-13` are green. Requesters are ownership-scoped, comment author/time comes from the backend, blank/over-limit input is rejected, allowed resolution-indication statuses preserve formal Ticket status, repeat indication is idempotent, and terminal statuses return the documented conflict. `COM-10`/`COM-11` remain intentionally planned because the formal Staff status API is Issue #37 scope.
 - **Client auth/requester UI:** Login, mandatory Change Password, authenticated shell, Requester Ticket Detail comments, comment-failure draft preservation, and resolution-indication UI are covered. The Login screen intentionally has no Forgot Password action in current scope.
 - **Server Vitest/Supertest:** **99/99 passed (15/15 test files)** on the PR #43 Round 1 fix head using an isolated `TEST_DATABASE_URL`. This includes direct shared Ticket-visibility policy tests, Origin/session-gate tests for the new Public Comment / Problem Appears Resolved mutations, concurrent resolution-indication coverage, and expanded direct Attachment-id isolation.
-- **Client Vitest:** **44/44 passed (8/8 test files)** on the PR #43 Round 1 fix head. Added coverage includes bootstrap-error Retry state, Unicode-decimal password semantics, and Unicode-safe Public Comment character counting.
+- **Client Vitest:** **46/46 passed (8/8 test files)** after PR #43 Round 2 fixes. Added coverage includes bootstrap-error Retry state, Unicode-decimal password semantics, Unicode-safe Public Comment character counting, authenticated-shell Logout failure, and mandatory-password-change Logout failure.
 - **Requester Playwright E2E:** **1/1 passed** using `e2e/playwright.lab3.config.ts`. The flow covers Requester login → mandatory password change → Create Ticket with attachment → My Tickets search → Ticket Detail → attachment download → Public Comment → Problem Appears Resolved without formal status change → responsive no-horizontal-overflow smoke checks → logout → second Requester isolation. The second Requester's browser session receives `404` for direct access to the first Requester's Ticket and active Attachment.
 - **E2E default:** running `npm test` from `e2e/` now targets the Lab 3 configuration; the old Lab 2 browser flow is retained only as explicit historical `npm run test:lab2` evidence.
 - **Server TypeScript build:** **Pass**.
@@ -612,6 +614,9 @@ Final Issue 3 evidence:
 - **Prisma schema validation:** **Pass**.
 - **Production dependency audit:** `npm audit --omit=dev` reports **0 vulnerabilities** for both server and client.
 - **PR #43 Round 1 fix final rerun:** Prisma schema validation **Pass**, `git diff --check` **Pass**, production dependency audit **0 vulnerabilities** for server/client, and Lab 3 Requester Playwright E2E **1/1 Pass** on a fresh isolated `toktickit_pr43_r1_e2e` database with isolated SeaweedFS.
+- **PR #43 Round 2 logout safety:** client auth state now changes to unauthenticated only after the server Logout call succeeds. `LOGOUT_FAILED`/network failure leaves the authenticated UI/gate intact and shows explicit retryable feedback; tests cover both the normal application shell and mandatory Change Password screen.
+- **PR #43 Round 2 retry isolation:** Playwright no longer mutates the canonical seeded Somchai/Somsri credentials. Every test attempt creates a fresh pair of dedicated E2E Requesters through `server/scripts/create-e2e-requesters.ts`; the helper requires an explicit fixture-creation flag and an E2E-marked database name. Because Playwright re-runs `beforeEach` for retries, a failed attempt cannot poison the next attempt's credentials. The full Requester E2E passed **twice consecutively against the same isolated `toktickit_pr43_r2_e2e` database**, proving ordinary reruns start from fresh user state as well.
+- **PR #43 Round 2 final rerun:** Server **99/99 (15/15)**, Client **46/46 (8/8)**, Server build **Pass**, Client build **Pass**, Prisma validate **Pass**, `npm audit --omit=dev` **0 vulnerabilities** for both server/client, `git diff --check` **Pass**, and Requester E2E **1/1 Pass** on each of two consecutive runs against the same isolated E2E database.
 - **Disposable environment cleanup:** the Issue 3 PostgreSQL container and isolated SeaweedFS containers/volumes/network were removed after verification; the normal development PostgreSQL container/database was not reset or removed.
 - **PR #43 peer review:** Round 1 returned **Changes requested** at head `25b191b`. The authorization blocker was fixed by replacing negative role fallback with one shared explicit allow-list Ticket visibility policy used by Public Comments and Attachment download. Reviewer polish items were also addressed with a separate auth-bootstrap error/Retry state, synchronized Unicode decimal-digit password validation, direct Origin/must-change/inactive tests for the new unsafe mutations, concurrent resolution-indication coverage, and expanded direct Attachment-id isolation.
 - **Public Comment length clarification:** Round 1 feedback stated that the approved limit was 200 characters, but the approved Issue 1 contract at exact reviewed head `70a682e` states **2,000 characters** in `BR-19` and `D-05`, and `api-spec.md` states trimmed content `1–2,000` characters. Issue 3 therefore keeps the reviewed 2,000-character business rule and fixes the actual counting bug by counting Unicode code points rather than UTF-16 code units on both server and client.
