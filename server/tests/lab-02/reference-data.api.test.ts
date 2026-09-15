@@ -4,11 +4,11 @@ import { app } from "../../src/app.js";
 import { UserRole } from "@prisma/client";
 import { cleanupTestUsers, createSessionCookie, createTestUser } from "../lab-03/testAuth.js";
 
-// Lab 2 Issue 2 — reference-data endpoints and Development Requester list.
-// A-1  : GET /api/v1/requesters       returns active requesters only (BR-6)
+// Lab 2 reference data retained under Lab 3 authenticated sessions.
+// The Development Requester directory is intentionally retired in Issue #35.
 // A-14 : GET /api/v1/categories       returns active categories (dropdown)
 // A-15 : GET /api/v1/related-systems  returns active related systems (dropdown)
-// Requires the DB to be migrated and seeded (4 categories, 7 systems, 5 requesters).
+// Requires the DB to be migrated and seeded.
 
 let referenceCookie = "";
 let referenceUserId: number | null = null;
@@ -23,30 +23,10 @@ afterAll(async () => {
   if (referenceUserId !== null) await cleanupTestUsers([referenceUserId]);
 });
 
-describe("GET /api/v1/requesters (A-1)", () => {
-  it("returns 200 with only the four active requesters", async () => {
+describe("retired Development Requester directory", () => {
+  it("does not expose GET /api/v1/requesters in Lab 3", async () => {
     const res = await request(app).get("/api/v1/requesters");
-    expect(res.status).toBe(200);
-    expect(res.body.length).toBeGreaterThanOrEqual(4);
-    for (const requester of res.body) {
-      expect(requester).toEqual(
-        expect.objectContaining({
-          id: expect.any(Number),
-          name: expect.any(String),
-          email: expect.any(String),
-          isActive: true,
-        })
-      );
-    }
-    // The single inactive requester must not appear (BR-6).
-    const emails = res.body.map((r: { email: string }) => r.email);
-    expect(emails).toEqual(expect.arrayContaining([
-      "somchai@toktick.it",
-      "somsri@toktick.it",
-      "anan@toktick.it",
-      "preecha@toktick.it",
-    ]));
-    expect(emails).not.toContain("noppadol@toktick.it");
+    expect(res.status).toBe(404);
   });
 });
 

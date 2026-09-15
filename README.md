@@ -101,7 +101,7 @@ npm run dev
 
 The default client environment points to `http://localhost:3000`. Open the Vite URL shown in the terminal (normally `http://localhost:5173`).
 
-## Development Requester Context
+## Lab 2 Development Requester Context (historical)
 
 Lab 2 intentionally does **not** implement real authentication. On entry, select an active Development Requester from the dropdown. Ticket-scoped requests send the simulated identity through:
 
@@ -109,7 +109,7 @@ Lab 2 intentionally does **not** implement real authentication. On entry, select
 X-Dev-Requester-Id: <requesterId>
 ```
 
-This is for development/testing and requester-isolation evidence only. Staff/Admin workflows and real authentication are outside Lab 2 scope.
+This was the Lab 2 development/testing identity mechanism only. Lab 3 Issue 3 retires the selector, public Requester directory, and runtime `X-Dev-Requester-Id` identity path; current Requester ownership comes from the authenticated server session.
 
 ## Lab 3 Local Authentication Seed
 
@@ -160,7 +160,7 @@ npm install
 npx playwright install chromium
 ```
 
-The Playwright configuration starts its own server on port `3001` and client on `5174`, but it expects PostgreSQL and SeaweedFS to already be available. By default it uses the Compose PostgreSQL database at port `5433`.
+The current Lab 3 Playwright configuration starts its own server on port `3001` and client on `5174`, but it expects a **fresh migrated/seeded E2E PostgreSQL database** and SeaweedFS to already be available. The E2E database must be separate from the normal development database because the flow changes seeded Requester passwords and creates test Tickets.
 
 Run:
 
@@ -168,10 +168,12 @@ Run:
 npm test
 ```
 
-To target another clean E2E database, set `E2E_DATABASE_URL` before running Playwright. Example PowerShell:
+`npm test` runs the current Lab 3 suite through `playwright.lab3.config.ts`. The historical Lab 2 Playwright flow remains available explicitly as `npm run test:lab2` and is not the current default.
+
+Set `E2E_DATABASE_URL` to the fresh E2E database before running Playwright. Example PowerShell:
 
 ```powershell
-$env:E2E_DATABASE_URL="postgresql://toktickit:toktickit@127.0.0.1:5433/toktickit_issue6?schema=public"
+$env:E2E_DATABASE_URL="postgresql://toktickit:toktickit@127.0.0.1:5435/toktickit_e2e_issue3?schema=public"
 npm test
 ```
 

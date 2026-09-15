@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { app } from "../../src/app.js";
 import { requireAuth, requirePasswordChanged, requireRole } from "../../src/auth.js";
-import { DEV_REQUESTER_HEADER } from "../../src/devRequester.js";
 import { getPrisma } from "../../src/prisma.js";
 import {
   cleanupTestUsers,
@@ -73,9 +72,8 @@ describe("Lab 3 authorization foundation", () => {
     expect(await getPrisma().authSession.findUnique({ where: { id: sessionId } })).toBeNull();
   });
 
-  it("AUTH-16: legacy Requester mutation routes reject wrong/missing/null Origin before mutation", async () => {
-    const user = await createTestUser({ role: UserRole.REQUESTER, mustChangePassword: false });
-    createdUserIds.push(user.id);
+  it("AUTH-16: Requester mutation routes reject wrong/missing/null Origin before mutation", async () => {
+    const { cookie } = await userWithSession({ role: UserRole.REQUESTER, mustChangePassword: false });
     const prisma = getPrisma();
     const before = {
       tickets: await prisma.ticket.count(),
@@ -85,7 +83,7 @@ describe("Lab 3 authorization foundation", () => {
     for (const origin of [undefined, "null", "https://wrong.example"]) {
       let createTicket = request(app)
         .post("/api/v1/tickets")
-        .set(DEV_REQUESTER_HEADER, String(user.id));
+        .set("Cookie", cookie);
       if (origin !== undefined) createTicket = createTicket.set("Origin", origin);
       const createTicketResponse = await createTicket.send({});
       expect(createTicketResponse.status).toBe(403);
@@ -93,7 +91,7 @@ describe("Lab 3 authorization foundation", () => {
 
       let upload = request(app)
         .post("/api/v1/tickets/999999/attachments")
-        .set(DEV_REQUESTER_HEADER, String(user.id));
+        .set("Cookie", cookie);
       if (origin !== undefined) upload = upload.set("Origin", origin);
       const uploadResponse = await upload.attach("files", Buffer.from("proof"), {
         filename: "proof.txt",
@@ -104,7 +102,7 @@ describe("Lab 3 authorization foundation", () => {
 
       let remove = request(app)
         .delete("/api/v1/attachments/999999")
-        .set(DEV_REQUESTER_HEADER, String(user.id));
+        .set("Cookie", cookie);
       if (origin !== undefined) remove = remove.set("Origin", origin);
       const removeResponse = await remove.send({ reason: "test" });
       expect(removeResponse.status).toBe(403);

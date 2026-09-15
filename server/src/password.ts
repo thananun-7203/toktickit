@@ -25,7 +25,7 @@ export function validatePassword(value: unknown): PasswordValidation {
   if (!/\p{L}/u.test(value)) {
     return { valid: false, message: "Password must include at least one letter" };
   }
-  if (!/\p{N}/u.test(value)) {
+  if (!/\p{Nd}/u.test(value)) {
     return { valid: false, message: "Password must include at least one digit" };
   }
   if (utf8ByteLength(value) > PASSWORD_MAX_UTF8_BYTES) {
