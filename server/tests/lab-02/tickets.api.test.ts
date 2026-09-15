@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import request from "supertest";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
+import { TEST_ORIGIN } from "../lab-03/testAuth.js";
 
 // Lab 2 Issue 3 — POST /api/v1/tickets (A-2, A-3, A-4) plus the middleware
 // 401 path. Requires the DB to be migrated and seeded.
@@ -30,7 +31,7 @@ afterEach(async () => {
 
 describe("POST /api/v1/tickets", () => {
   it("A-4: returns 401 when the X-Dev-Requester-Id header is missing", async () => {
-    const res = await request(app).post("/api/v1/tickets").send(validPayload);
+    const res = await request(app).post("/api/v1/tickets").set("Origin", TEST_ORIGIN).send(validPayload);
     expect(res.status).toBe(401);
     expect(res.body.error.message).toMatch(/header/i);
   });
@@ -38,6 +39,7 @@ describe("POST /api/v1/tickets", () => {
   it("A-4: returns 401 when the requester header is inactive", async () => {
     const res = await request(app)
       .post("/api/v1/tickets")
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", "5") // Noppadol = inactive
       .send(validPayload);
     expect(res.status).toBe(401);
@@ -46,6 +48,7 @@ describe("POST /api/v1/tickets", () => {
   it("A-4: returns 400 with per-field messages when required fields are missing", async () => {
     const res = await request(app)
       .post("/api/v1/tickets")
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(ACTIVE_REQUESTER_ID))
       .send({});
     expect(res.status).toBe(400);
@@ -62,6 +65,7 @@ describe("POST /api/v1/tickets", () => {
   it("A-16: returns 400 for an unsupported Requested Priority", async () => {
     const res = await request(app)
       .post("/api/v1/tickets")
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(ACTIVE_REQUESTER_ID))
       .send({ ...validPayload, requestedPriority: "Urgent" });
     expect(res.status).toBe(400);
@@ -71,6 +75,7 @@ describe("POST /api/v1/tickets", () => {
   it("A-3: returns 400 when summary is too long", async () => {
     const res = await request(app)
       .post("/api/v1/tickets")
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(ACTIVE_REQUESTER_ID))
       .send({ ...validPayload, summary: "a".repeat(101) });
     expect(res.status).toBe(400);
@@ -81,6 +86,7 @@ describe("POST /api/v1/tickets", () => {
     for (const bad of [0, -1, 1.5, "1"]) {
       const res = await request(app)
         .post("/api/v1/tickets")
+        .set("Origin", TEST_ORIGIN)
         .set("X-Dev-Requester-Id", String(ACTIVE_REQUESTER_ID))
         .send({ ...validPayload, categoryId: bad });
       expect(res.status).toBe(400);
@@ -91,6 +97,7 @@ describe("POST /api/v1/tickets", () => {
   it("A-2: creates a ticket with a generated Ticket Number and status New", async () => {
     const res = await request(app)
       .post("/api/v1/tickets")
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(ACTIVE_REQUESTER_ID))
       .send(validPayload);
 

@@ -7,6 +7,7 @@ import {
   resetAttachmentStorageForTests,
   setAttachmentStorageForTests,
 } from "../../src/attachmentStorage.js";
+import { TEST_ORIGIN } from "../lab-03/testAuth.js";
 
 const R1 = 1;
 const R2 = 2;
@@ -61,6 +62,7 @@ afterEach(async () => {
 async function createTicket(requesterId: number) {
   const res = await request(app)
     .post("/api/v1/tickets")
+    .set("Origin", TEST_ORIGIN)
     .set("X-Dev-Requester-Id", String(requesterId))
     .send({
       categoryId: 1,
@@ -117,6 +119,7 @@ describe("Ticket attachments", () => {
 
     const upload = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(R1))
       .attach("files", body, { filename: "screenshot.png", contentType: "image/png" });
 
@@ -142,6 +145,7 @@ describe("Ticket attachments", () => {
 
     const badType = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(R1))
       .attach("files", Buffer.from("valid part"), { filename: "okay.pdf", contentType: "application/pdf" })
       .attach("files", Buffer.from("bad part"), { filename: "script.exe", contentType: "application/octet-stream" });
@@ -150,6 +154,7 @@ describe("Ticket attachments", () => {
 
     const tooLarge = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(R1))
       .attach("files", Buffer.alloc(5 * 1024 * 1024 + 1), {
         filename: "too-large.pdf",
@@ -169,6 +174,7 @@ describe("Ticket attachments", () => {
     const ticket = await createTicket(R1);
     const first = request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(R1));
     for (let i = 1; i <= 5; i++) {
       first.attach("files", Buffer.from(`file-${i}`), {
@@ -180,6 +186,7 @@ describe("Ticket attachments", () => {
 
     const sixth = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(R1))
       .attach("files", Buffer.from("sixth"), { filename: "sixth.pdf", contentType: "application/pdf" });
     expect(sixth.status).toBe(400);
@@ -195,6 +202,7 @@ describe("Ticket attachments", () => {
     const ticket = await createTicket(R1);
     const initial = request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(R1));
     for (let i = 1; i <= 4; i++) {
       initial.attach("files", Buffer.from(`initial-${i}`), {
@@ -214,6 +222,7 @@ describe("Ticket attachments", () => {
     const [uploadA, uploadB] = await Promise.all([
       request(app)
         .post(`/api/v1/tickets/${ticket.id}/attachments`)
+        .set("Origin", TEST_ORIGIN)
         .set("X-Dev-Requester-Id", String(R1))
         .attach("files", Buffer.from("concurrent-a"), {
           filename: "concurrent-a.pdf",
@@ -221,6 +230,7 @@ describe("Ticket attachments", () => {
         }),
       request(app)
         .post(`/api/v1/tickets/${ticket.id}/attachments`)
+        .set("Origin", TEST_ORIGIN)
         .set("X-Dev-Requester-Id", String(R1))
         .attach("files", Buffer.from("concurrent-b"), {
           filename: "concurrent-b.pdf",
@@ -251,6 +261,7 @@ describe("Ticket attachments", () => {
     const ticket = await createTicket(R1);
     const upload = request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(R1));
     for (let i = 1; i <= 6; i++) {
       upload.attach("files", Buffer.from(`file-${i}`), {
@@ -270,6 +281,7 @@ describe("Ticket attachments", () => {
     const body = Buffer.from("download me");
     const upload = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(R1))
       .attach("files", body, { filename: "report.pdf", contentType: "application/pdf" });
     const attachment = upload.body[0] as { id: number };
@@ -284,6 +296,7 @@ describe("Ticket attachments", () => {
 
     const removed = await request(app)
       .delete(`/api/v1/attachments/${attachment.id}`)
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(R1))
       .send({ reason: "Duplicate evidence" });
     expect(removed.status).toBe(200);
@@ -304,6 +317,7 @@ describe("Ticket attachments", () => {
 
     const removedAgain = await request(app)
       .delete(`/api/v1/attachments/${attachment.id}`)
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(R1))
       .send({ reason: "Second attempt" });
     expect(removedAgain.status).toBe(409);
@@ -314,6 +328,7 @@ describe("Ticket attachments", () => {
     const ticket = await createTicket(R1);
     const upload = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(R1))
       .attach("files", Buffer.from("reason required"), {
         filename: "reason-required.pdf",
@@ -323,6 +338,7 @@ describe("Ticket attachments", () => {
 
     const missing = await request(app)
       .delete(`/api/v1/attachments/${attachmentId}`)
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(R1))
       .send({});
     expect(missing.status).toBe(400);
@@ -330,6 +346,7 @@ describe("Ticket attachments", () => {
 
     const blank = await request(app)
       .delete(`/api/v1/attachments/${attachmentId}`)
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(R1))
       .send({ reason: "   " });
     expect(blank.status).toBe(400);
@@ -347,6 +364,7 @@ describe("Ticket attachments", () => {
     const ticket = await createTicket(R1);
     const upload = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(R1))
       .attach("files", Buffer.from("remove race"), {
         filename: "remove-race.pdf",
@@ -357,10 +375,12 @@ describe("Ticket attachments", () => {
     const [removeA, removeB] = await Promise.all([
       request(app)
         .delete(`/api/v1/attachments/${attachmentId}`)
+        .set("Origin", TEST_ORIGIN)
         .set("X-Dev-Requester-Id", String(R1))
         .send({ reason: "Concurrent reason A" }),
       request(app)
         .delete(`/api/v1/attachments/${attachmentId}`)
+        .set("Origin", TEST_ORIGIN)
         .set("X-Dev-Requester-Id", String(R1))
         .send({ reason: "Concurrent reason B" }),
     ]);
@@ -381,6 +401,7 @@ describe("Ticket attachments", () => {
     const ticket = await createTicket(R1);
     const upload = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(R1))
       .attach("files", Buffer.from("storage failure test"), {
         filename: "storage.pdf",
@@ -408,6 +429,7 @@ describe("Ticket attachments", () => {
     const ticket = await createTicket(R2);
     const upload = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(R2))
       .attach("files", Buffer.from("private"), { filename: "private.pdf", contentType: "application/pdf" });
     const id = upload.body[0].id as number;
@@ -419,6 +441,7 @@ describe("Ticket attachments", () => {
 
     const remove = await request(app)
       .delete(`/api/v1/attachments/${id}`)
+      .set("Origin", TEST_ORIGIN)
       .set("X-Dev-Requester-Id", String(R1))
       .send({ reason: "Should not be accepted" });
     expect(remove.status).toBe(404);

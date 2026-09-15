@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import request from "supertest";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
+import { TEST_ORIGIN } from "../lab-03/testAuth.js";
 
 // Lab 2 Issue 4 — GET /api/v1/tickets (A-6, A-7, A-8, A-9) + 401/400
 // Requires DB migrated and seeded. Uses the five seeded requesters.
@@ -30,6 +31,7 @@ async function createTicket(requesterId: number, overrides: Record<string, unkno
   };
   const res = await request(app)
     .post("/api/v1/tickets")
+    .set("Origin", TEST_ORIGIN)
     .set("X-Dev-Requester-Id", String(requesterId))
     .send(payload);
   if (res.status !== 201) throw new Error(`createTicket failed ${res.status} ${JSON.stringify(res.body)}`);

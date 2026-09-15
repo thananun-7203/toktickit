@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { app } from "../../src/app.js";
 import { requireAuth, requirePasswordChanged, requireRole } from "../../src/auth.js";
+import { DEV_REQUESTER_HEADER } from "../../src/devRequester.js";
 import { getPrisma } from "../../src/prisma.js";
 import {
   cleanupTestUsers,
@@ -28,6 +29,7 @@ afterEach(async () => {
 
 describe("Lab 3 authorization foundation", () => {
   it("AZ-01/AZ-14: protected app/reference-data routes reject an unauthenticated request", async () => {
+    expect((await request(app).get("/api/categories")).status).toBe(401);
     expect((await request(app).get("/api/v1/categories")).status).toBe(401);
     expect((await request(app).get("/api/v1/related-systems")).status).toBe(401);
   });
@@ -42,8 +44,10 @@ describe("Lab 3 authorization foundation", () => {
   it("authenticated users of each approved role can read reference data after the password gate", async () => {
     for (const role of [UserRole.REQUESTER, UserRole.IT_STAFF, UserRole.ADMINISTRATOR]) {
       const { cookie } = await userWithSession({ role, mustChangePassword: false });
+      const legacyCategories = await request(app).get("/api/categories").set("Cookie", cookie);
       const categories = await request(app).get("/api/v1/categories").set("Cookie", cookie);
       const systems = await request(app).get("/api/v1/related-systems").set("Cookie", cookie);
+      expect(legacyCategories.status).toBe(200);
       expect(categories.status).toBe(200);
       expect(systems.status).toBe(200);
     }
@@ -67,6 +71,48 @@ describe("Lab 3 authorization foundation", () => {
       .set("Origin", TEST_ORIGIN);
     expect(allowed.status).toBe(204);
     expect(await getPrisma().authSession.findUnique({ where: { id: sessionId } })).toBeNull();
+  });
+
+  it("AUTH-16: legacy Requester mutation routes reject wrong/missing/null Origin before mutation", async () => {
+    const user = await createTestUser({ role: UserRole.REQUESTER, mustChangePassword: false });
+    createdUserIds.push(user.id);
+    const prisma = getPrisma();
+    const before = {
+      tickets: await prisma.ticket.count(),
+      attachments: await prisma.attachment.count(),
+    };
+
+    for (const origin of [undefined, "null", "https://wrong.example"]) {
+      let createTicket = request(app)
+        .post("/api/v1/tickets")
+        .set(DEV_REQUESTER_HEADER, String(user.id));
+      if (origin !== undefined) createTicket = createTicket.set("Origin", origin);
+      const createTicketResponse = await createTicket.send({});
+      expect(createTicketResponse.status).toBe(403);
+      expect(createTicketResponse.body.error.code).toBe("ORIGIN_FORBIDDEN");
+
+      let upload = request(app)
+        .post("/api/v1/tickets/999999/attachments")
+        .set(DEV_REQUESTER_HEADER, String(user.id));
+      if (origin !== undefined) upload = upload.set("Origin", origin);
+      const uploadResponse = await upload.attach("files", Buffer.from("proof"), {
+        filename: "proof.txt",
+        contentType: "text/plain",
+      });
+      expect(uploadResponse.status).toBe(403);
+      expect(uploadResponse.body.error.code).toBe("ORIGIN_FORBIDDEN");
+
+      let remove = request(app)
+        .delete("/api/v1/attachments/999999")
+        .set(DEV_REQUESTER_HEADER, String(user.id));
+      if (origin !== undefined) remove = remove.set("Origin", origin);
+      const removeResponse = await remove.send({ reason: "test" });
+      expect(removeResponse.status).toBe(403);
+      expect(removeResponse.body.error.code).toBe("ORIGIN_FORBIDDEN");
+    }
+
+    expect(await prisma.ticket.count()).toBe(before.tickets);
+    expect(await prisma.attachment.count()).toBe(before.attachments);
   });
 
   it("reusable requireRole middleware permits Admin and rejects Requester", async () => {

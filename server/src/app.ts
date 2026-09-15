@@ -6,7 +6,12 @@ import { getPrisma } from "./prisma.js";
 import { filterActiveRequesters } from "./requesterFilter.js";
 import { requireDevRequester } from "./devRequester.js";
 import { authRouter } from "./authRoutes.js";
-import { CLIENT_ORIGIN, requireAuth, requirePasswordChanged } from "./auth.js";
+import {
+  CLIENT_ORIGIN,
+  requireApprovedOrigin,
+  requireAuth,
+  requirePasswordChanged,
+} from "./auth.js";
 import { generateTicketNumber, isTicketNumberConflict } from "./ticketNumber.js";
 import { validateTicketInput } from "./ticketValidation.js";
 import { toPrismaOrderBy, validateTicketQuery } from "./ticketQuery.js";
@@ -85,7 +90,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 // GET /api/categories reads categories from PostgreSQL through Prisma and
 // returns each { id, name } in predictable (id) order.
 // ---------------------------------------------------------------------------
-app.get("/api/categories", async (_req: Request, res: Response) => {
+app.get("/api/categories", requireAuth, requirePasswordChanged, async (_req: Request, res: Response) => {
   try {
     const prisma = getPrisma();
     const categories = await prisma.category.findMany({
@@ -153,6 +158,7 @@ app.get("/api/v1/related-systems", requireAuth, requirePasswordChanged, async (_
 // ---------------------------------------------------------------------------
 app.post(
   "/api/v1/tickets",
+  requireApprovedOrigin,
   requireDevRequester,
   async (req: Request, res: Response) => {
     try {
@@ -331,6 +337,7 @@ app.get("/api/v1/tickets/:id", requireDevRequester, async (req: Request, res: Re
 // Issue 5 — Upload attachments to an owned ticket.
 app.post(
   "/api/v1/tickets/:id/attachments",
+  requireApprovedOrigin,
   requireDevRequester,
   parseAttachmentUpload,
   async (req: Request, res: Response) => {
@@ -505,66 +512,71 @@ app.get(
 );
 
 // Issue 5 — Soft-remove an attachment while retaining metadata and storage.
-app.delete("/api/v1/attachments/:id", requireDevRequester, async (req: Request, res: Response) => {
-  try {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) {
-      res.status(404).json({ error: { message: "Attachment not found" } });
-      return;
-    }
+app.delete(
+  "/api/v1/attachments/:id",
+  requireApprovedOrigin,
+  requireDevRequester,
+  async (req: Request, res: Response) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id) || id <= 0) {
+        res.status(404).json({ error: { message: "Attachment not found" } });
+        return;
+      }
 
-    const prisma = getPrisma();
-    const requester = res.locals.devRequester!;
-    const attachment = await prisma.attachment.findFirst({
-      where: { id, ticket: { requesterId: requester.id } },
-    });
-    if (!attachment) {
-      res.status(404).json({ error: { message: "Attachment not found" } });
-      return;
-    }
-    if (attachment.removedAt) {
-      res.status(409).json({ error: { message: "Attachment already removed" } });
-      return;
-    }
+      const prisma = getPrisma();
+      const requester = res.locals.devRequester!;
+      const attachment = await prisma.attachment.findFirst({
+        where: { id, ticket: { requesterId: requester.id } },
+      });
+      if (!attachment) {
+        res.status(404).json({ error: { message: "Attachment not found" } });
+        return;
+      }
+      if (attachment.removedAt) {
+        res.status(409).json({ error: { message: "Attachment already removed" } });
+        return;
+      }
 
-    const reason = typeof req.body?.reason === "string" ? req.body.reason.trim() : "";
-    if (!reason) {
-      res.status(400).json({ error: { message: "Removal reason is required" } });
-      return;
-    }
+      const reason = typeof req.body?.reason === "string" ? req.body.reason.trim() : "";
+      if (!reason) {
+        res.status(400).json({ error: { message: "Removal reason is required" } });
+        return;
+      }
 
-    const removedAt = new Date();
-    // Make the state transition atomic. With concurrent DELETEs, only the
-    // first request can change removedAt from NULL; the loser updates zero rows
-    // and therefore returns the documented 409 instead of a second 200.
-    const result = await prisma.attachment.updateMany({
-      where: { id, removedAt: null },
-      data: { removedAt, removalReason: reason },
-    });
-    if (result.count === 0) {
-      res.status(409).json({ error: { message: "Attachment already removed" } });
-      return;
-    }
+      const removedAt = new Date();
+      // Make the state transition atomic. With concurrent DELETEs, only the
+      // first request can change removedAt from NULL; the loser updates zero rows
+      // and therefore returns the documented 409 instead of a second 200.
+      const result = await prisma.attachment.updateMany({
+        where: { id, removedAt: null },
+        data: { removedAt, removalReason: reason },
+      });
+      if (result.count === 0) {
+        res.status(409).json({ error: { message: "Attachment already removed" } });
+        return;
+      }
 
-    const updated = await prisma.attachment.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        fileName: true,
-        mimeType: true,
-        sizeBytes: true,
-        removedAt: true,
-        removalReason: true,
-      },
-    });
-    if (!updated) {
-      res.status(404).json({ error: { message: "Attachment not found" } });
-      return;
+      const updated = await prisma.attachment.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          fileName: true,
+          mimeType: true,
+          sizeBytes: true,
+          removedAt: true,
+          removalReason: true,
+        },
+      });
+      if (!updated) {
+        res.status(404).json({ error: { message: "Attachment not found" } });
+        return;
+      }
+      res.json(updated);
+    } catch {
+      res.status(500).json({ error: { message: "Unable to remove attachment" } });
     }
-    res.json(updated);
-  } catch {
-    res.status(500).json({ error: { message: "Unable to remove attachment" } });
-  }
-});
+  },
+);
 
 export default app;

@@ -107,10 +107,30 @@ Round 1 was resolved before Issue 2 implementation began, including removing the
 
 ## 5. Issue 2 — User Migration, Authentication & Authorization Foundation
 
-- PR: Pending.
-- Reviewer feedback: Pending.
-- Response: Pending.
-- Verdict: Pending.
+- PR: #42 — `[Lab 3] Issue 2: User Migration, Authentication & Authorization Foundation`.
+- Base/head: `lab3-staging` ← `feature/2-user-migration-auth`.
+- Round 1 reviewer: `Tanaboonnnnn`.
+- Round 1 reviewed head: `86fdbac61e2444ee45b83f3304e8c0aa164e3357`.
+- Round 1 submitted: 2026-09-15T06:09:07Z.
+- Reviewer state: **Changes requested**.
+- Verdict: **Changes requested — fixes implemented on the feature branch; re-review pending.**
+
+### Round 1 reviewer feedback
+
+The reviewer confirmed that the ID-preserving migration, hashed session token, bcrypt UTF-8 boundary, password/session rotation, migration preflight, deactivated-session invalidation, and non-destructive seed were strong. Three corrections were requested before merge:
+
+1. **Reference-data auth bypass:** legacy `GET /api/categories` was still public while `/api/v1/categories` was protected. The reviewer required the alias to be protected or removed and required a negative authorization test so the older route could not bypass the Lab 3 authenticated-only Reference Data contract.
+2. **Migration evidence accuracy:** `tests.md` marked `MIG-01`–`MIG-06`/`MIG-11` as passing while pointing to `migration-regression.test.ts`, but that automated file did not exist at reviewed head. The reviewer accepted either a real automated migration test or truthful, reproducible manual evidence with exact commands, fixtures, and results.
+3. **Origin/CSRF gap on legacy mutations:** auth mutations enforced Origin, but the still-temporary Lab 2 Requester mutation routes did not. The reviewer requested the approved Origin boundary on Ticket creation, attachment upload, and attachment soft-remove even though requester-identity cutover itself remains scoped to Issue #35.
+
+### Response to Round 1
+
+- Protected legacy `GET /api/categories` with the same `requireAuth` + `requirePasswordChanged` gate as the v1 reference-data endpoints. Direct tests now assert unauthenticated `401` for `/api/categories`, `/api/v1/categories`, and `/api/v1/related-systems`, and confirm permitted authenticated roles can still read reference data.
+- Added `requireApprovedOrigin` before every currently implemented non-auth mutation route: `POST /api/v1/tickets`, `POST /api/v1/tickets/:id/attachments`, and `DELETE /api/v1/attachments/:id`. Direct API tests exercise wrong, missing, and `Origin: null` across all three and assert no Ticket/Attachment mutation.
+- Corrected migration evidence rather than inventing an automated test. `MIG-01`–`MIG-06` and `MIG-11` are now explicitly labelled **manual isolated PostgreSQL evidence**. Two committed SQL fixtures plus exact PowerShell/Docker/PostgreSQL commands and observed results are recorded in `tests.md`. The planned `migration-regression.test.ts` is explicitly marked as not present in Issue 2.
+- Repeated the manual migration rehearsal on a fresh PostgreSQL 16 container: exact requester ids and Ticket ownership were preserved; historical attachment removal metadata survived; null/non-null priority behavior stayed correct; normalized-email collision aborted before the `User` table was created.
+- Reran the isolated implementation suite after the fixes: Server **76/76** (11/11 files), Client **25/25** (5/5 files), Server build **Pass**, Client build **Pass**, Prisma validate **Pass**, production dependency audit **0 vulnerabilities**.
+- Hosted CI is still not claimed green; PR #42 had no hosted status checks at the reviewed head.
 
 Required review focus when this Issue starts:
 
