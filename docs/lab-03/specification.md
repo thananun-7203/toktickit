@@ -234,6 +234,7 @@ Lab 3 keeps Administrator and IT Staff responsibilities conceptually separate in
 | BR-32 | Users are deactivated rather than deleted. User deletion is not exposed by the API. |
 | BR-33 | Setting a new initial password sets `mustChangePassword=true`; existing authenticated sessions for that target user are invalidated so the new credential state takes effect safely. |
 | BR-34 | If a user currently owns one or more Tickets, Administrator User Management cannot deactivate that user or change their role to `REQUESTER`. The operation returns `409 ASSIGNED_TICKETS_REQUIRE_REASSIGNMENT` with no user/Ticket mutation; all owned Tickets must be reassigned first. |
+| BR-35 | Ticket-owner eligibility is a transactional invariant, not a check-then-write convention. Claim/assign/reassign and Administrator deactivate/demote-to-`REQUESTER` operations must serialize on the affected owner user(s), re-read eligibility/ownership inside the same database transaction immediately before mutation, and commit only if BR-21/BR-34 still hold. A concurrent race must never commit a Ticket whose `ownerId` references an inactive user or a `REQUESTER`; one competing operation must fail with a documented `409` conflict instead. |
 
 ## 7. Ticket Status Transition Matrix
 
@@ -349,16 +350,17 @@ Recommended indexes: `requesterId`, `ownerId`, `status`, `itPriority`, `createdA
 
 ### 9.2 Migration Steps
 
-1. Add User/role/password/session and operational Ticket/comment/note structures in a migration-safe form.
-2. Copy/evolve each Lab 2 `DevelopmentRequester` into a `User` with role `REQUESTER` while preserving the numeric id exactly (`User.id = DevelopmentRequester.id`). After explicit-id inserts, advance the User id sequence/identity to at least the migrated maximum before creating new Staff/Admin users. Lab 3 does not use an alternate old→new requester-id mapping strategy.
-3. Assign documented local initial passwords as hashes and set `mustChangePassword=true` for migrated Requesters.
-4. Repoint each existing Ticket requester FK to the corresponding User; verify counts and ownership before removing the obsolete relation/model.
-5. Preserve existing Ticket Number, Summary, Description, Requested Priority, status, Category, Related System, timestamps, and Attachment rows.
-6. Add `ownerId = null` for migrated Tickets unless seed/demo data intentionally assigns an owner later.
-7. Set `itPriority = requestedPriority` when historical `requestedPriority` is non-null; otherwise leave null.
-8. Add `updatedAt` with safe backfill from `createdAt` for historical Tickets.
-9. Remove/retire Development Requester API/client state only after migration verification succeeds.
-10. Run migration on a disposable/clean Lab 2-shaped test database and verify Ticket/Attachment counts and ownership before using it on the normal development database.
+1. Before mutating data, preflight every existing `DevelopmentRequester.email` using the Lab 3 normalization rule (`trim + lowercase`). If two distinct source Requesters normalize to the same email, abort the migration explicitly with a collision report; do not merge accounts, pick a winner, or partially mutate User/Ticket data.
+2. Add User/role/password/session and operational Ticket/comment/note structures in a migration-safe form.
+3. Copy/evolve each Lab 2 `DevelopmentRequester` into a `User` with role `REQUESTER` while preserving the numeric id exactly (`User.id = DevelopmentRequester.id`). After explicit-id inserts, advance the User id sequence/identity to at least the migrated maximum before creating new Staff/Admin users. Lab 3 does not use an alternate old→new requester-id mapping strategy.
+4. Assign documented local initial passwords as hashes and set `mustChangePassword=true` for migrated Requesters.
+5. Repoint each existing Ticket requester FK to the corresponding User; verify counts and ownership before removing the obsolete relation/model.
+6. Preserve existing Ticket Number, Summary, Description, Requested Priority, status, Category, Related System, timestamps, and Attachment rows.
+7. Add `ownerId = null` for migrated Tickets unless seed/demo data intentionally assigns an owner later.
+8. Set `itPriority = requestedPriority` when historical `requestedPriority` is non-null; otherwise leave null.
+9. Add `updatedAt` with safe backfill from `createdAt` for historical Tickets.
+10. Remove/retire Development Requester API/client state only after migration verification succeeds.
+11. Run migration on a disposable/clean Lab 2-shaped test database and verify Ticket/Attachment counts and ownership before using it on the normal development database.
 
 ### 9.3 Migration Invariants
 
@@ -366,6 +368,7 @@ Recommended indexes: `requesterId`, `ownerId`, `status`, `itPriority`, `createdA
 - Attachment count before migration = Attachment count after migration.
 - Every pre-Lab-3 Ticket remains linked to the same logical Requester email/name.
 - Every migrated Requester keeps the same numeric id, so each pre-Lab-3 `Ticket.requesterId` continues to identify the same person after its FK is repointed to `User`.
+- Email normalization is collision-free before migration writes begin; a case/whitespace collision aborts explicitly rather than silently merging or overwriting users.
 - Existing removed attachments keep `removedAt` and `removalReason`.
 - No plaintext password is introduced during migration/seed.
 
@@ -454,6 +457,7 @@ Error categories are deliberately distinct: `400` invalid input, `401` unauthent
 | AC-29 | Major Lab 3 screens provide meaningful loading/validation/success/empty/no-results/forbidden/failure feedback. |
 | AC-30 | Major Lab 3 screens are usable at desktop, tablet, and mobile sizes with no page-level horizontal overflow and accessible labels/focus behavior. |
 | AC-31 | If an active IT Staff/Administrator owns one or more Tickets, Administrator User Management rejects deactivation or demotion to `REQUESTER` with `409 ASSIGNED_TICKETS_REQUIRE_REASSIGNMENT` until those Tickets are reassigned. |
+| AC-32 | Concurrent owner assignment/reassignment and Administrator deactivate/demote operations preserve the owner invariant atomically: after both requests finish, every non-null `Ticket.ownerId` still references an active `IT_STAFF`/`ADMINISTRATOR`; at least one conflicting operation is rejected rather than committing an invalid final state. |
 
 Every AC must map to at least one planned test in `tests.md` before implementation PRs are completed.
 
@@ -500,3 +504,5 @@ Sprint 3 is product-complete only when all applicable items below are true:
 | D-10 | Issue 1 documents planned contracts; final statuses/evidence are updated only from actual implementation/test/review results. | Prevents documentation from claiming work before it exists. |
 | D-11 | Lab 2 Requester ids are preserved exactly during `DevelopmentRequester → User` migration. | Removes migration ambiguity, keeps existing `Ticket.requesterId` values stable, and makes ownership verification deterministic. |
 | D-12 | `Problem Appears Resolved` is allowed only in non-terminal workflow states: `New`, `Open`, `In Progress`, `Waiting for Requester`, and `Reopened`. | Prevents a Requester from adding a redundant/confusing resolution indication after staff has already formally resolved, closed, or cancelled the Ticket. |
+| D-13 | Owner eligibility is protected by transaction-level serialization/revalidation across Ticket ownership changes and Admin role/activation changes. | Prevents races from committing a Ticket owned by an inactive user or Requester even when both requests passed an earlier application-level check. |
+| D-14 | Migration performs a normalized-email collision preflight and aborts explicitly before data mutation when collisions exist. | Preserves one-to-one requester identity and prevents silent account merges caused by lowercasing/trim normalization. |

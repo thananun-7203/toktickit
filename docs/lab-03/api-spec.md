@@ -496,7 +496,10 @@ Rules:
 - Claim sets owner to authenticated user.
 - `ownerId` is ignored/not allowed for claim.
 - Lab 3 does not expose an unassign action; once a Ticket is assigned, ownership changes by reassignment to another eligible owner.
-- Concurrency conflict should return `409` rather than silently overwrite when implementation detects stale/current-state mismatch.
+- Claim/assign/reassign must preserve the owner invariant atomically with concurrent Administrator role/activation changes. The operation must use a database transaction plus a serialization mechanism on the affected owner user(s) (for example row-level locking, serializable transaction semantics, or an equivalent conditional-write strategy), re-read `isActive`/`role` after serialization, and update the Ticket only while the target still satisfies the owner rule.
+- Reassignment must coordinate both the current owner and target owner in a deterministic order where multiple user rows are involved so that a concurrent deactivate/demote cannot commit an invalid owner reference.
+- If a concurrent Admin change wins first and the target is no longer eligible, the owner mutation returns `409 OWNER_NOT_ELIGIBLE` (or an equivalent documented conflict) and does not change the Ticket. If the owner mutation wins first, a competing deactivate/demote must observe the assignment and fail with `409 ASSIGNED_TICKETS_REQUIRE_REASSIGNMENT`.
+- Other stale/current-state concurrency conflicts return `409` rather than silently overwriting newer state.
 
 Success `200`: updated owner + `updatedAt`.
 
@@ -645,6 +648,7 @@ Rules:
 - Changing/deactivating the last active Administrator so zero active Administrators remain → `409 LAST_ACTIVE_ADMIN_REQUIRED`.
 - Role change from Administrator to another role counts toward last-admin safety.
 - If the target user currently owns one or more Tickets, setting `isActive=false` or changing role to `REQUESTER` → `409 ASSIGNED_TICKETS_REQUIRE_REASSIGNMENT`; neither the user nor any Ticket is mutated. The Tickets must be reassigned through the staff owner endpoint first.
+- The assigned-Ticket check and user eligibility mutation occur in the same database transaction and serialize on the target user using the same owner-invariant strategy as section 7.1. After serialization, the server re-reads current owned Tickets before committing. This prevents assign/reassign racing with deactivate/demote from producing an invalid `Ticket.ownerId`.
 - No delete behavior.
 
 Success `200`: updated safe user object.

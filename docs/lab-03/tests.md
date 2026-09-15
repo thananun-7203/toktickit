@@ -230,6 +230,9 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | ADM-17 | AC-26 | `authorization.api.test.ts` | Requester/IT Staff hit admin list/create/edit | `403` | Planned |
 | ADM-18 | AC-31 | `users-admin.api.test.ts` | deactivate an IT Staff/Admin who currently owns ≥1 Ticket | `409 ASSIGNED_TICKETS_REQUIRE_REASSIGNMENT`; user remains active and Ticket owner unchanged | Planned |
 | ADM-19 | AC-31 | same | change an assigned IT Staff/Admin role to `REQUESTER` | same `409`; role and Ticket owner unchanged until Tickets are reassigned | Planned |
+| ADM-20 | AC-32 | `users-admin.api.test.ts` | concurrently assign an unassigned Ticket to eligible user X and deactivate X | at most one state-changing operation succeeds; final DB state is either assigned+active or unassigned+inactive, never assigned+inactive | Planned |
+| ADM-21 | AC-32 | same | concurrently assign an unassigned Ticket to eligible user X and demote X to `REQUESTER` | at most one state-changing operation succeeds; final DB state is either assigned+eligible-role or unassigned+Requester, never Ticket owned by Requester | Planned |
+| ADM-22 | AC-32 | same | concurrently reassign a Ticket to eligible user X while Admin deactivates or demotes X | one side conflicts as required; final non-null owner always remains active IT Staff/Admin | Planned |
 
 ## 12. Migration / Seed / Regression Tests
 
@@ -245,6 +248,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | MIG-08 | AC-28 | seed verification | account counts | ≥4 active + 1 inactive Requester; ≥3 active + 1 inactive Staff; ≥1 active Admin | Planned |
 | MIG-09 | AC-28 | seed verification | seeded Tickets/comments/notes | realistic distribution; no sensitive content | Planned |
 | MIG-10 | AC-28 | seed verification | seed once → mutate seeded password/role/active state/Ticket status-owner-priority → seed again | no duplicate rows and mutable state is not reset to original demo values | Planned |
+| MIG-11 | AC-27 | `migration-regression.test.ts` | Lab 2-shaped DB contains two distinct Development Requesters whose emails collide after trim+lowercase | migration aborts explicitly before User/Ticket mutation; no silent merge/overwrite/partial ownership rewrite | Planned |
 | REG-01 | AC-08/09 | existing Lab 2 server suite adapted/retained | full Requester regression | green | Planned |
 | REG-02 | AC-08/09 | existing Lab 2 client suite adapted/retained | Requester UI regression | green | Planned |
 
@@ -389,11 +393,12 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | AC-24 | ADM-12, UI-ADM-07, E2E-ADMIN-02 |
 | AC-25 | ADM-13/14, UI-ADM-08, E2E-ADMIN-02 |
 | AC-26 | AZ-03–05, ADM-17, E2E-ADMIN-02 |
-| AC-27 | MIG-01–MIG-06, REG-01/02 |
+| AC-27 | MIG-01–MIG-06, MIG-11, REG-01/02 |
 | AC-28 | MIG-07–MIG-10 |
 | AC-29 | UI-AUTH-07, UI-Q-05–08, UI-ST-09, UI-ADM-09, E2E-AUTH-02 |
 | AC-30 | V-01–V-08 plus responsive checks inside all four E2E files |
 | AC-31 | ADM-18/19, UI-ADM-10, E2E-ADMIN-02 |
+| AC-32 | ADM-20–ADM-22 |
 
 ## 17. Issue → Test Focus
 
@@ -403,8 +408,8 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | #34 Issue 2 | U-01–06, AUTH-01–16, key AZ tests, MIG foundation. |
 | #35 Issue 3 | REQ-01–13, COM Requester tests, Requester UI/E2E regression. |
 | #36 Issue 4 | Q-01–12, UI-Q suite, Queue responsive evidence. |
-| #37 Issue 5 | ST/NOTE/COM staff tests, UI-ST, Staff E2E. |
-| #38 Issue 6 | ADM suite, UI-ADM, Admin E2E. |
+| #37 Issue 5 | ST/NOTE/COM staff tests, owner-invariant concurrency coverage with Issue 6, UI-ST, Staff E2E. |
+| #38 Issue 6 | ADM suite including assigned-owner race tests, UI-ADM, Admin E2E. |
 | #39 Issue 7 | full AZ/security, migration/regression, all E2E, visual/accessibility/build. |
 | #40 Issue 8 | final main-ready rerun + evidence/status update only. |
 
