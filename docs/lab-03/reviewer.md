@@ -115,8 +115,14 @@ Round 1 was resolved before Issue 2 implementation began, including removing the
 - Round 2 reviewer: `Tanaboonnnnn`.
 - Round 2 reviewed head: `848f39d29aae4c324539d924bfa7e694c5cb92c5`.
 - Round 2 submitted: 2026-09-15T07:44:13Z.
-- Reviewer state: **Changes requested**.
-- Verdict: **Changes requested — Round 2 fixes implemented on the feature branch; re-review pending.**
+- Round 3 reviewer: `Tanaboonnnnn`.
+- Round 3 reviewed head: `dcd2dd7cb5b4ff9595fb59ca62c81aa59afe0152`.
+- Round 3 submitted: 2026-09-15T08:44:39Z.
+- Reviewer state: **Approved**.
+- Verdict: **Approved and merged into `lab3-staging`.**
+- Merged at: 2026-09-15T08:44:52Z.
+- Merge commit: `9b594b9c5a61af3f97d73dbd10280b756c6dbfcd`.
+- Issue #34 closed after merge at 2026-09-15T08:46:02Z.
 
 ### Round 1 reviewer feedback
 
@@ -156,6 +162,17 @@ The reviewer confirmed all Round 1 fixes at exact head `848f39d`, then found two
 - Synced the live PR #42 description from the stale **75/75 (11/11)** server result to the current **80/80 (12/12)** result and added the guarded test-target / whole-migration rollback / assigned-unassigned seed evidence.
 - Reran verification after the Round 2 fixes: Server **80/80** (12/12 files), Client **25/25** (5/5 files), Server build **Pass**, Client build **Pass**, Prisma validate **Pass**, production dependency audit **0 vulnerabilities**, normal migration preservation **Pass**, normalized-email collision rollback **Pass**, and injected post-mutation transaction rollback **Pass**.
 - Hosted CI is still not claimed green because PR #42 currently reports no hosted checks.
+
+### Round 3 final review
+
+The reviewer re-checked exact head `dcd2dd7` across Issue #34, the approved contract, migration failure paths, test isolation, authentication/session behavior, Origin protection, seed coverage, and evidence. The two Round 2 safety blockers were confirmed resolved in executable code/tests, the PR was **Approved**, and the reviewer explicitly cleared Issue #34 to proceed to Issue #35.
+
+Non-blocking follow-ups carried forward from the final review:
+
+- Issue #35 must remove the temporary public `/api/v1/requesters` compatibility endpoint together with the Development Requester selector/header flow before final integration.
+- The later status-workflow issue must enforce the exact eight-status domain from the contract; `Ticket.status` remains free-form at the Issue 2 foundation stage.
+- The in-memory login limiter is acceptable for local-lab BR-08 behavior but must not be represented as production-grade rate limiting.
+- Hosted CI still had no checks on the approved head, so Issue 2 evidence does not claim hosted CI green.
 
 Required review focus when this Issue starts:
 
