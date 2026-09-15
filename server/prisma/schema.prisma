@@ -28,13 +28,41 @@ model Category {
 // ---------------------------------------------------------------------------
 // Issue 2 — Development Requester Context & Database Seed
 // ---------------------------------------------------------------------------
-model DevelopmentRequester {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  isActive  Boolean  @default(true)
+enum UserRole {
+  REQUESTER
+  IT_STAFF
+  ADMINISTRATOR
+}
+
+model User {
+  id                 Int             @id @default(autoincrement())
+  name               String
+  email              String          @unique
+  passwordHash       String
+  role               UserRole
+  isActive           Boolean         @default(true)
+  mustChangePassword Boolean         @default(true)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  requestedTickets   Ticket[]        @relation("RequesterTickets")
+  ownedTickets       Ticket[]        @relation("OwnedTickets")
+  sessions           AuthSession[]
+  publicComments     PublicComment[]
+  internalNotes      InternalNote[]
+
+  @@index([role, isActive])
+}
+
+model AuthSession {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
   createdAt DateTime @default(now())
-  tickets   Ticket[]
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model RelatedSystem {
@@ -46,24 +74,36 @@ model RelatedSystem {
 }
 
 model Ticket {
-  id                Int                  @id @default(autoincrement())
-  ticketNumber      String               @unique
-  summary           String
-  description       String
-  requestedPriority String?
-  status            String               @default("New")
-  createdAt         DateTime             @default(now())
-  requesterId       Int
-  requester         DevelopmentRequester @relation(fields: [requesterId], references: [id])
-  categoryId        Int
-  category          Category             @relation(fields: [categoryId], references: [id])
-  relatedSystemId   Int
-  relatedSystem     RelatedSystem        @relation(fields: [relatedSystemId], references: [id])
-  attachments       Attachment[]
+  id                       Int             @id @default(autoincrement())
+  ticketNumber             String          @unique
+  summary                  String
+  description              String
+  requestedPriority        String?
+  itPriority               String?
+  status                   String          @default("New")
+  problemAppearsResolvedAt DateTime?
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
+  requesterId              Int
+  requester                User            @relation("RequesterTickets", fields: [requesterId], references: [id])
+  ownerId                  Int?
+  owner                    User?           @relation("OwnedTickets", fields: [ownerId], references: [id])
+  categoryId               Int
+  category                 Category        @relation(fields: [categoryId], references: [id])
+  relatedSystemId          Int
+  relatedSystem            RelatedSystem   @relation(fields: [relatedSystemId], references: [id])
+  attachments              Attachment[]
+  publicComments           PublicComment[]
+  internalNotes            InternalNote[]
 
   @@index([requesterId])
+  @@index([ownerId])
+  @@index([status])
+  @@index([itPriority])
   @@index([categoryId])
   @@index([relatedSystemId])
+  @@index([createdAt])
+  @@index([updatedAt])
 }
 
 model Attachment {
@@ -78,4 +118,30 @@ model Attachment {
   ticket        Ticket    @relation(fields: [ticketId], references: [id])
 
   @@index([ticketId])
+}
+
+model PublicComment {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([ticketId, createdAt])
+  @@index([authorId])
+}
+
+model InternalNote {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([ticketId, createdAt])
+  @@index([authorId])
 }

@@ -5,6 +5,13 @@ import multer from "multer";
 import { getPrisma } from "./prisma.js";
 import { filterActiveRequesters } from "./requesterFilter.js";
 import { requireDevRequester } from "./devRequester.js";
+import { authRouter } from "./authRoutes.js";
+import {
+  CLIENT_ORIGIN,
+  requireApprovedOrigin,
+  requireAuth,
+  requirePasswordChanged,
+} from "./auth.js";
 import { generateTicketNumber, isTicketNumberConflict } from "./ticketNumber.js";
 import { validateTicketInput } from "./ticketValidation.js";
 import { toPrismaOrderBy, validateTicketQuery } from "./ticketQuery.js";
@@ -36,12 +43,15 @@ declare global {
 export const app = express();
 
 app.use(cors({
+  origin: CLIENT_ORIGIN,
+  credentials: true,
   // Attachment downloads are fetched by the Vite client, so expose the
   // filename header to browser JavaScript instead of letting it be hidden by
   // CORS. The client uses it to preserve the original attachment filename.
   exposedHeaders: ["Content-Disposition"],
 }));
 app.use(express.json());
+app.use("/api/v1/auth", authRouter);
 
 const attachmentUpload = multer({
   storage: multer.memoryStorage(),
@@ -80,7 +90,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 // GET /api/categories reads categories from PostgreSQL through Prisma and
 // returns each { id, name } in predictable (id) order.
 // ---------------------------------------------------------------------------
-app.get("/api/categories", async (_req: Request, res: Response) => {
+app.get("/api/categories", requireAuth, requirePasswordChanged, async (_req: Request, res: Response) => {
   try {
     const prisma = getPrisma();
     const categories = await prisma.category.findMany({
@@ -94,13 +104,16 @@ app.get("/api/categories", async (_req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
-// Issue 2 — Development Requester Context
-// Reference-data endpoints under /api/v1/ per api-spec.md.
+// Issue 2 — temporary Development Requester compatibility context.
+// IMPORTANT: this now reads the real User table and therefore must be removed
+// together with the selector/header identity bridge in Issue #35 before final
+// Lab 3 integration. It remains only to preserve the Lab 2 UI during Issue 2.
 // ---------------------------------------------------------------------------
 app.get("/api/v1/requesters", async (_req: Request, res: Response) => {
   try {
     const prisma = getPrisma();
-    const requesters = await prisma.developmentRequester.findMany({
+    const requesters = await prisma.user.findMany({
+      where: { role: "REQUESTER" },
       select: { id: true, name: true, email: true, isActive: true },
       orderBy: { id: "asc" },
     });
@@ -113,7 +126,7 @@ app.get("/api/v1/requesters", async (_req: Request, res: Response) => {
   }
 });
 
-app.get("/api/v1/categories", async (_req: Request, res: Response) => {
+app.get("/api/v1/categories", requireAuth, requirePasswordChanged, async (_req: Request, res: Response) => {
   try {
     const prisma = getPrisma();
     const categories = await prisma.category.findMany({
@@ -126,7 +139,7 @@ app.get("/api/v1/categories", async (_req: Request, res: Response) => {
   }
 });
 
-app.get("/api/v1/related-systems", async (_req: Request, res: Response) => {
+app.get("/api/v1/related-systems", requireAuth, requirePasswordChanged, async (_req: Request, res: Response) => {
   try {
     const prisma = getPrisma();
     const systems = await prisma.relatedSystem.findMany({
@@ -147,6 +160,7 @@ app.get("/api/v1/related-systems", async (_req: Request, res: Response) => {
 // ---------------------------------------------------------------------------
 app.post(
   "/api/v1/tickets",
+  requireApprovedOrigin,
   requireDevRequester,
   async (req: Request, res: Response) => {
     try {
@@ -192,6 +206,7 @@ app.post(
               summary: summary.trim(),
               description: description.trim(),
               requestedPriority: requestedPriority.trim(),
+              itPriority: requestedPriority.trim(),
               status: "New",
               requesterId: requester.id,
               categoryId,
@@ -324,6 +339,7 @@ app.get("/api/v1/tickets/:id", requireDevRequester, async (req: Request, res: Re
 // Issue 5 — Upload attachments to an owned ticket.
 app.post(
   "/api/v1/tickets/:id/attachments",
+  requireApprovedOrigin,
   requireDevRequester,
   parseAttachmentUpload,
   async (req: Request, res: Response) => {
@@ -498,66 +514,71 @@ app.get(
 );
 
 // Issue 5 — Soft-remove an attachment while retaining metadata and storage.
-app.delete("/api/v1/attachments/:id", requireDevRequester, async (req: Request, res: Response) => {
-  try {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) {
-      res.status(404).json({ error: { message: "Attachment not found" } });
-      return;
-    }
+app.delete(
+  "/api/v1/attachments/:id",
+  requireApprovedOrigin,
+  requireDevRequester,
+  async (req: Request, res: Response) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id) || id <= 0) {
+        res.status(404).json({ error: { message: "Attachment not found" } });
+        return;
+      }
 
-    const prisma = getPrisma();
-    const requester = res.locals.devRequester!;
-    const attachment = await prisma.attachment.findFirst({
-      where: { id, ticket: { requesterId: requester.id } },
-    });
-    if (!attachment) {
-      res.status(404).json({ error: { message: "Attachment not found" } });
-      return;
-    }
-    if (attachment.removedAt) {
-      res.status(409).json({ error: { message: "Attachment already removed" } });
-      return;
-    }
+      const prisma = getPrisma();
+      const requester = res.locals.devRequester!;
+      const attachment = await prisma.attachment.findFirst({
+        where: { id, ticket: { requesterId: requester.id } },
+      });
+      if (!attachment) {
+        res.status(404).json({ error: { message: "Attachment not found" } });
+        return;
+      }
+      if (attachment.removedAt) {
+        res.status(409).json({ error: { message: "Attachment already removed" } });
+        return;
+      }
 
-    const reason = typeof req.body?.reason === "string" ? req.body.reason.trim() : "";
-    if (!reason) {
-      res.status(400).json({ error: { message: "Removal reason is required" } });
-      return;
-    }
+      const reason = typeof req.body?.reason === "string" ? req.body.reason.trim() : "";
+      if (!reason) {
+        res.status(400).json({ error: { message: "Removal reason is required" } });
+        return;
+      }
 
-    const removedAt = new Date();
-    // Make the state transition atomic. With concurrent DELETEs, only the
-    // first request can change removedAt from NULL; the loser updates zero rows
-    // and therefore returns the documented 409 instead of a second 200.
-    const result = await prisma.attachment.updateMany({
-      where: { id, removedAt: null },
-      data: { removedAt, removalReason: reason },
-    });
-    if (result.count === 0) {
-      res.status(409).json({ error: { message: "Attachment already removed" } });
-      return;
-    }
+      const removedAt = new Date();
+      // Make the state transition atomic. With concurrent DELETEs, only the
+      // first request can change removedAt from NULL; the loser updates zero rows
+      // and therefore returns the documented 409 instead of a second 200.
+      const result = await prisma.attachment.updateMany({
+        where: { id, removedAt: null },
+        data: { removedAt, removalReason: reason },
+      });
+      if (result.count === 0) {
+        res.status(409).json({ error: { message: "Attachment already removed" } });
+        return;
+      }
 
-    const updated = await prisma.attachment.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        fileName: true,
-        mimeType: true,
-        sizeBytes: true,
-        removedAt: true,
-        removalReason: true,
-      },
-    });
-    if (!updated) {
-      res.status(404).json({ error: { message: "Attachment not found" } });
-      return;
+      const updated = await prisma.attachment.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          fileName: true,
+          mimeType: true,
+          sizeBytes: true,
+          removedAt: true,
+          removalReason: true,
+        },
+      });
+      if (!updated) {
+        res.status(404).json({ error: { message: "Attachment not found" } });
+        return;
+      }
+      res.json(updated);
+    } catch {
+      res.status(500).json({ error: { message: "Unable to remove attachment" } });
     }
-    res.json(updated);
-  } catch {
-    res.status(500).json({ error: { message: "Unable to remove attachment" } });
-  }
-});
+  },
+);
 
 export default app;

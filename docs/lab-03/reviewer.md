@@ -107,10 +107,55 @@ Round 1 was resolved before Issue 2 implementation began, including removing the
 
 ## 5. Issue 2 — User Migration, Authentication & Authorization Foundation
 
-- PR: Pending.
-- Reviewer feedback: Pending.
-- Response: Pending.
-- Verdict: Pending.
+- PR: #42 — `[Lab 3] Issue 2: User Migration, Authentication & Authorization Foundation`.
+- Base/head: `lab3-staging` ← `feature/2-user-migration-auth`.
+- Round 1 reviewer: `Tanaboonnnnn`.
+- Round 1 reviewed head: `86fdbac61e2444ee45b83f3304e8c0aa164e3357`.
+- Round 1 submitted: 2026-09-15T06:09:07Z.
+- Round 2 reviewer: `Tanaboonnnnn`.
+- Round 2 reviewed head: `848f39d29aae4c324539d924bfa7e694c5cb92c5`.
+- Round 2 submitted: 2026-09-15T07:44:13Z.
+- Reviewer state: **Changes requested**.
+- Verdict: **Changes requested — Round 2 fixes implemented on the feature branch; re-review pending.**
+
+### Round 1 reviewer feedback
+
+The reviewer confirmed that the ID-preserving migration, hashed session token, bcrypt UTF-8 boundary, password/session rotation, migration preflight, deactivated-session invalidation, and non-destructive seed were strong. Three corrections were requested before merge:
+
+1. **Reference-data auth bypass:** legacy `GET /api/categories` was still public while `/api/v1/categories` was protected. The reviewer required the alias to be protected or removed and required a negative authorization test so the older route could not bypass the Lab 3 authenticated-only Reference Data contract.
+2. **Migration evidence accuracy:** `tests.md` marked `MIG-01`–`MIG-06`/`MIG-11` as passing while pointing to `migration-regression.test.ts`, but that automated file did not exist at reviewed head. The reviewer accepted either a real automated migration test or truthful, reproducible manual evidence with exact commands, fixtures, and results.
+3. **Origin/CSRF gap on legacy mutations:** auth mutations enforced Origin, but the still-temporary Lab 2 Requester mutation routes did not. The reviewer requested the approved Origin boundary on Ticket creation, attachment upload, and attachment soft-remove even though requester-identity cutover itself remains scoped to Issue #35.
+
+### Response to Round 1
+
+- Protected legacy `GET /api/categories` with the same `requireAuth` + `requirePasswordChanged` gate as the v1 reference-data endpoints. Direct tests now assert unauthenticated `401` for `/api/categories`, `/api/v1/categories`, and `/api/v1/related-systems`, and confirm permitted authenticated roles can still read reference data.
+- Added `requireApprovedOrigin` before every currently implemented non-auth mutation route: `POST /api/v1/tickets`, `POST /api/v1/tickets/:id/attachments`, and `DELETE /api/v1/attachments/:id`. Direct API tests exercise wrong, missing, and `Origin: null` across all three and assert no Ticket/Attachment mutation.
+- Corrected migration evidence rather than inventing an automated test. `MIG-01`–`MIG-06` and `MIG-11` are now explicitly labelled **manual isolated PostgreSQL evidence**. Two committed SQL fixtures plus exact PowerShell/Docker/PostgreSQL commands and observed results are recorded in `tests.md`. The planned `migration-regression.test.ts` is explicitly marked as not present in Issue 2.
+- Repeated the manual migration rehearsal on a fresh PostgreSQL 16 container: exact requester ids and Ticket ownership were preserved; historical attachment removal metadata survived; null/non-null priority behavior stayed correct; normalized-email collision aborted before the `User` table was created.
+- Reran the isolated implementation suite after the fixes: Server **76/76** (11/11 files), Client **25/25** (5/5 files), Server build **Pass**, Client build **Pass**, Prisma validate **Pass**, production dependency audit **0 vulnerabilities**.
+- Hosted CI is still not claimed green; PR #42 had no hosted status checks at the reviewed head.
+
+### Round 2 reviewer feedback
+
+The reviewer confirmed all Round 1 fixes at exact head `848f39d`, then found two new safety blockers plus one important seed correction and one deferred Issue 3 note:
+
+1. **Tests could still write the development DB:** `npm test` still ran plain Vitest against the normal `DATABASE_URL`, while `seed-regression.test.ts` intentionally seeds and mutates User/Ticket rows. The reviewer required `TEST_DATABASE_URL` plus a fail-fast guard before Prisma/seed/mutation when the target is missing, does not look like a test database, or collides with the development database.
+2. **The Lab 3 migration was not whole-file atomic:** the migration performed many schema/data mutations without explicit `BEGIN/COMMIT`. The reviewer required one transaction around the full migration plus a rehearsal that deliberately fails after mutation has begun and proves the original Lab 2 state is fully restored.
+3. **Seed fixture needed unassigned ownership:** the engineering contract requires realistic assigned and unassigned Tickets, but all three demo Tickets were assigned. At least one canonical `ownerId=null` Ticket and an assertion for both states were requested.
+4. **Temporary public requester directory:** `/api/v1/requesters` now reads the real `User` table. The reviewer explicitly deferred removal to Issue #35 but requested that the endpoint/selector be closed there before final integration.
+5. **Evidence sync:** PR description still showed `75/75` while committed evidence had already reached `76/76`.
+
+### Response to Round 2
+
+- Added `server/src/testDatabaseGuard.ts` plus `server/scripts/run-tests.ts`; `npm test` now refuses to start without a distinct `TEST_DATABASE_URL` whose database name contains `test`, rejects dev/test target collisions (including local host aliases), and switches `DATABASE_URL` only after the target passes validation. `getPrisma()` repeats the guard for direct Vitest/test-seed processes before constructing Prisma.
+- Added 4 direct unit tests for missing target, non-test database name, dev/test collision, and successful test target selection. Manual launcher checks also returned non-zero before Vitest/Prisma for all three unsafe cases.
+- Wrapped the complete Lab 3 migration in explicit `BEGIN; ... COMMIT;`. A fresh disposable PostgreSQL rehearsal injected a deliberate division-by-zero immediately before `COMMIT`, after all Lab 3 mutation statements including the old-table `DROP` had executed. The connection failure rolled the transaction back: no `User` table or `Ticket.ownerId` survived, `DevelopmentRequester` returned, and the original 2 Ticket / 2 Attachment rows remained.
+- Changed canonical demo Ticket `TKT-2025-90003` to `ownerId=null`; seed regression now asserts the canonical demo set contains both assigned and unassigned Tickets while preserving rerun safety.
+- Marked `/api/v1/requesters` in code as a temporary Issue 2 compatibility endpoint that **must** be removed with the selector/header bridge in Issue #35; it is not being represented as final Lab 3 behavior.
+- Updated README/`.env.example` with isolated test-database setup and safety behavior.
+- Synced the live PR #42 description from the stale **75/75 (11/11)** server result to the current **80/80 (12/12)** result and added the guarded test-target / whole-migration rollback / assigned-unassigned seed evidence.
+- Reran verification after the Round 2 fixes: Server **80/80** (12/12 files), Client **25/25** (5/5 files), Server build **Pass**, Client build **Pass**, Prisma validate **Pass**, production dependency audit **0 vulnerabilities**, normal migration preservation **Pass**, normalized-email collision rollback **Pass**, and injected post-mutation transaction rollback **Pass**.
+- Hosted CI is still not claimed green because PR #42 currently reports no hosted checks.
 
 Required review focus when this Issue starts:
 
