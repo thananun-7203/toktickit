@@ -11,7 +11,7 @@
 
 | Lab 3 Issue | GitHub Issue | Planned feature scope | PR | Reviewer / verdict |
 |---|---|---|---|---|
-| Issue 1 | [#33](https://github.com/thananun-7203/toktickit/issues/33) | Sprint 3 Engineering Contract & Test Plan | [#41](https://github.com/thananun-7203/toktickit/pull/41) | Changes requested — round 3 atomic-owner fix in progress |
+| Issue 1 | [#33](https://github.com/thananun-7203/toktickit/issues/33) | Sprint 3 Engineering Contract & Test Plan | [#41](https://github.com/thananun-7203/toktickit/pull/41) | **Approved and merged** |
 | Issue 2 | [#34](https://github.com/thananun-7203/toktickit/issues/34) | User Migration, Authentication & Authorization Foundation | Pending | Pending |
 | Issue 3 | [#35](https://github.com/thananun-7203/toktickit/issues/35) | Authenticated Requester & Lab 2 Regression | Pending | Pending |
 | Issue 4 | [#36](https://github.com/thananun-7203/toktickit/issues/36) | IT Staff Ticket Queue | Pending | Pending |
@@ -80,9 +80,12 @@ The first four documents are designed to exist before the main Lab 3 implementat
 - Head: `feature/1-sprint3-engineering-contract`
 - Base: `lab3-staging`
 - Initial commit: `afb88b6` (`docs(lab3): define sprint 3 engineering contract`)
+- Final reviewed head: `70a682e` (`docs(lab3): close owner invariant race contract`)
+- Merge commit: `478c940bf50a1d17c88ae13412223a1cff5684e8`
+- Merged into `lab3-staging` on 2026-09-15 after approval from `Tanaboonnnnn`.
 - PR opened after the Lab 2 baseline was rerun successfully on an isolated disposable PostgreSQL database.
 - PR description records Server **49/49**, Client **25/25**, Server build, Client build, Prisma validation, and inherited seed rerun evidence.
-- PR #41 targets `lab3-staging`, so the PR description references Issue #33 without a closing keyword. Issue #33 is linked manually through GitHub Development and remains open during review; it is closed only after the student confirms the merge workflow is complete.
+- PR #41 targeted `lab3-staging`, so the PR description referenced Issue #33 without a closing keyword. Issue #33 was linked manually through GitHub Development, remained open throughout review, and was closed only after PR #41 was approved and merged.
 
 ### Reviewer feedback
 
@@ -92,13 +95,15 @@ Round 2 — after those fixes, `Tanaboonnnnn` again submitted **Changes requeste
 
 Round 3 — `Tanaboonnnnn` confirmed the Round 2 fixes and left one remaining blocker: owner assignment/reassignment must be atomic with concurrent Admin deactivate/demote operations so a race cannot commit a Ticket whose owner is inactive or has role `REQUESTER`. The reviewer also requested two polish items: normalized-email migration collisions should be detected in a preflight and abort explicitly rather than silently merging accounts, and hosted CI must not be claimed green while GitHub reports no checks for the PR head.
 
+Round 4 — `Tanaboonnnnn` re-reviewed commit `70a682e` and submitted **Approved**. The reviewer confirmed that the owner-invariant concurrency contract, serialization/revalidation requirement, race-test coverage, normalized-email migration preflight, and earlier contract corrections were all resolved. Two implementation notes remain non-blocking: Issue 2 must implement the database concurrency strategy atomically as specified, and hosted CI must not be reported as green until GitHub has an actual hosted check result.
+
 ### How I responded
 
-Round 1 was resolved before Issue 2 implementation began, including removing the extra Unassign action rather than expanding the workflow. Round 2 was addressed by blocking deactivate/demote-to-Requester for users who still own Tickets (`409 ASSIGNED_TICKETS_REQUIRE_REASSIGNMENT`), locking Reference Data APIs to authenticated roles, preserving `DevelopmentRequester.id` exactly as migrated `User.id`, adding direct Login Origin tests, and limiting `Problem Appears Resolved` to `New`, `Open`, `In Progress`, `Waiting for Requester`, and `Reopened`. Round 3 is addressed by requiring transaction-level serialization/revalidation across owner assignment/reassignment and Admin eligibility changes, adding assign-vs-deactivate/demote race tests (plus reassign coverage), and adding normalized-email collision preflight/abort behavior to the migration plan. GitHub currently reports **no hosted checks** for this PR head, so this review record does not claim hosted CI is green. Final verdict remains pending until the next re-review is submitted.
+Round 1 was resolved before Issue 2 implementation began, including removing the extra Unassign action rather than expanding the workflow. Round 2 was addressed by blocking deactivate/demote-to-Requester for users who still own Tickets (`409 ASSIGNED_TICKETS_REQUIRE_REASSIGNMENT`), locking Reference Data APIs to authenticated roles, preserving `DevelopmentRequester.id` exactly as migrated `User.id`, adding direct Login Origin tests, and limiting `Problem Appears Resolved` to `New`, `Open`, `In Progress`, `Waiting for Requester`, and `Reopened`. Round 3 was addressed by requiring transaction-level serialization/revalidation across owner assignment/reassignment and Admin eligibility changes, adding assign-vs-deactivate/demote race tests (plus reassign coverage), and adding normalized-email collision preflight/abort behavior to the migration plan. Round 4 confirmed those fixes and approved the contract. GitHub reported **no hosted checks** for the reviewed PR head, so this record intentionally does not claim hosted CI was green for PR #41.
 
 ### Final verdict
 
-Pending.
+**Approved.** `Tanaboonnnnn` approved PR #41 at reviewed head `70a682e`. The PR was then merged into `lab3-staging` as merge commit `478c940bf50a1d17c88ae13412223a1cff5684e8`. Issue #33 is closed after the merge. The approved Sprint 3 contract is now the source of truth for Issue 2 implementation; the reviewer’s remaining concurrency/hosted-CI comments are implementation reminders, not merge blockers for Issue 1.
 
 ## 5. Issue 2 — User Migration, Authentication & Authorization Foundation
 
