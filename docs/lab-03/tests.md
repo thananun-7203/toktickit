@@ -81,8 +81,8 @@ The final implementation may consolidate closely related tests, but `tests.md` m
 | U-08 | BR-19 | `comments-notes.api.test.ts` | 2,000 chars accepted / 2,001 rejected for Public Comment | correct boundary | **Pass** |
 | U-09 | status matrix | `staff-ticket-detail.api.test.ts` or helper | each allowed transition | helper returns allowed | Planned |
 | U-10 | status matrix | same | disallowed/self transition | helper rejects | Planned |
-| U-11 | Queue spec | `staff-queue.api.test.ts` or helper | valid queue query parsing/defaults | deterministic parsed query | Planned |
-| U-12 | Queue spec | same | invalid page/pageSize/sort/status/priority | field errors | Planned |
+| U-11 | Queue spec | `staff-queue.unit.test.ts` | valid queue query parsing/defaults | deterministic parsed query | **Pass** |
+| U-12 | Queue spec | same | invalid page/pageSize/sort/status/priority | field errors | **Pass** |
 
 ## 4. Authentication API / Integration Tests
 
@@ -112,11 +112,11 @@ These tests intentionally call APIs directly rather than relying on hidden front
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
 | AZ-01 | AC-06 | `authorization.api.test.ts` | no session → Requester ticket list | `401` | Planned |
-| AZ-02 | AC-06 | same | Requester → Staff Queue | `403` | Planned |
+| AZ-02 | AC-06 | `staff-queue.api.test.ts` | Requester → Staff Queue | `403` | **Pass** |
 | AZ-03 | AC-26 | same | Requester → Admin users | `403` | Planned |
 | AZ-04 | AC-26 | same | IT Staff → Admin users | `403` | Planned |
 | AZ-05 | AC-06 | same | Admin → Admin users | allowed | Planned |
-| AZ-06 | AC-06 | same | IT Staff → Staff Queue | allowed | Planned |
+| AZ-06 | AC-06 | `staff-queue.api.test.ts` | IT Staff/Admin → Staff Queue | allowed | **Pass** |
 | AZ-07 | AC-06 | same | user requiring password change → normal protected API | `403 PASSWORD_CHANGE_REQUIRED` | **Pass** |
 | AZ-08 | AC-18 | same | Requester → Internal Notes endpoint | `403`, no note content | Planned |
 | AZ-09 | AC-07 | `requester-regression.api.test.ts` | Requester sends another `requesterId` in body/query/header, including retired development header | ignored for ownership; no session means `401`; cannot impersonate | **Pass** |
@@ -168,18 +168,18 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
-| Q-01 | AC-12 | `staff-queue.api.test.ts` | default queue | updated-desc order, pagination metadata | Planned |
-| Q-02 | AC-12 | same | search Ticket Number | matching items | Planned |
-| Q-03 | AC-12 | same | search Summary | matching items | Planned |
-| Q-04 | AC-12 | same | search Requester name/email | matching items | Planned |
-| Q-05 | AC-12 | same | filter Status | exact subset | Planned |
-| Q-06 | AC-12 | same | filter Requested Priority / IT Priority | exact subset | Planned |
-| Q-07 | AC-13 | same | owner=`unassigned` | only owner null | Planned |
-| Q-08 | AC-13 | same | owner=`mine` | only authenticated staff-owned Tickets | Planned |
-| Q-09 | AC-12 | same | Category/System filters combined | AND semantics | Planned |
-| Q-10 | AC-12 | same | supported sort options | deterministic order | Planned |
-| Q-11 | AC-12 | same | invalid page/pageSize/filter/sort | `400` fields; no server crash | Planned |
-| Q-12 | AC-13 | same | item fields | owner/status/requested+IT priority/updated context present | Planned |
+| Q-01 | AC-12 | `staff-queue.api.test.ts` | default queue | updated-desc order, pagination metadata | **Pass** |
+| Q-02 | AC-12 | same | search Ticket Number | matching items | **Pass** |
+| Q-03 | AC-12 | same | search Summary | matching items | **Pass** |
+| Q-04 | AC-12 | same | search Requester name/email | matching items | **Pass** |
+| Q-05 | AC-12 | same | filter Status | exact subset | **Pass** |
+| Q-06 | AC-12 | same | filter Requested Priority / IT Priority | exact subset | **Pass** |
+| Q-07 | AC-13 | same | owner=`unassigned` | only owner null | **Pass** |
+| Q-08 | AC-13 | same | owner=`mine` | only authenticated staff-owned Tickets | **Pass** |
+| Q-09 | AC-12 | same | Category/System filters combined | AND semantics | **Pass** |
+| Q-10 | AC-12 | same | supported sort options | deterministic order | **Pass** |
+| Q-11 | AC-12 | same | invalid page/pageSize/filter/sort | `400` fields; no server crash | **Pass** |
+| Q-12 | AC-13 | same | item fields | owner/status/requested+IT priority/updated context present | **Pass** |
 
 ## 9. IT Staff Ticket Detail / Operations API Tests
 
@@ -286,7 +286,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
 | UI-SHELL-01 | AC-06 | `AuthenticatedShell.test.tsx` | Requester | only Requester nav + name/role/logout | **Pass** |
-| UI-SHELL-02 | AC-06 | same | IT Staff | Staff nav; no Admin Users | Planned |
+| UI-SHELL-02 | AC-06 | same | IT Staff | Staff nav; no Admin Users | **Pass** |
 | UI-SHELL-03 | AC-06 | same | Admin | Admin Users + approved destinations | Planned |
 | UI-SHELL-04 | AC-05 | same | logout | auth state cleared/login rendered | **Pass** |
 | UI-SHELL-05 | AC-04 | `Login.test.tsx` + `ChangePassword.test.tsx` | must-change account | Change Password gate | **Pass** |
@@ -306,14 +306,14 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
-| UI-Q-01 | AC-12/13 | `StaffTicketQueue.test.tsx` | realistic data | required columns/badges/owner/open action | Planned |
-| UI-Q-02 | AC-12 | same | search/filter/sort | API params updated/reset page | Planned |
-| UI-Q-03 | AC-12 | same | pagination | metadata/buttons correct | Planned |
-| UI-Q-04 | AC-13 | same | unassigned | explicit Unassigned label | Planned |
-| UI-Q-05 | AC-29 | same | loading | loading feedback | Planned |
-| UI-Q-06 | AC-29 | same | empty | queue empty state | Planned |
-| UI-Q-07 | AC-29 | same | no results | clear-filter CTA | Planned |
-| UI-Q-08 | AC-29 | same | failure/forbidden | safe states | Planned |
+| UI-Q-01 | AC-12/13 | `StaffTicketQueue.test.tsx` | realistic data | required columns/badges/owner/open action | **Pass** |
+| UI-Q-02 | AC-12 | same | search/filter/sort | API params updated/reset page | **Pass** |
+| UI-Q-03 | AC-12 | same | pagination | metadata/buttons correct | **Pass** |
+| UI-Q-04 | AC-13 | same | unassigned | explicit Unassigned label | **Pass** |
+| UI-Q-05 | AC-29 | same | loading | loading feedback | **Pass** |
+| UI-Q-06 | AC-29 | same | empty | queue empty state | **Pass** |
+| UI-Q-07 | AC-29 | same | no results | clear-filter CTA | **Pass** |
+| UI-Q-08 | AC-29 | same | failure/forbidden | safe states | **Pass** |
 
 ### 13.6 Staff Ticket Detail
 
@@ -363,7 +363,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 |---|---|---|---|---|
 | V-01 | AC-30 | Login/Change Password 1280/820/390 | no clipping/overflow; focus/labels | Planned |
 | V-02 | AC-30 | Requester major screens 1280/820/390 | Lab 2 responsive behavior preserved | Planned |
-| V-03 | AC-30 | Staff Queue 1280/820/390 | table/card adaptation; badges readable | Planned |
+| V-03 | AC-30 | `staff-queue-responsive.spec.ts` at 1280/820/390 | table/card adaptation; badges readable; no horizontal overflow | **Pass** |
 | V-04 | AC-30 | Staff Detail 1280/820/390 | controls/comments/notes/attachments no overlap | Planned |
 | V-05 | AC-30 | User Management 1280/820/390 | list/form adaptation no horizontal overflow | Planned |
 | V-06 | AC-30 | all major forms | labels, validation placement, visible focus | Planned |
@@ -623,11 +623,36 @@ Final Issue 3 evidence:
 - **PR #43 final review/merge:** `Tanaboonnnnn` approved exact head `01db49d972d981e62778ab9343ea4bc3aeb5be70`; PR #43 was merged into `lab3-staging` as `5261c3c59ae6131e5e607bdcbcc35fe6aff40c69`, and Issue #35 is closed.
 - **Hosted CI:** GitHub reported no hosted checks for the approved/merged head, so this evidence does not claim hosted CI was green.
 
-Representative final commands:
+### Issue 4 verification — IT Staff Ticket Queue
+
+Issue #36 was implemented on `feature/4-it-staff-ticket-queue` from the post-Issue-3 `lab3-staging` baseline. Initial pre-review DB-backed verification used a disposable PostgreSQL 16 container named `toktickit-issue4-test` on local port `5435`. PR #44 Round 1 fix verification was rerun from a fresh migration + seed in disposable container `toktickit-pr44-r1-clean` on local port `5436` with database `toktickit_pr44_r1_clean_test`; the normal development PostgreSQL database on port `5432` was not reset or replaced.
+
+Issue 4 evidence after PR #44 Round 1 fixes:
+
+- **Queue API / RBAC:** `GET /api/v1/staff/tickets` requires an authenticated, password-changed `IT_STAFF` or `ADMINISTRATOR` session. Requester access is rejected with `403`; authenticated Staff/Admin access succeeds. `GET /api/v1/staff/assignees` returns active eligible Staff/Admin users for the Owner filter.
+- **Queue query contract:** `staffQueueQuery.ts` validates the approved eight Ticket statuses, Requested/IT Priority values, Owner (`unassigned`, `mine`, or an active eligible Staff/Admin user id), Category/System ids, five documented sort modes, page/pageSize, and a trimmed maximum-100-character search. Duplicate query parameters are rejected with `400 VALIDATION_ERROR` instead of silently selecting one value. `U-11/U-12` and `Q-01–Q-12` are green.
+- **Search/filter/sort/pagination:** API tests cover Ticket Number, Summary, Requester name/email search; Status, Requested Priority, IT Priority including `not_recorded`, Owner, Category and Related System filters; deterministic sorting; AND semantics; invalid/duplicate-query `400` field errors; and consistent pagination metadata. Standard sorts use database `orderBy/skip/take` inside a transaction with `count`; `priority_desc` uses deterministic High → Medium → Low → unrecorded/other database buckets and never loads the full matching dataset into Node.
+- **Owner filter semantics:** `/staff/assignees` exposes only active `IT_STAFF`/`ADMINISTRATOR` users, and explicit `owner=<id>` now accepts only that same eligible set. Requester ids, inactive Staff/Admin ids, and nonexistent ids return `400 VALIDATION_ERROR`.
+- **Queue UI:** `StaffTicketQueue.tsx` implements the approved Ticket Queue with search, filters, sort, result count, Requested/IT Priority and Status badges, explicit `Unassigned`, pagination, and Open Ticket action. Staff navigation is enabled without exposing Requester actions. `UI-Q-01–UI-Q-08` and `UI-SHELL-02` are green.
+- **Responsive behavior:** `staff-queue-responsive.spec.ts` verifies the desktop table at 1280 px, tablet table at 820 px, mobile cards at 390 px, readable `Unassigned`/Open action context, and no horizontal page overflow. `V-03` is **Pass**.
+- **Issue-boundary behavior:** the Queue can open a selected Ticket, but Staff operational Ticket Detail mutations remain intentionally deferred to Issue #37; Issue #36 does not introduce claim/assign/reassign, IT Priority mutation, status mutation, Internal Notes, or Staff attachment mutation controls.
+- **Server Vitest/Supertest:** **115/115 passed (17/17 test files)** against the fresh isolated Round 1 `TEST_DATABASE_URL` after migration + seed.
+- **Client Vitest:** **54/54 passed (9/9 test files)**.
+- **Responsive Playwright:** **1/1 passed** for `V-03` after correcting the test locator to target the visible table/card `Unassigned` indicator rather than the hidden Owner-filter option.
+- **Server TypeScript build:** **Pass**.
+- **Client production build:** **Pass**.
+- **Prisma schema validation:** **Pass**.
+- **Production dependency audit:** `npm audit --omit=dev` reports **0 vulnerabilities** for both server and client.
+- **PR #44 Round 1 review fixes:** focused Staff Queue tests passed **16/16 (2/2 files)** before the full regression. A first disposable review database was intentionally discarded after an earlier test-fixture sequence advanced reference-data ids; the final full regression was repeated from a fresh migrated/seeded database and passed completely.
+- **Diff hygiene:** `git diff --check` **Pass** on the Round 1 fix working tree.
+- **Disposable environment cleanup:** both PR #44 Round 1 disposable PostgreSQL containers were removed after verification; the normal development PostgreSQL container/database was not reset or removed.
+- **Hosted CI:** no hosted CI result is claimed before the Issue #36 PR reports an actual check.
+
+Representative PR #44 Round 1 final commands (run while the disposable database was available):
 
 ```powershell
 # Server regression (separate test DB only)
-$env:TEST_DATABASE_URL='postgresql://toktickit:toktickit@127.0.0.1:5435/toktickit_test_issue3?schema=public'
+$env:TEST_DATABASE_URL='postgresql://toktickit:toktickit@127.0.0.1:5436/toktickit_pr44_r1_clean_test?schema=public'
 cd server
 npm test
 npm run build
@@ -640,10 +665,10 @@ npm test -- --run
 npm run build
 npm audit --omit=dev
 
-# Browser regression — E2E_DATABASE_URL must point to a fresh migrated/seeded E2E DB
+# Staff Queue responsive browser regression
 cd ../e2e
-$env:E2E_DATABASE_URL='postgresql://toktickit:toktickit@127.0.0.1:5435/toktickit_e2e_issue3_20260915d?schema=public'
-npm test
+$env:E2E_DATABASE_URL='postgresql://toktickit:toktickit@127.0.0.1:5436/toktickit_pr44_r1_clean_test?schema=public'
+npx playwright test lab-03/staff-queue-responsive.spec.ts --config playwright.lab3.config.ts
 ```
 
 ### Final Lab 3 regression template

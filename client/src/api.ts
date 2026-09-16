@@ -76,6 +76,69 @@ export interface PublicComment {
   author: { id: number; name: string; role: UserRole };
 }
 
+export const TICKET_STATUSES = [
+  "New",
+  "Open",
+  "In Progress",
+  "Waiting for Requester",
+  "Resolved",
+  "Closed",
+  "Reopened",
+  "Cancelled",
+] as const;
+
+export type TicketStatus = (typeof TICKET_STATUSES)[number];
+
+export type StaffQueueSort =
+  | "updated_desc"
+  | "created_desc"
+  | "created_asc"
+  | "priority_desc"
+  | "ticket_number_asc";
+
+export interface StaffAssignee {
+  id: number;
+  name: string;
+  email: string;
+  role: "IT_STAFF" | "ADMINISTRATOR";
+}
+
+export interface StaffQueueTicket {
+  id: number;
+  ticketNumber: string;
+  summary: string;
+  requestedPriority: RequestedPriority | null;
+  itPriority: RequestedPriority | null;
+  status: TicketStatus;
+  createdAt: string;
+  updatedAt: string;
+  requester: { id: number; name: string; email: string };
+  category: { id: number; name: string };
+  relatedSystem: { id: number; name: string };
+  owner: StaffAssignee | null;
+}
+
+export interface StaffQueueParams {
+  search?: string;
+  status?: TicketStatus;
+  requestedPriority?: RequestedPriority;
+  itPriority?: RequestedPriority | "not_recorded";
+  owner?: "unassigned" | "mine" | number;
+  categoryId?: number;
+  relatedSystemId?: number;
+  sort?: StaffQueueSort;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface StaffQueueResponse {
+  items: StaffQueueTicket[];
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+}
+
 export interface NewTicketInput {
   categoryId: number;
   relatedSystemId: number;
@@ -312,6 +375,30 @@ export async function indicateProblemAppearsResolved(ticketId: number): Promise<
     method: "POST",
   });
   if (!res.ok) throw await responseError(res, "Unable to record resolution indication");
+  return res.json();
+}
+
+export async function getStaffQueue(params: StaffQueueParams = {}): Promise<StaffQueueResponse> {
+  const qs = new URLSearchParams();
+  if (params.search) qs.set("search", params.search);
+  if (params.status) qs.set("status", params.status);
+  if (params.requestedPriority) qs.set("requestedPriority", params.requestedPriority);
+  if (params.itPriority) qs.set("itPriority", params.itPriority);
+  if (params.owner !== undefined) qs.set("owner", String(params.owner));
+  if (params.categoryId) qs.set("categoryId", String(params.categoryId));
+  if (params.relatedSystemId) qs.set("relatedSystemId", String(params.relatedSystemId));
+  if (params.sort) qs.set("sort", params.sort);
+  if (params.page) qs.set("page", String(params.page));
+  if (params.pageSize) qs.set("pageSize", String(params.pageSize));
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
+  const res = await apiFetch(`/api/v1/staff/tickets${suffix}`);
+  if (!res.ok) throw await responseError(res, "Unable to load Ticket Queue");
+  return res.json();
+}
+
+export async function getStaffAssignees(): Promise<StaffAssignee[]> {
+  const res = await apiFetch("/api/v1/staff/assignees");
+  if (!res.ok) throw await responseError(res, "Unable to load staff assignees");
   return res.json();
 }
 

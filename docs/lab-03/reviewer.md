@@ -263,10 +263,25 @@ Required review focus:
 
 ## 7. Issue 4 — IT Staff Ticket Queue
 
-- PR: Pending.
-- Reviewer feedback: Pending.
-- Response: Pending.
-- Verdict: Pending.
+- GitHub Issue: [#36](https://github.com/thananun-7203/toktickit/issues/36).
+- Feature branch: `feature/4-it-staff-ticket-queue`.
+- Base branch: `lab3-staging`.
+- PR: [#44](https://github.com/thananun-7203/toktickit/pull/44) — **Open**.
+- Reviewer requested: `Tanaboonnnnn`.
+- Round 1 review: `Tanaboonnnnn` returned **Changes requested** at exact head `0efe4c736d4046927f5c69db9fe6adcee6b061a9`.
+- Reviewer feedback: move Queue filtering/sorting/pagination to the database layer instead of loading all matching Tickets into Node; reject duplicate query parameters; and lock explicit `owner=<id>` semantics to eligible active Staff/Admin users.
+- Response: implemented all three findings. Standard sorts now use transactional `count + findMany(orderBy/skip/take)`. `priority_desc` pages across deterministic High → Medium → Low → unrecorded/other database buckets without loading the full result set. Duplicate parameters return `400 VALIDATION_ERROR`. Explicit owner ids must exist, be active, and have role `IT_STAFF` or `ADMINISTRATOR`; the API contract now documents this rule.
+- Verification after Round 1 fixes: Server **115/115 (17/17)**, Client **54/54 (9/9)**, responsive Playwright `V-03` **1/1**, Server/Client builds **Pass**, Prisma validate **Pass**, production dependency audits **0 vulnerabilities**, and `git diff --check` **Pass**.
+- Verdict: **Round 1 fixes complete; re-review pending after fix commit/push. Not approved or merged.**
+
+Pre-review implementation/evidence prepared:
+
+- Staff/Admin-only `GET /api/v1/staff/tickets` plus active eligible assignee reference data.
+- Search, documented filters, five sort modes, pagination/default ordering, invalid-query `400` field errors, assigned/unassigned clarity, and operational queue fields.
+- Responsive Staff Queue UI with desktop/tablet table, mobile cards, explicit `Unassigned`, loading/empty/no-results/forbidden/failure states, and Open Ticket action.
+- Staff Queue route logic is separated from the growing central `app.ts` rather than expanding it further.
+- Initial pre-review verification: Server **111/111 (17/17)**, Client **54/54 (9/9)**, responsive Playwright `V-03` **1/1**, Server/Client builds **Pass**, Prisma validate **Pass**, production dependency audits **0 vulnerabilities**, and `git diff --check` **Pass**.
+- Hosted CI is not claimed green before an actual PR check exists.
 
 Required review focus:
 

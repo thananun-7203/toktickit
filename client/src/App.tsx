@@ -6,9 +6,10 @@ import ChangePassword from "./ChangePassword.js";
 import CreateTicket from "./CreateTicket.js";
 import MyTickets from "./MyTickets.js";
 import TicketDetail from "./TicketDetail.js";
+import StaffTicketQueue from "./StaffTicketQueue.js";
 
 type UiState = "idle" | "loading" | "success" | "error";
-type View = "home" | "create" | "my-tickets" | "ticket-detail";
+type View = "home" | "create" | "my-tickets" | "ticket-detail" | "staff-queue" | "staff-ticket-detail";
 
 function AuthLoading() {
   return (
@@ -72,7 +73,7 @@ export default function App() {
   useEffect(() => {
     if (user?.id) {
       setSelectedTicketId(null);
-      setView("my-tickets");
+      setView(user.role === "IT_STAFF" ? "staff-queue" : "my-tickets");
       setMobileMenuOpen(false);
       setShowChangePassword(false);
     }
@@ -142,6 +143,7 @@ export default function App() {
   }
 
   const isRequester = user.role === "REQUESTER";
+  const isStaff = user.role === "IT_STAFF";
 
   return (
     <div className="app-shell">
@@ -166,6 +168,11 @@ export default function App() {
                     <button type="button" role="menuitem" onClick={showCreateTicket}><span aria-hidden="true">+</span> Create Ticket</button>
                     <button type="button" role="menuitem" onClick={showSystemCheck}><span aria-hidden="true">⌁</span> Check System</button>
                   </>
+                )}
+                {isStaff && (
+                  <button type="button" role="menuitem" onClick={() => { setView("staff-queue"); setSelectedTicketId(null); setMobileMenuOpen(false); }}>
+                    <span aria-hidden="true">≡</span> Ticket Queue
+                  </button>
                 )}
                 <div className="mobile-nav-user">
                   <strong>{user.name}</strong>
@@ -192,6 +199,13 @@ export default function App() {
               </button>
               <button className={`app-nav-button ${view === "home" ? "active" : ""}`} onClick={showSystemCheck}>
                 <span className="nav-icon" aria-hidden="true">⌁</span> Check System
+              </button>
+            </nav>
+          )}
+          {isStaff && (
+            <nav className="app-nav-links" aria-label="Primary navigation">
+              <button className={`app-nav-button ${view === "staff-queue" || view === "staff-ticket-detail" ? "active" : ""}`} onClick={() => { setView("staff-queue"); setSelectedTicketId(null); }}>
+                <span className="nav-icon" aria-hidden="true">≡</span> Ticket Queue
               </button>
             </nav>
           )}
@@ -222,7 +236,15 @@ export default function App() {
             {logoutError}
           </div>
         )}
-        {!isRequester ? (
+        {isStaff && view === "staff-queue" ? (
+          <StaffTicketQueue onOpenTicket={(ticketId) => { setSelectedTicketId(ticketId); setView("staff-ticket-detail"); }} />
+        ) : isStaff && view === "staff-ticket-detail" && selectedTicketId !== null ? (
+          <section className="zen-card content-card role-placeholder">
+            <button type="button" className="btn btn-link px-0" onClick={() => { setSelectedTicketId(null); setView("staff-queue"); }}>← Back to Ticket Queue</button>
+            <h1 className="page-title">Ticket Detail</h1>
+            <p className="page-subtitle">Ticket #{selectedTicketId} selected. Staff operational detail and mutations are implemented in Issue #37.</p>
+          </section>
+        ) : !isRequester ? (
           <section className="zen-card content-card role-placeholder">
             <h1 className="page-title">{user.role === "IT_STAFF" ? "Ticket Queue" : "User Management"}</h1>
             <p className="page-subtitle">
