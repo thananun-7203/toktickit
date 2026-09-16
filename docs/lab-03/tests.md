@@ -625,32 +625,34 @@ Final Issue 3 evidence:
 
 ### Issue 4 verification — IT Staff Ticket Queue
 
-Issue #36 was implemented on `feature/4-it-staff-ticket-queue` from the post-Issue-3 `lab3-staging` baseline. DB-backed verification used a disposable PostgreSQL 16 container named `toktickit-issue4-test` on local port `5435` with database `toktickit_issue4_test`; the normal development PostgreSQL database on port `5432` was not reset or replaced.
+Issue #36 was implemented on `feature/4-it-staff-ticket-queue` from the post-Issue-3 `lab3-staging` baseline. Initial pre-review DB-backed verification used a disposable PostgreSQL 16 container named `toktickit-issue4-test` on local port `5435`. PR #44 Round 1 fix verification was rerun from a fresh migration + seed in disposable container `toktickit-pr44-r1-clean` on local port `5436` with database `toktickit_pr44_r1_clean_test`; the normal development PostgreSQL database on port `5432` was not reset or replaced.
 
-Final Issue 4 pre-review evidence:
+Issue 4 evidence after PR #44 Round 1 fixes:
 
 - **Queue API / RBAC:** `GET /api/v1/staff/tickets` requires an authenticated, password-changed `IT_STAFF` or `ADMINISTRATOR` session. Requester access is rejected with `403`; authenticated Staff/Admin access succeeds. `GET /api/v1/staff/assignees` returns active eligible Staff/Admin users for the Owner filter.
-- **Queue query contract:** `staffQueueQuery.ts` validates the approved eight Ticket statuses, Requested/IT Priority values, Owner (`unassigned`, `mine`, positive user id), Category/System ids, five documented sort modes, page/pageSize, and a trimmed maximum-100-character search. `U-11/U-12` and `Q-01–Q-12` are green.
-- **Search/filter/sort/pagination:** API tests cover Ticket Number, Summary, Requester name/email search; Status, Requested Priority, IT Priority including `not_recorded`, Owner, Category and Related System filters; deterministic sorting; AND semantics; invalid-query `400` field errors; and consistent pagination metadata.
+- **Queue query contract:** `staffQueueQuery.ts` validates the approved eight Ticket statuses, Requested/IT Priority values, Owner (`unassigned`, `mine`, or an active eligible Staff/Admin user id), Category/System ids, five documented sort modes, page/pageSize, and a trimmed maximum-100-character search. Duplicate query parameters are rejected with `400 VALIDATION_ERROR` instead of silently selecting one value. `U-11/U-12` and `Q-01–Q-12` are green.
+- **Search/filter/sort/pagination:** API tests cover Ticket Number, Summary, Requester name/email search; Status, Requested Priority, IT Priority including `not_recorded`, Owner, Category and Related System filters; deterministic sorting; AND semantics; invalid/duplicate-query `400` field errors; and consistent pagination metadata. Standard sorts use database `orderBy/skip/take` inside a transaction with `count`; `priority_desc` uses deterministic High → Medium → Low → unrecorded/other database buckets and never loads the full matching dataset into Node.
+- **Owner filter semantics:** `/staff/assignees` exposes only active `IT_STAFF`/`ADMINISTRATOR` users, and explicit `owner=<id>` now accepts only that same eligible set. Requester ids, inactive Staff/Admin ids, and nonexistent ids return `400 VALIDATION_ERROR`.
 - **Queue UI:** `StaffTicketQueue.tsx` implements the approved Ticket Queue with search, filters, sort, result count, Requested/IT Priority and Status badges, explicit `Unassigned`, pagination, and Open Ticket action. Staff navigation is enabled without exposing Requester actions. `UI-Q-01–UI-Q-08` and `UI-SHELL-02` are green.
 - **Responsive behavior:** `staff-queue-responsive.spec.ts` verifies the desktop table at 1280 px, tablet table at 820 px, mobile cards at 390 px, readable `Unassigned`/Open action context, and no horizontal page overflow. `V-03` is **Pass**.
 - **Issue-boundary behavior:** the Queue can open a selected Ticket, but Staff operational Ticket Detail mutations remain intentionally deferred to Issue #37; Issue #36 does not introduce claim/assign/reassign, IT Priority mutation, status mutation, Internal Notes, or Staff attachment mutation controls.
-- **Server Vitest/Supertest:** **111/111 passed (17/17 test files)** against the isolated `TEST_DATABASE_URL`.
+- **Server Vitest/Supertest:** **115/115 passed (17/17 test files)** against the fresh isolated Round 1 `TEST_DATABASE_URL` after migration + seed.
 - **Client Vitest:** **54/54 passed (9/9 test files)**.
 - **Responsive Playwright:** **1/1 passed** for `V-03` after correcting the test locator to target the visible table/card `Unassigned` indicator rather than the hidden Owner-filter option.
 - **Server TypeScript build:** **Pass**.
 - **Client production build:** **Pass**.
 - **Prisma schema validation:** **Pass**.
 - **Production dependency audit:** `npm audit --omit=dev` reports **0 vulnerabilities** for both server and client.
-- **Diff hygiene:** `git diff --check` **Pass** on the final pre-review working tree.
-- **Disposable environment cleanup:** `toktickit-issue4-test` was removed after final verification; the normal development PostgreSQL container/database was not reset or removed.
+- **PR #44 Round 1 review fixes:** focused Staff Queue tests passed **16/16 (2/2 files)** before the full regression. A first disposable review database was intentionally discarded after an earlier test-fixture sequence advanced reference-data ids; the final full regression was repeated from a fresh migrated/seeded database and passed completely.
+- **Diff hygiene:** `git diff --check` **Pass** on the Round 1 fix working tree.
+- **Disposable environment cleanup:** both PR #44 Round 1 disposable PostgreSQL containers were removed after verification; the normal development PostgreSQL container/database was not reset or removed.
 - **Hosted CI:** no hosted CI result is claimed before the Issue #36 PR reports an actual check.
 
-Representative final commands:
+Representative PR #44 Round 1 final commands (run while the disposable database was available):
 
 ```powershell
 # Server regression (separate test DB only)
-$env:TEST_DATABASE_URL='postgresql://toktickit:toktickit@127.0.0.1:5435/toktickit_test_issue3?schema=public'
+$env:TEST_DATABASE_URL='postgresql://toktickit:toktickit@127.0.0.1:5436/toktickit_pr44_r1_clean_test?schema=public'
 cd server
 npm test
 npm run build
@@ -663,10 +665,10 @@ npm test -- --run
 npm run build
 npm audit --omit=dev
 
-# Browser regression — E2E_DATABASE_URL must point to a fresh migrated/seeded E2E DB
+# Staff Queue responsive browser regression
 cd ../e2e
-$env:E2E_DATABASE_URL='postgresql://toktickit:toktickit@127.0.0.1:5435/toktickit_e2e_issue3_20260915d?schema=public'
-npm test
+$env:E2E_DATABASE_URL='postgresql://toktickit:toktickit@127.0.0.1:5436/toktickit_pr44_r1_clean_test?schema=public'
+npx playwright test lab-03/staff-queue-responsive.spec.ts --config playwright.lab3.config.ts
 ```
 
 ### Final Lab 3 regression template

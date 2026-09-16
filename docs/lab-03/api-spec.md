@@ -425,14 +425,14 @@ Filters:
 | `status` | One approved Ticket status. |
 | `requestedPriority` | `Low`, `Medium`, `High`. |
 | `itPriority` | `Low`, `Medium`, `High`, `not_recorded`. |
-| `owner` | `unassigned`, `mine`, or positive user id. |
+| `owner` | `unassigned`, `mine`, or the positive user id of an active `IT_STAFF` / `ADMINISTRATOR` returned by the assignee list; other ids are rejected with a validation error. |
 | `categoryId` | positive int. |
 | `relatedSystemId` | positive int. |
 | `sort` | `updated_desc` (default), `created_desc`, `created_asc`, `priority_desc`, `ticket_number_asc`. |
 | `page` | ≥1, default 1. |
 | `pageSize` | 1–50, default 10. |
 
-Multiple filters may combine with AND. Only one value per filter is required for Lab 3.
+Multiple filters may combine with AND. Each query parameter may appear at most once; duplicate parameters are rejected with `400 VALIDATION_ERROR` rather than silently choosing one value.
 
 Success `200` item example:
 

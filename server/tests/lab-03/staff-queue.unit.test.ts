@@ -62,4 +62,18 @@ describe("IT Staff Queue query validation", () => {
       "requestedPriority", "search", "sort", "status",
     ].sort());
   });
+
+  it("U-12: rejects duplicate query parameters deterministically", () => {
+    const result = validateStaffQueueQuery({
+      status: ["Open", "Closed"],
+      owner: ["mine", "unassigned"],
+      page: ["1", "2"],
+    });
+    expect(result.parsed).toBeNull();
+    expect(result.errors).toMatchObject({
+      status: expect.stringContaining("at most once"),
+      owner: expect.stringContaining("at most once"),
+      page: expect.stringContaining("at most once"),
+    });
+  });
 });

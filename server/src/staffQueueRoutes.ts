@@ -6,30 +6,81 @@ import { validateStaffQueueQuery, type StaffQueueSort } from "./staffQueueQuery.
 
 export const staffQueueRouter = Router();
 
-function comparePriority(a: string | null, b: string | null): number {
-  const rank: Record<string, number> = { High: 3, Medium: 2, Low: 1 };
-  return (rank[b ?? ""] ?? 0) - (rank[a ?? ""] ?? 0);
+const queueSelect = Prisma.validator<Prisma.TicketSelect>()({
+  id: true,
+  ticketNumber: true,
+  summary: true,
+  requestedPriority: true,
+  itPriority: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+  category: { select: { id: true, name: true } },
+  relatedSystem: { select: { id: true, name: true } },
+  requester: { select: { id: true, name: true, email: true } },
+  owner: { select: { id: true, name: true, email: true, role: true } },
+});
+
+function standardOrderBy(sort: StaffQueueSort): Prisma.TicketOrderByWithRelationInput[] | null {
+  switch (sort) {
+    case "created_desc":
+      return [{ createdAt: "desc" }, { id: "desc" }];
+    case "created_asc":
+      return [{ createdAt: "asc" }, { id: "asc" }];
+    case "ticket_number_asc":
+      return [{ ticketNumber: "asc" }, { id: "asc" }];
+    case "priority_desc":
+      return null;
+    case "updated_desc":
+    default:
+      return [{ updatedAt: "desc" }, { id: "desc" }];
+  }
 }
 
-function sortTickets<T extends { id: number; ticketNumber: string; createdAt: Date; updatedAt: Date; itPriority: string | null }>(
-  items: T[],
-  sort: StaffQueueSort,
-): T[] {
-  return items.sort((a, b) => {
-    switch (sort) {
-      case "created_desc":
-        return b.createdAt.getTime() - a.createdAt.getTime() || b.id - a.id;
-      case "created_asc":
-        return a.createdAt.getTime() - b.createdAt.getTime() || a.id - b.id;
-      case "priority_desc":
-        return comparePriority(a.itPriority, b.itPriority) || b.updatedAt.getTime() - a.updatedAt.getTime() || b.id - a.id;
-      case "ticket_number_asc":
-        return a.ticketNumber.localeCompare(b.ticketNumber) || a.id - b.id;
-      case "updated_desc":
-      default:
-        return b.updatedAt.getTime() - a.updatedAt.getTime() || b.id - a.id;
+async function findPriorityPage(
+  tx: Prisma.TransactionClient,
+  where: Prisma.TicketWhereInput,
+  skip: number,
+  take: number,
+) {
+  // Prisma cannot express the approved High > Medium > Low > unrecorded
+  // business ordering directly. Keep the ordering/pagination in PostgreSQL by
+  // paging across four disjoint priority buckets instead of loading all rows
+  // and sorting them in Node.
+  const groups: Prisma.TicketWhereInput[] = [
+    { itPriority: "High" },
+    { itPriority: "Medium" },
+    { itPriority: "Low" },
+    { OR: [{ itPriority: null }, { itPriority: { notIn: ["High", "Medium", "Low"] } }] },
+  ];
+  const counts = await Promise.all(
+    groups.map((group) => tx.ticket.count({ where: { AND: [where, group] } })),
+  );
+  const totalItems = counts.reduce((sum, count) => sum + count, 0);
+  const items: Array<Prisma.TicketGetPayload<{ select: typeof queueSelect }>> = [];
+  let remainingSkip = skip;
+  let remainingTake = take;
+
+  for (let index = 0; index < groups.length && remainingTake > 0; index += 1) {
+    const count = counts[index];
+    if (remainingSkip >= count) {
+      remainingSkip -= count;
+      continue;
     }
-  });
+    const groupTake = Math.min(remainingTake, count - remainingSkip);
+    const rows = await tx.ticket.findMany({
+      where: { AND: [where, groups[index]] },
+      select: queueSelect,
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+      skip: remainingSkip,
+      take: groupTake,
+    });
+    items.push(...rows);
+    remainingTake -= rows.length;
+    remainingSkip = 0;
+  }
+
+  return { totalItems, items };
 }
 
 staffQueueRouter.get(
@@ -46,6 +97,28 @@ staffQueueRouter.get(
       }
 
       const user = res.locals.authUser!;
+      const prisma = getPrisma();
+      if (typeof parsed.owner === "number") {
+        const eligibleOwner = await prisma.user.findFirst({
+          where: {
+            id: parsed.owner,
+            isActive: true,
+            role: { in: [UserRole.IT_STAFF, UserRole.ADMINISTRATOR] },
+          },
+          select: { id: true },
+        });
+        if (!eligibleOwner) {
+          res.status(400).json({
+            error: {
+              code: "VALIDATION_ERROR",
+              message: "Validation failed",
+              fields: { owner: "owner must identify an active IT Staff or Administrator" },
+            },
+          });
+          return;
+        }
+      }
+
       const where: Prisma.TicketWhereInput = {};
       if (parsed.search) {
         where.OR = [
@@ -64,29 +137,27 @@ staffQueueRouter.get(
       if (parsed.categoryId) where.categoryId = parsed.categoryId;
       if (parsed.relatedSystemId) where.relatedSystemId = parsed.relatedSystemId;
 
-      const rows = await getPrisma().ticket.findMany({
-        where,
-        select: {
-          id: true,
-          ticketNumber: true,
-          summary: true,
-          requestedPriority: true,
-          itPriority: true,
-          status: true,
-          createdAt: true,
-          updatedAt: true,
-          category: { select: { id: true, name: true } },
-          relatedSystem: { select: { id: true, name: true } },
-          requester: { select: { id: true, name: true, email: true } },
-          owner: { select: { id: true, name: true, email: true, role: true } },
-        },
+      const skip = (parsed.page - 1) * parsed.pageSize;
+      const result = await prisma.$transaction(async (tx) => {
+        const orderBy = standardOrderBy(parsed.sort);
+        if (!orderBy) {
+          return findPriorityPage(tx, where, skip, parsed.pageSize);
+        }
+        const [totalItems, items] = await Promise.all([
+          tx.ticket.count({ where }),
+          tx.ticket.findMany({
+            where,
+            select: queueSelect,
+            orderBy,
+            skip,
+            take: parsed.pageSize,
+          }),
+        ]);
+        return { totalItems, items };
       });
 
-      const sorted = sortTickets(rows, parsed.sort);
-      const totalItems = sorted.length;
+      const { totalItems, items } = result;
       const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / parsed.pageSize);
-      const start = (parsed.page - 1) * parsed.pageSize;
-      const items = sorted.slice(start, start + parsed.pageSize);
 
       res.json({ items, page: parsed.page, pageSize: parsed.pageSize, totalItems, totalPages });
     } catch {

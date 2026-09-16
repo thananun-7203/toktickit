@@ -17,6 +17,8 @@ describe("GET /api/v1/staff/tickets", () => {
   let staffId = 0;
   let staffCookie = "";
   let otherStaffId = 0;
+  let inactiveStaffId = 0;
+  let requesterAId = 0;
   let adminCookie = "";
   let requesterCookie = "";
   let gatedStaffCookie = "";
@@ -33,15 +35,22 @@ describe("GET /api/v1/staff/tickets", () => {
     userIds.push(requesterA.id, requesterB.id, staff.id, otherStaff.id, inactiveStaff.id, gatedStaff.id, admin.id);
     staffId = staff.id;
     otherStaffId = otherStaff.id;
+    inactiveStaffId = inactiveStaff.id;
+    requesterAId = requesterA.id;
     staffCookie = (await createSessionCookie(staff.id)).cookie;
     adminCookie = (await createSessionCookie(admin.id)).cookie;
     requesterCookie = (await createSessionCookie(requesterA.id)).cookie;
     gatedStaffCookie = (await createSessionCookie(gatedStaff.id)).cookie;
 
-    const categoryA = await prisma.category.create({ data: { name: `Queue Software ${stamp}` } });
-    const categoryB = await prisma.category.create({ data: { name: `Queue Hardware ${stamp}` } });
-    const systemA = await prisma.relatedSystem.create({ data: { name: `Queue CRM ${stamp}` } });
-    const systemB = await prisma.relatedSystem.create({ data: { name: `Queue ERP ${stamp}` } });
+    const [categories, systems] = await Promise.all([
+      prisma.category.findMany({ orderBy: { id: "asc" }, take: 2 }),
+      prisma.relatedSystem.findMany({ orderBy: { id: "asc" }, take: 2 }),
+    ]);
+    if (categories.length < 2 || systems.length < 2) {
+      throw new Error("Reference data must be seeded before Staff Queue tests");
+    }
+    const [categoryA, categoryB] = categories;
+    const [systemA, systemB] = systems;
     categoryAId = categoryA.id; categoryBId = categoryB.id;
     systemAId = systemA.id; systemBId = systemB.id;
 
@@ -75,8 +84,6 @@ describe("GET /api/v1/staff/tickets", () => {
   afterAll(async () => {
     const prisma = getPrisma();
     await prisma.ticket.deleteMany({ where: { id: { in: ticketIds } } });
-    await prisma.category.deleteMany({ where: { id: { in: [categoryAId, categoryBId] } } });
-    await prisma.relatedSystem.deleteMany({ where: { id: { in: [systemAId, systemBId] } } });
     await cleanupTestUsers(userIds);
   });
 
@@ -143,6 +150,19 @@ describe("GET /api/v1/staff/tickets", () => {
     expect(other.body.items).toHaveLength(1);
   });
 
+  it("Q-08: rejects explicit owner ids that are not active eligible assignees", async () => {
+    for (const ownerId of [inactiveStaffId, requesterAId, 999999999]) {
+      const res = await request(app)
+        .get(`/api/v1/staff/tickets?search=${stamp}&owner=${ownerId}`)
+        .set("Cookie", staffCookie);
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatchObject({
+        code: "VALIDATION_ERROR",
+        fields: { owner: expect.any(String) },
+      });
+    }
+  });
+
   it("Q-09: combines Category and Related System filters with AND semantics", async () => {
     const res = await request(app).get(`/api/v1/staff/tickets?search=${stamp}&categoryId=${categoryAId}&relatedSystemId=${systemAId}`).set("Cookie", staffCookie);
     expect(res.body.items.map((x: any) => x.summary).sort()).toEqual([`Alpha export ${stamp}`, `Delta access ${stamp}`].sort());
@@ -163,6 +183,25 @@ describe("GET /api/v1/staff/tickets", () => {
     }
   });
 
+  it("Q-10: priority sort stays deterministic across database-paginated pages", async () => {
+    const expected = [
+      `Beta network ${stamp}`,
+      `Delta access ${stamp}`,
+      `Alpha export ${stamp}`,
+      `Gamma report ${stamp}`,
+    ];
+    const actual: string[] = [];
+    for (let page = 1; page <= 4; page += 1) {
+      const res = await request(app)
+        .get(`/api/v1/staff/tickets?search=${stamp}&sort=priority_desc&page=${page}&pageSize=1`)
+        .set("Cookie", staffCookie);
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ page, pageSize: 1, totalItems: 4, totalPages: 4 });
+      actual.push(res.body.items[0].summary);
+    }
+    expect(actual).toEqual(expected);
+  });
+
   it("Q-01/Q-10: paginates after sorting and returns consistent metadata", async () => {
     const page1 = await request(app).get(`/api/v1/staff/tickets?search=${stamp}&page=1&pageSize=2`).set("Cookie", staffCookie);
     const page2 = await request(app).get(`/api/v1/staff/tickets?search=${stamp}&page=2&pageSize=2`).set("Cookie", staffCookie);
@@ -179,5 +218,19 @@ describe("GET /api/v1/staff/tickets", () => {
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe("VALIDATION_ERROR");
     expect(res.body.error.fields).toEqual(expect.objectContaining({ status: expect.any(String), sort: expect.any(String), page: expect.any(String) }));
+  });
+
+  it("Q-11: duplicate query parameters are rejected instead of silently choosing one", async () => {
+    const res = await request(app)
+      .get("/api/v1/staff/tickets?status=Open&status=Closed&page=1&page=2")
+      .set("Cookie", staffCookie);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatchObject({
+      code: "VALIDATION_ERROR",
+      fields: {
+        status: expect.stringContaining("at most once"),
+        page: expect.stringContaining("at most once"),
+      },
+    });
   });
 });
