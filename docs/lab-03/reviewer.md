@@ -263,10 +263,22 @@ Required review focus:
 
 ## 7. Issue 4 — IT Staff Ticket Queue
 
-- PR: Pending.
-- Reviewer feedback: Pending.
-- Response: Pending.
-- Verdict: Pending.
+- GitHub Issue: [#36](https://github.com/thananun-7203/toktickit/issues/36).
+- Feature branch: `feature/4-it-staff-ticket-queue`.
+- Base branch: `lab3-staging`.
+- PR: Pending creation after final commit/push.
+- Reviewer feedback: Pending — no review has occurred yet.
+- Response: Pending — no reviewer findings to respond to yet.
+- Verdict: **Pre-review; not approved or merged.**
+
+Pre-review implementation/evidence prepared:
+
+- Staff/Admin-only `GET /api/v1/staff/tickets` plus active eligible assignee reference data.
+- Search, documented filters, five sort modes, pagination/default ordering, invalid-query `400` field errors, assigned/unassigned clarity, and operational queue fields.
+- Responsive Staff Queue UI with desktop/tablet table, mobile cards, explicit `Unassigned`, loading/empty/no-results/forbidden/failure states, and Open Ticket action.
+- Staff Queue route logic is separated from the growing central `app.ts` rather than expanding it further.
+- Final local verification before review: Server **111/111 (17/17)**, Client **54/54 (9/9)**, responsive Playwright `V-03` **1/1**, Server/Client builds **Pass**, Prisma validate **Pass**, production dependency audits **0 vulnerabilities**, and `git diff --check` **Pass**.
+- Hosted CI is not claimed green before an actual PR check exists.
 
 Required review focus:
 

@@ -30,6 +30,10 @@ describe("Lab 3 authenticated application shell", () => {
     vi.spyOn(api, "getTickets").mockResolvedValue({
       items: [], page: 1, pageSize: 10, totalItems: 0, totalPages: 0,
     });
+    vi.spyOn(api, "getStaffQueue").mockResolvedValue({
+      items: [], page: 1, pageSize: 10, totalItems: 0, totalPages: 0,
+    });
+    vi.spyOn(api, "getStaffAssignees").mockResolvedValue([]);
   });
 
   it("shows current Requester name/role and only Requester navigation", async () => {
@@ -89,14 +93,20 @@ describe("Lab 3 authenticated application shell", () => {
     expect(screen.queryByRole("heading", { name: /Sign in to your account/i })).not.toBeInTheDocument();
   });
 
-  it("does not expose Requester navigation to IT Staff or Administrator", async () => {
-    for (const role of ["IT_STAFF", "ADMINISTRATOR"] as const) {
-      vi.restoreAllMocks();
-      vi.spyOn(api, "getCurrentUser").mockResolvedValue({ ...REQUESTER, id: role === "IT_STAFF" ? 302 : 303, role });
-      const rendered = renderApp();
-      expect(await screen.findByRole("heading", { name: role === "IT_STAFF" ? /Ticket Queue/i : /User Management/i })).toBeInTheDocument();
-      expect(screen.queryByRole("navigation", { name: /Primary navigation/i })).not.toBeInTheDocument();
-      rendered.unmount();
-    }
+  it("shows IT Staff Ticket Queue navigation without Requester actions", async () => {
+    vi.spyOn(api, "getCurrentUser").mockResolvedValue({ ...REQUESTER, id: 302, name: "Narin Support", role: "IT_STAFF" });
+    renderApp();
+    const nav = await screen.findByRole("navigation", { name: /Primary navigation/i });
+    expect(within(nav).getByRole("button", { name: /Ticket Queue/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Ticket Queue/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Create Ticket/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /My Tickets/i })).not.toBeInTheDocument();
+  });
+
+  it("keeps Administrator on User Management placeholder without Requester navigation", async () => {
+    vi.spyOn(api, "getCurrentUser").mockResolvedValue({ ...REQUESTER, id: 303, role: "ADMINISTRATOR" });
+    renderApp();
+    expect(await screen.findByRole("heading", { name: /User Management/i })).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: /Primary navigation/i })).not.toBeInTheDocument();
   });
 });
