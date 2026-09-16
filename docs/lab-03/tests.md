@@ -620,7 +620,8 @@ Final Issue 3 evidence:
 - **Disposable environment cleanup:** the Issue 3 PostgreSQL container and isolated SeaweedFS containers/volumes/network were removed after verification; the normal development PostgreSQL container/database was not reset or removed.
 - **PR #43 peer review:** Round 1 returned **Changes requested** at head `25b191b`. The authorization blocker was fixed by replacing negative role fallback with one shared explicit allow-list Ticket visibility policy used by Public Comments and Attachment download. Reviewer polish items were also addressed with a separate auth-bootstrap error/Retry state, synchronized Unicode decimal-digit password validation, direct Origin/must-change/inactive tests for the new unsafe mutations, concurrent resolution-indication coverage, and expanded direct Attachment-id isolation.
 - **Public Comment length clarification:** Round 1 feedback stated that the approved limit was 200 characters, but the approved Issue 1 contract at exact reviewed head `70a682e` states **2,000 characters** in `BR-19` and `D-05`, and `api-spec.md` states trimmed content `1–2,000` characters. Issue 3 therefore keeps the reviewed 2,000-character business rule and fixes the actual counting bug by counting Unicode code points rather than UTF-16 code units on both server and client.
-- **Hosted CI / PR:** PR #43 is open. No hosted CI result is claimed unless GitHub reports an actual check for the reviewed head.
+- **PR #43 final review/merge:** `Tanaboonnnnn` approved exact head `01db49d972d981e62778ab9343ea4bc3aeb5be70`; PR #43 was merged into `lab3-staging` as `5261c3c59ae6131e5e607bdcbcc35fe6aff40c69`, and Issue #35 is closed.
+- **Hosted CI:** GitHub reported no hosted checks for the approved/merged head, so this evidence does not claim hosted CI was green.
 
 Representative final commands:
 

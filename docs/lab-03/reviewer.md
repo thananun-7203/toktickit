@@ -13,7 +13,7 @@
 |---|---|---|---|---|
 | Issue 1 | [#33](https://github.com/thananun-7203/toktickit/issues/33) | Sprint 3 Engineering Contract & Test Plan | [#41](https://github.com/thananun-7203/toktickit/pull/41) | **Approved and merged** |
 | Issue 2 | [#34](https://github.com/thananun-7203/toktickit/issues/34) | User Migration, Authentication & Authorization Foundation | [#42](https://github.com/thananun-7203/toktickit/pull/42) | **Approved and merged** |
-| Issue 3 | [#35](https://github.com/thananun-7203/toktickit/issues/35) | Authenticated Requester & Lab 2 Regression | [#43](https://github.com/thananun-7203/toktickit/pull/43) | **Changes requested — Round 1 fixes prepared; re-review pending** |
+| Issue 3 | [#35](https://github.com/thananun-7203/toktickit/issues/35) | Authenticated Requester & Lab 2 Regression | [#43](https://github.com/thananun-7203/toktickit/pull/43) | **Approved and merged** |
 | Issue 4 | [#36](https://github.com/thananun-7203/toktickit/issues/36) | IT Staff Ticket Queue | Pending | Pending |
 | Issue 5 | [#37](https://github.com/thananun-7203/toktickit/issues/37) | IT Staff Ticket Detail & Operations | Pending | Pending |
 | Issue 6 | [#38](https://github.com/thananun-7203/toktickit/issues/38) | Administrator User Management | Pending | Pending |
@@ -195,8 +195,14 @@ Required review focus when this Issue starts:
 - Round 2 reviewer: `Tanaboonnnnn`.
 - Round 2 reviewed head: `a02a8c32e0543e047257541fd43bb041911fc28b`.
 - Round 2 submitted: 2026-09-15T18:19:19Z.
-- Reviewer state: **Changes requested**.
-- Verdict: **Re-review pending after Round 2 fixes.**
+- Round 3 reviewer: `Tanaboonnnnn`.
+- Round 3 reviewed head: `01db49d972d981e62778ab9343ea4bc3aeb5be70`.
+- Round 3 submitted: 2026-09-15T19:22:40Z.
+- Reviewer state: **Approved**.
+- Verdict: **Approved and merged into `lab3-staging`.**
+- Merged at: 2026-09-15T19:22:56Z.
+- Merge commit: `5261c3c59ae6131e5e607bdcbcc35fe6aff40c69`.
+- Issue #35 is closed after merge.
 
 ### Round 1 reviewer feedback
 
@@ -236,6 +242,16 @@ The reviewer also suggested renaming the shared Ticket visibility helper so its 
 - Renamed the policy helper to `sharedResourceTicketVisibilityWhere` to reduce the risk of a later issue treating it as a universal Ticket-access policy.
 - Round 2 fix implementation commit: `36b4f0b` (`fix(lab3): harden logout and e2e retry isolation`).
 - Verification after Round 2 fixes: Server **99/99 (15/15 files)**, Client **46/46 (8/8 files)**, Server build **Pass**, Client build **Pass**, Prisma validate **Pass**, production dependency audit **0 vulnerabilities** on both server/client, and `git diff --check` **Pass**. The Requester Playwright E2E passed **twice consecutively against the same isolated E2E database**, with each run creating a fresh dedicated Requester pair; this demonstrates local rerun reproducibility in addition to per-attempt retry isolation.
+
+### Round 3 final review
+
+`Tanaboonnnnn` re-reviewed exact head `01db49d` and submitted **Approved**. The reviewer confirmed that both Round 2 blockers were closed: Logout failure no longer clears client authentication state when server-side revocation fails, and Playwright retries/reruns now use fresh dedicated E2E Requesters rather than mutating canonical seeded credentials. The reviewer also reconfirmed the explicit shared-resource Ticket visibility policy, the 2,000-character Public Comment contract, direct Origin/session-gate coverage, Attachment direct-id isolation, concurrent resolution indication, and bootstrap Retry behavior.
+
+Two non-blocking polish notes were left for later work: keep the merged PR description synchronized with the Round 2 Client result (**46/46** rather than the historical Round 1 **44/44**), and begin splitting `app.ts` into route modules as the Staff implementation grows instead of allowing the central app file to become a monolith.
+
+### Final verdict
+
+**Approved.** PR #43 was approved at reviewed head `01db49d972d981e62778ab9343ea4bc3aeb5be70` and merged into `lab3-staging` as `5261c3c59ae6131e5e607bdcbcc35fe6aff40c69`. Issue #35 is closed. The next implementation issue is #36, IT Staff Ticket Queue.
 
 Required review focus:
 
