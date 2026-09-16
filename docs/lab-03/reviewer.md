@@ -266,10 +266,11 @@ Required review focus:
 - GitHub Issue: [#36](https://github.com/thananun-7203/toktickit/issues/36).
 - Feature branch: `feature/4-it-staff-ticket-queue`.
 - Base branch: `lab3-staging`.
-- PR: Pending creation after final commit/push.
+- PR: [#44](https://github.com/thananun-7203/toktickit/pull/44) — **Open**.
+- Reviewer requested: `Tanaboonnnnn`.
 - Reviewer feedback: Pending — no review has occurred yet.
 - Response: Pending — no reviewer findings to respond to yet.
-- Verdict: **Pre-review; not approved or merged.**
+- Verdict: **Awaiting peer review; not approved or merged.**
 
 Pre-review implementation/evidence prepared:
 
