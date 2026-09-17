@@ -34,6 +34,7 @@ describe("Lab 3 authenticated application shell", () => {
       items: [], page: 1, pageSize: 10, totalItems: 0, totalPages: 0,
     });
     vi.spyOn(api, "getStaffAssignees").mockResolvedValue([]);
+    vi.spyOn(api, "getAdminUsers").mockResolvedValue([]);
   });
 
   it("shows current Requester name/role and only Requester navigation", async () => {
@@ -103,10 +104,14 @@ describe("Lab 3 authenticated application shell", () => {
     expect(screen.queryByRole("button", { name: /My Tickets/i })).not.toBeInTheDocument();
   });
 
-  it("keeps Administrator on User Management placeholder without Requester navigation", async () => {
+  it("routes Administrator to User Management without Requester navigation", async () => {
     vi.spyOn(api, "getCurrentUser").mockResolvedValue({ ...REQUESTER, id: 303, role: "ADMINISTRATOR" });
     renderApp();
-    expect(await screen.findByRole("heading", { name: /User Management/i })).toBeInTheDocument();
-    expect(screen.queryByRole("navigation", { name: /Primary navigation/i })).not.toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /Create User/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /User Management/i })).toBeInTheDocument();
+    const nav = screen.getByRole("navigation", { name: /Primary navigation/i });
+    expect(within(nav).getByRole("button", { name: /User Management/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Create Ticket/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /My Tickets/i })).not.toBeInTheDocument();
   });
 });
