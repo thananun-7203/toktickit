@@ -545,7 +545,14 @@ The API does not rely on a client confirmation flag for safety; confirmation is 
 
 Roles: IT Staff/Admin only.
 
-Success `200`: append-only note list oldest→newest.
+Optional query parameters:
+
+- `page`: positive integer, default `1`.
+- `pageSize`: `1–100`, default `50`.
+- duplicate/invalid pagination parameters → `400 VALIDATION_ERROR`.
+
+Success `200`: paginated append-only note list oldest→newest with
+`items`, `page`, `pageSize`, `totalItems`, and `totalPages`.
 
 Requester direct call → `403` and no note content.
 

@@ -234,6 +234,147 @@ describe("Lab 3 Public Comments", () => {
   });
 });
 
+describe("Lab 3 Internal Notes", () => {
+  it("NOTE-01/NOTE-02: IT Staff posts notes with backend author/time and reads them chronologically", async () => {
+    const ticket = await createTicket();
+    const first = await request(app)
+      .post(`/api/v1/staff/tickets/${ticket.id}/internal-notes`)
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", staffCookie)
+      .send({ content: "  First private note  " });
+    const second = await request(app)
+      .post(`/api/v1/staff/tickets/${ticket.id}/internal-notes`)
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", staffCookie)
+      .send({ content: "Second private note" });
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(201);
+    expect(first.body.content).toBe("First private note");
+    expect(first.body.author).toMatchObject({ id: staffId, role: "IT_STAFF" });
+    expect(first.body.createdAt).toEqual(expect.any(String));
+
+    const list = await request(app)
+      .get(`/api/v1/staff/tickets/${ticket.id}/internal-notes`)
+      .set("Cookie", staffCookie);
+    expect(list.status).toBe(200);
+    expect(list.body.items.map((item: { id: number }) => item.id)).toEqual([first.body.id, second.body.id]);
+    expect(list.body).toMatchObject({ page: 1, pageSize: 50, totalItems: 2, totalPages: 1 });
+  });
+
+  it("review regression: paginates Internal Notes deterministically and rejects unsafe pagination", async () => {
+    const ticket = await createTicket();
+    await getPrisma().internalNote.createMany({
+      data: Array.from({ length: 5 }, (_, index) => ({
+        ticketId: ticket.id,
+        authorId: staffId,
+        content: `Private page note ${index + 1}`,
+      })),
+    });
+
+    const firstPage = await request(app)
+      .get(`/api/v1/staff/tickets/${ticket.id}/internal-notes?page=1&pageSize=2`)
+      .set("Cookie", staffCookie);
+    expect(firstPage.status).toBe(200);
+    expect(firstPage.body).toMatchObject({ page: 1, pageSize: 2, totalItems: 5, totalPages: 3 });
+    expect(firstPage.body.items.map((item: { content: string }) => item.content)).toEqual([
+      "Private page note 1",
+      "Private page note 2",
+    ]);
+
+    const lastPage = await request(app)
+      .get(`/api/v1/staff/tickets/${ticket.id}/internal-notes?page=3&pageSize=2`)
+      .set("Cookie", staffCookie);
+    expect(lastPage.status).toBe(200);
+    expect(lastPage.body.items.map((item: { content: string }) => item.content)).toEqual([
+      "Private page note 5",
+    ]);
+
+    for (const query of [
+      "page=0",
+      "pageSize=101",
+      "page=1&page=2",
+      "page=9007199254740991&pageSize=100",
+    ]) {
+      const invalid = await request(app)
+        .get(`/api/v1/staff/tickets/${ticket.id}/internal-notes?${query}`)
+        .set("Cookie", staffCookie);
+      expect(invalid.status).toBe(400);
+      expect(invalid.body.error.code).toBe("VALIDATION_ERROR");
+    }
+  });
+
+  it("NOTE-03: Administrator may read and post Internal Notes", async () => {
+    const ticket = await createTicket();
+    const post = await request(app)
+      .post(`/api/v1/staff/tickets/${ticket.id}/internal-notes`)
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", adminCookie)
+      .send({ content: "Admin-only operational context" });
+    expect(post.status).toBe(201);
+    expect(post.body.author).toMatchObject({ id: adminId, role: "ADMINISTRATOR" });
+    const list = await request(app)
+      .get(`/api/v1/staff/tickets/${ticket.id}/internal-notes`)
+      .set("Cookie", adminCookie);
+    expect(list.status).toBe(200);
+    expect(list.body.items).toHaveLength(1);
+  });
+
+  it("NOTE-04/NOTE-05/AZ-08: Requester direct GET/POST is 403 and leaks no note content", async () => {
+    const ticket = await createTicket();
+    await getPrisma().internalNote.create({
+      data: { ticketId: ticket.id, authorId: staffId, content: "Private secret-free fixture" },
+    });
+    const read = await request(app)
+      .get(`/api/v1/staff/tickets/${ticket.id}/internal-notes`)
+      .set("Cookie", requesterACookie);
+    expect(read.status).toBe(403);
+    expect(JSON.stringify(read.body)).not.toContain("Private secret-free fixture");
+
+    const post = await request(app)
+      .post(`/api/v1/staff/tickets/${ticket.id}/internal-notes`)
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", requesterACookie)
+      .send({ content: "Requester must not write private notes" });
+    expect(post.status).toBe(403);
+    expect(await getPrisma().internalNote.count({ where: { ticketId: ticket.id } })).toBe(1);
+  });
+
+  it("NOTE-06/NOTE-07: blank and >2,000 are rejected while exactly 2,000 Unicode characters are accepted", async () => {
+    const ticket = await createTicket();
+    for (const content of ["   ", "x".repeat(2001), "😀".repeat(2001)]) {
+      const invalid = await request(app)
+        .post(`/api/v1/staff/tickets/${ticket.id}/internal-notes`)
+        .set("Origin", TEST_ORIGIN)
+        .set("Cookie", staffCookie)
+        .send({ content });
+      expect(invalid.status).toBe(400);
+      expect(invalid.body.error.code).toBe("VALIDATION_ERROR");
+    }
+
+    const boundary = await request(app)
+      .post(`/api/v1/staff/tickets/${ticket.id}/internal-notes`)
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", staffCookie)
+      .send({ content: "😀".repeat(2000) });
+    expect(boundary.status).toBe(201);
+    expect(Array.from(boundary.body.content)).toHaveLength(2000);
+  });
+
+  it("security: Internal Note POST rejects missing/null/wrong Origin with zero mutation", async () => {
+    const ticket = await createTicket();
+    for (const origin of [undefined, "null", "http://evil.example"] as const) {
+      let pending = request(app)
+        .post(`/api/v1/staff/tickets/${ticket.id}/internal-notes`)
+        .set("Cookie", staffCookie);
+      if (origin !== undefined) pending = pending.set("Origin", origin);
+      const res = await pending.send({ content: "Must not be written" });
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe("ORIGIN_FORBIDDEN");
+    }
+    expect(await getPrisma().internalNote.count({ where: { ticketId: ticket.id } })).toBe(0);
+  });
+});
+
 describe("Lab 3 Problem Appears Resolved", () => {
   it("COM-08/COM-12: allowed statuses record an indication without changing formal status", async () => {
     for (const status of ["New", "Open", "In Progress", "Waiting for Requester", "Reopened"]) {
