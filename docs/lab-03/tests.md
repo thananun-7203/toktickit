@@ -216,28 +216,28 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
-| ADM-01 | AC-21 | `users-admin.api.test.ts` | list users | safe fields only; no hashes | Planned |
-| ADM-02 | AC-21 | same | search name | matching list | Planned |
-| ADM-03 | AC-21 | same | search email | matching list | Planned |
-| ADM-04 | AC-21 | same | role filter | matching role | Planned |
-| ADM-05 | AC-22 | same | create valid Requester/IT Staff/Admin | exactly one role, initial-password flag true | Planned |
-| ADM-06 | AC-22 | same | duplicate email different case | `409`, no duplicate row | Planned |
-| ADM-07 | AC-22 | same | invalid role | `400` | Planned |
-| ADM-08 | AC-22 | same | invalid name/email/password | field validation | Planned |
-| ADM-09 | AC-23 | same | edit name/email | updated safe user | Planned |
-| ADM-10 | AC-23 | same | change role with valid safety state | updated | Planned |
-| ADM-11 | AC-23 | same | activate/deactivate normal user | updated | Planned |
-| ADM-12 | AC-24 | same | Admin deactivates self | `409`, still active | Planned |
-| ADM-13 | AC-25 | same | deactivate last active Admin | `409`, still active | Planned |
-| ADM-14 | AC-25 | same | change last active Admin to non-Admin | `409` | Planned |
-| ADM-15 | AC-23 | same | set new initial password | flag true; old sessions invalidated | Planned |
-| ADM-16 | AC-23 | same | target user logs in with new initial password | must change before normal app | Planned |
-| ADM-17 | AC-26 | `authorization.api.test.ts` | Requester/IT Staff hit admin list/create/edit | `403` | Planned |
-| ADM-18 | AC-31 | `users-admin.api.test.ts` | deactivate an IT Staff/Admin who currently owns ≥1 Ticket | `409 ASSIGNED_TICKETS_REQUIRE_REASSIGNMENT`; user remains active and Ticket owner unchanged | Planned |
-| ADM-19 | AC-31 | same | change an assigned IT Staff/Admin role to `REQUESTER` | same `409`; role and Ticket owner unchanged until Tickets are reassigned | Planned |
-| ADM-20 | AC-32 | `users-admin.api.test.ts` | concurrently assign an unassigned Ticket to eligible user X and deactivate X | at most one state-changing operation succeeds; final DB state is either assigned+active or unassigned+inactive, never assigned+inactive | Planned |
-| ADM-21 | AC-32 | same | concurrently assign an unassigned Ticket to eligible user X and demote X to `REQUESTER` | at most one state-changing operation succeeds; final DB state is either assigned+eligible-role or unassigned+Requester, never Ticket owned by Requester | Planned |
-| ADM-22 | AC-32 | same | concurrently reassign a Ticket to eligible user X while Admin deactivates or demotes X | one side conflicts as required; final non-null owner always remains active IT Staff/Admin | Planned |
+| ADM-01 | AC-21 | `users-admin.api.test.ts` | list users | safe fields only; no hashes | **Pass** |
+| ADM-02 | AC-21 | same | search name | matching list | **Pass** |
+| ADM-03 | AC-21 | same | search email | matching list | **Pass** |
+| ADM-04 | AC-21 | same | role filter | matching role | **Pass** |
+| ADM-05 | AC-22 | same | create valid Requester/IT Staff/Admin | exactly one role, initial-password flag true | **Pass** |
+| ADM-06 | AC-22 | same | duplicate email different case | `409`, no duplicate row | **Pass** |
+| ADM-07 | AC-22 | same | invalid role | `400` | **Pass** |
+| ADM-08 | AC-22 | same | invalid name/email/password | field validation | **Pass** |
+| ADM-09 | AC-23 | same | edit name/email | updated safe user | **Pass** |
+| ADM-10 | AC-23 | same | change role with valid safety state | updated | **Pass** |
+| ADM-11 | AC-23 | same | activate/deactivate normal user | updated | **Pass** |
+| ADM-12 | AC-24 | same | Admin deactivates self | `409`, still active | **Pass** |
+| ADM-13 | AC-25 | `admin-user-operations.unit.test.ts` + route integration path | deactivate last active Admin | `409`, still active | **Pass** |
+| ADM-14 | AC-25 | same | change last active Admin to non-Admin | `409` | **Pass** |
+| ADM-15 | AC-23 | `users-admin.api.test.ts` | set new initial password | flag true; old sessions invalidated | **Pass** |
+| ADM-16 | AC-23 | same | target user logs in with new initial password | must change before normal app | **Pass** |
+| ADM-17 | AC-26 | `users-admin.api.test.ts` | Requester/IT Staff hit admin list/create/edit | `403` | **Pass** |
+| ADM-18 | AC-31 | `users-admin.api.test.ts` | deactivate an IT Staff/Admin who currently owns ≥1 Ticket | `409 ASSIGNED_TICKETS_REQUIRE_REASSIGNMENT`; user remains active and Ticket owner unchanged | **Pass** |
+| ADM-19 | AC-31 | same | change an assigned IT Staff/Admin role to `REQUESTER` | same `409`; role and Ticket owner unchanged until Tickets are reassigned | **Pass** |
+| ADM-20 | AC-32 | `users-admin.api.test.ts` | concurrently assign an unassigned Ticket to eligible user X and deactivate X | at most one state-changing operation succeeds; final DB state is either assigned+active or unassigned+inactive, never assigned+inactive | **Pass** |
+| ADM-21 | AC-32 | same | concurrently assign an unassigned Ticket to eligible user X and demote X to `REQUESTER` | at most one state-changing operation succeeds; final DB state is either assigned+eligible-role or unassigned+Requester, never Ticket owned by Requester | **Pass** |
+| ADM-22 | AC-32 | same | concurrently reassign a Ticket to eligible user X while Admin deactivates or demotes X | one side conflicts as required; final non-null owner always remains active IT Staff/Admin | **Pass** |
 
 ## 12. Migration / Seed / Regression Tests
 
@@ -334,16 +334,16 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
-| UI-ADM-01 | AC-21 | `UserManagement.test.tsx` | list | Name/Email/Role/Status/Edit | Planned |
-| UI-ADM-02 | AC-21 | same | search/filter | visible results update | Planned |
-| UI-ADM-03 | AC-22 | same | create form | required controls + one-role select + initial password | Planned |
-| UI-ADM-04 | AC-22 | same | duplicate/invalid | field/conflict feedback | Planned |
-| UI-ADM-05 | AC-23 | same | edit | name/email/role/active save | Planned |
-| UI-ADM-06 | AC-23 | same | set initial password | separate flow + success indicator | Planned |
-| UI-ADM-07 | AC-24 | same | self-deactivation conflict | clear blocked feedback | Planned |
-| UI-ADM-08 | AC-25 | same | last-admin conflict | clear blocked feedback | Planned |
-| UI-ADM-09 | AC-29 | same | loading/empty/failure | meaningful states | Planned |
-| UI-ADM-10 | AC-31 | same | assigned owner deactivation/demotion conflict | clear `reassign tickets first` feedback; edited user state is not falsely shown as saved | Planned |
+| UI-ADM-01 | AC-21 | `UserManagement.test.tsx` | list | Name/Email/Role/Status/Edit | **Pass** |
+| UI-ADM-02 | AC-21 | same | search/filter | visible results update | **Pass** |
+| UI-ADM-03 | AC-22 | same | create form | required controls + one-role select + initial password | **Pass** |
+| UI-ADM-04 | AC-22 | same | duplicate/invalid | field/conflict feedback | **Pass** |
+| UI-ADM-05 | AC-23 | same | edit | name/email/role/active save | **Pass** |
+| UI-ADM-06 | AC-23 | same | set initial password | separate flow + success indicator | **Pass** |
+| UI-ADM-07 | AC-24 | same | self-deactivation conflict | clear blocked feedback | **Pass** |
+| UI-ADM-08 | AC-25 | same | last-admin conflict | clear blocked feedback | **Pass** |
+| UI-ADM-09 | AC-29 | same | loading/empty/failure | meaningful states | **Pass** |
+| UI-ADM-10 | AC-31 | same | assigned owner deactivation/demotion conflict | clear `reassign tickets first` feedback; edited user state is not falsely shown as saved | **Pass** |
 
 ## 14. End-to-End Tests
 
@@ -366,7 +366,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | V-02 | AC-30 | Requester major screens 1280/820/390 | Lab 2 responsive behavior preserved | Planned |
 | V-03 | AC-30 | `staff-queue-responsive.spec.ts` at 1280/820/390 | table/card adaptation; badges readable; no horizontal overflow | **Pass** |
 | V-04 | AC-30 | Staff Detail 1280/820/390 | controls/comments/notes/attachments no overlap | **Pass** |
-| V-05 | AC-30 | User Management 1280/820/390 | list/form adaptation no horizontal overflow | Planned |
+| V-05 | AC-30 | `user-management-responsive.spec.ts` at 1280/820/390 | list/form adaptation no horizontal overflow | **Pass** |
 | V-06 | AC-30 | all major forms | labels, validation placement, visible focus | Planned |
 | V-07 | AC-30 | badges | role/status/priority meaning not colour-only | Planned |
 | V-08 | AC-30 | communication | Public vs Internal distinction includes explicit text | Planned |
@@ -695,6 +695,35 @@ Current Issue 5 / PR #45 evidence after reviewer follow-up fixes:
 - **Production dependency audit:** `npm audit --omit=dev` reports **0 vulnerabilities** for both server and client.
 - **Initial PR #45 peer review:** `Peepipat-Suesoongnuen` submitted **Approved** on exact head `22672275a96f49303ffe01cc44a0771ce2991172`. The reviewer identified two non-blocking follow-ups: bcrypt/seed tests were timing-marginal under load, and Internal Notes were read with an unbounded `findMany`. Both are addressed in the follow-up working tree described above; re-review is requested after commit/push.
 - **Hosted CI:** no hosted CI result is claimed unless GitHub reports an actual check for the current PR head.
+
+### Issue 6 verification — Administrator User Management
+
+Issue #38 implementation is on `feature/6-administrator-user-management` from merge commit `35b5ad77f9072e554ef3c4943e5936e331055306` (PR #45 merged into `lab3-staging`). The normal development database was not reset, migrated, or replaced. DB-backed verification used a fresh disposable PostgreSQL 16 container on local port `5438`.
+
+Current Issue 6 evidence after the approved Administrator UI mockup and implementation:
+
+- **Administrator User Management API:** added Admin-only list/search/role-filter, create, edit, activate/deactivate, and set-new-initial-password endpoints. Responses use safe user fields only; password hashes are never returned.
+- **Validation/account lifecycle:** create/edit normalize email with trim + lowercase, enforce case-insensitive uniqueness through normalized storage + the database unique constraint, restrict users to exactly one approved role, validate name/email/activation/password inputs, and set `mustChangePassword=true` for initial-password flows.
+- **Session safety:** setting a new initial password invalidates all existing sessions for the target user. Deactivation also deletes existing target sessions; normal auth middleware continues to deny inactive users.
+- **Administrator safety:** self-deactivation returns `409 SELF_DEACTIVATION_FORBIDDEN`; helper-backed last-active-Administrator logic blocks a deactivation or demotion that would leave zero active Administrators.
+- **Assigned-owner invariant:** deactivation or demotion to `REQUESTER` for a user who still owns Tickets returns `409 ASSIGNED_TICKETS_REQUIRE_REASSIGNMENT` with no user/Ticket mutation. Administrator user mutation serializes on the target user row so it coordinates with the Staff owner mutation protocol introduced in Issue #37.
+- **Concurrency coverage:** `ADM-20`–`ADM-22` exercise assign/reassign racing with deactivate/demote. Exactly one competing state change succeeds and final non-null Ticket owners remain active `IT_STAFF`/`ADMINISTRATOR` users.
+- **Shared serialization mapping hardening:** Issue #38 race coverage exposed PostgreSQL raw SQLSTATE `40001` arriving through Prisma as `P2010` rather than `P2034`. A shared helper now maps both Prisma `P2034` and raw `40001`/`40P01` retryable conflicts to the existing safe `409` stale-state behavior; this closes the Issue #37 reassign-vs-Admin-change edge case without changing successful owner behavior.
+- **Focused Issue #38 tests:** `users-admin.api.test.ts` + `admin-user-operations.unit.test.ts` pass **22/22 (2/2 test files)**, covering `ADM-01`–`ADM-22`, initial-password validation, Origin protection, and owner-eligibility rule checks.
+- **Full Server regression:** **160/160 passed (21/21 test files)** against the isolated Issue #38 database; Lab 1/Lab 2 and previous Lab 3 authentication/requester/staff behavior remained green.
+- **Server TypeScript build:** **Pass**.
+- **Prisma schema validation:** **Pass**.
+- **Server production dependency audit:** `npm audit --omit=dev` reports **0 vulnerabilities**.
+- **Diff hygiene:** `git diff --check` **Pass**; only repository line-ending normalization warnings were reported.
+- **Approved Administrator UI:** the User Management mockup was revised to match the existing TokTickIT Ticket Queue header/Zen Green design and was approved before frontend implementation. Out-of-scope mockup concepts such as Delete User, Department, and Trash were intentionally not implemented because Issue #38 excludes them.
+- **Administrator UI:** `UserManagement.tsx` provides Admin-only list/search/role-filter, Create User, Edit User, activation/deactivation confirmation, and a separate Set Initial Password flow. It uses the exact Lab 3 password rules and displays safe conflict feedback for self-deactivation, last-active-Administrator protection, assigned Ticket ownership, duplicate email, and stale state.
+- **UI-ADM suite:** `UI-ADM-01`–`UI-ADM-10` pass **10/10** in `UserManagement.test.tsx`. The authenticated-shell regression was updated from the former Administrator placeholder to the real User Management navigation and remains green.
+- **Full Client regression:** **74/74 passed (11/11 test files)** after Administrator User Management implementation.
+- **Client production build:** **Pass**.
+- **Client production dependency audit:** `npm audit --omit=dev` reports **0 vulnerabilities**.
+- **Responsive V-05:** `user-management-responsive.spec.ts` passes at **1280 / 820 / 390 px**, including desktop/table/card adaptation, Create User modal behavior, mobile navigation, and no page-level horizontal overflow. `V-05` is **Pass**.
+- **Administrator routed-browser smoke:** `user-administration.spec.ts` passes a browser workflow covering Sign In UI → User Management → search/role filter → create → edit → set initial password → assigned-owner deactivation conflict. The test uses routed/mock API responses and is supporting UI interaction evidence only; it does **not** claim full-stack `E2E-ADMIN-01` or `E2E-ADMIN-02` Pass. Those rows remain Planned until run against the real isolated backend/database stack.
+- **Manual local verification:** the student manually verified the Administrator login/User Management flow in the local development app after implementation and reported no remaining Issue #38 UI problems before commit/push/PR preparation.
 
 ### Final Lab 3 regression template
 

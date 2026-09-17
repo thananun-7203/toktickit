@@ -160,6 +160,37 @@ export interface InternalNotesResponse {
   totalPages: number;
 }
 
+export interface AdminUser {
+  id: number;
+  name: string;
+  email: string;
+  role: UserRole;
+  isActive: boolean;
+  mustChangePassword: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminUserListParams {
+  search?: string;
+  role?: UserRole;
+}
+
+export interface CreateAdminUserInput {
+  name: string;
+  email: string;
+  role: UserRole;
+  isActive: boolean;
+  initialPassword: string;
+}
+
+export interface UpdateAdminUserInput {
+  name?: string;
+  email?: string;
+  role?: UserRole;
+  isActive?: boolean;
+}
+
 export interface NewTicketInput {
   categoryId: number;
   relatedSystemId: number;
@@ -482,6 +513,48 @@ export async function postInternalNote(ticketId: number, content: string): Promi
     body: JSON.stringify({ content }),
   });
   if (!res.ok) throw await responseError(res, "Unable to post Internal Note");
+  return res.json();
+}
+
+export async function getAdminUsers(params: AdminUserListParams = {}): Promise<AdminUser[]> {
+  const qs = new URLSearchParams();
+  if (params.search) qs.set("search", params.search);
+  if (params.role) qs.set("role", params.role);
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
+  const res = await apiFetch(`/api/v1/admin/users${suffix}`);
+  if (!res.ok) throw await responseError(res, "Unable to load users");
+  const data = await res.json();
+  return data.items as AdminUser[];
+}
+
+export async function createAdminUser(input: CreateAdminUserInput): Promise<AdminUser> {
+  const res = await apiFetch("/api/v1/admin/users", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw await responseError(res, "Unable to create user");
+  return res.json();
+}
+
+export async function updateAdminUser(userId: number, input: UpdateAdminUserInput): Promise<AdminUser> {
+  const res = await apiFetch(`/api/v1/admin/users/${userId}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw await responseError(res, "Unable to update user");
+  return res.json();
+}
+
+export async function setAdminInitialPassword(
+  userId: number,
+  initialPassword: string,
+  confirmPassword: string,
+): Promise<{ id: number; mustChangePassword: true }> {
+  const res = await apiFetch(`/api/v1/admin/users/${userId}/initial-password`, {
+    method: "POST",
+    body: JSON.stringify({ initialPassword, confirmPassword }),
+  });
+  if (!res.ok) throw await responseError(res, "Unable to set initial password");
   return res.json();
 }
 

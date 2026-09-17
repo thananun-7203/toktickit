@@ -8,9 +8,10 @@ import MyTickets from "./MyTickets.js";
 import TicketDetail from "./TicketDetail.js";
 import StaffTicketQueue from "./StaffTicketQueue.js";
 import StaffTicketDetail from "./StaffTicketDetail.js";
+import UserManagement from "./UserManagement.js";
 
 type UiState = "idle" | "loading" | "success" | "error";
-type View = "home" | "create" | "my-tickets" | "ticket-detail" | "staff-queue" | "staff-ticket-detail";
+type View = "home" | "create" | "my-tickets" | "ticket-detail" | "staff-queue" | "staff-ticket-detail" | "admin-users";
 
 function AuthLoading() {
   return (
@@ -74,7 +75,7 @@ export default function App() {
   useEffect(() => {
     if (user?.id) {
       setSelectedTicketId(null);
-      setView(user.role === "IT_STAFF" ? "staff-queue" : "my-tickets");
+      setView(user.role === "IT_STAFF" ? "staff-queue" : user.role === "ADMINISTRATOR" ? "admin-users" : "my-tickets");
       setMobileMenuOpen(false);
       setShowChangePassword(false);
     }
@@ -145,6 +146,7 @@ export default function App() {
 
   const isRequester = user.role === "REQUESTER";
   const isStaff = user.role === "IT_STAFF";
+  const isAdmin = user.role === "ADMINISTRATOR";
 
   return (
     <div className="app-shell">
@@ -173,6 +175,11 @@ export default function App() {
                 {isStaff && (
                   <button type="button" role="menuitem" onClick={() => { setView("staff-queue"); setSelectedTicketId(null); setMobileMenuOpen(false); }}>
                     <span aria-hidden="true">≡</span> Ticket Queue
+                  </button>
+                )}
+                {isAdmin && (
+                  <button type="button" role="menuitem" onClick={() => { setView("admin-users"); setSelectedTicketId(null); setMobileMenuOpen(false); }}>
+                    <span aria-hidden="true">◎</span> User Management
                   </button>
                 )}
                 <div className="mobile-nav-user">
@@ -211,6 +218,14 @@ export default function App() {
             </nav>
           )}
 
+          {isAdmin && (
+            <nav className="app-nav-links" aria-label="Primary navigation">
+              <button className={`app-nav-button ${view === "admin-users" ? "active" : ""}`} onClick={() => { setView("admin-users"); setSelectedTicketId(null); }}>
+                <span className="nav-icon" aria-hidden="true">◎</span> User Management
+              </button>
+            </nav>
+          )}
+
           <details className="user-menu">
             <summary aria-label={`User menu for ${user.name}`}>
               <span className="user-avatar" aria-hidden="true">●</span>
@@ -245,6 +260,8 @@ export default function App() {
             currentUserId={user.id}
             onBack={() => { setSelectedTicketId(null); setView("staff-queue"); }}
           />
+        ) : isAdmin && view === "admin-users" ? (
+          <UserManagement currentUserId={user.id} />
         ) : !isRequester ? (
           <section className="zen-card content-card role-placeholder">
             <h1 className="page-title">{user.role === "IT_STAFF" ? "Ticket Queue" : "User Management"}</h1>

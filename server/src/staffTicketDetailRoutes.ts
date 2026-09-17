@@ -12,6 +12,7 @@ import {
   isItPriority,
   isTicketStatus,
 } from "./staffTicketOperations.js";
+import { isPrismaSerializationConflict } from "./prismaErrors.js";
 
 export const staffTicketDetailRouter = Router();
 
@@ -200,7 +201,7 @@ staffTicketDetailRouter.patch(
         });
         return;
       }
-      if (error instanceof StaleTicketStateError || (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034")) {
+      if (error instanceof StaleTicketStateError || isPrismaSerializationConflict(error)) {
         res.status(409).json({
           error: { code: "STALE_TICKET_STATE", message: "Ticket ownership changed; refresh and try again" },
         });
