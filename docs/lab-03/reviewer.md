@@ -355,7 +355,8 @@ Required review focus:
 
 ## 10. Issue 7 — Security, Regression, E2E & Visual QA
 
-- PR: Pending.
+- PR: [#47](https://github.com/thananun-7203/toktickit/pull/47), open against `lab3-staging`.
+- Requested reviewer: `Tanaboonnnnn`.
 - Reviewer feedback: Pending.
 - Response: Pending.
 - Verdict: Pending.
