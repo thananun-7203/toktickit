@@ -139,6 +139,19 @@ export interface StaffQueueResponse {
   totalPages: number;
 }
 
+export interface StaffTicketDetail extends StaffQueueTicket {
+  description: string;
+  problemAppearsResolvedAt: string | null;
+  attachments: Attachment[];
+}
+
+export interface InternalNote {
+  id: number;
+  content: string;
+  createdAt: string;
+  author: { id: number; name: string; role: UserRole };
+}
+
 export interface NewTicketInput {
   categoryId: number;
   relatedSystemId: number;
@@ -399,6 +412,64 @@ export async function getStaffQueue(params: StaffQueueParams = {}): Promise<Staf
 export async function getStaffAssignees(): Promise<StaffAssignee[]> {
   const res = await apiFetch("/api/v1/staff/assignees");
   if (!res.ok) throw await responseError(res, "Unable to load staff assignees");
+  return res.json();
+}
+
+export async function getStaffTicketDetail(id: number): Promise<StaffTicketDetail> {
+  const res = await apiFetch(`/api/v1/staff/tickets/${id}`);
+  if (!res.ok) throw await responseError(res, "Unable to load Ticket Detail");
+  return res.json();
+}
+
+export async function updateStaffTicketOwner(
+  ticketId: number,
+  input: { action: "claim" } | { action: "assign"; ownerId: number },
+): Promise<Pick<StaffTicketDetail, "id" | "owner" | "updatedAt">> {
+  const res = await apiFetch(`/api/v1/staff/tickets/${ticketId}/owner`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw await responseError(res, "Unable to update Ticket owner");
+  return res.json();
+}
+
+export async function updateStaffTicketItPriority(
+  ticketId: number,
+  itPriority: RequestedPriority,
+): Promise<Pick<StaffTicketDetail, "id" | "requestedPriority" | "itPriority" | "updatedAt">> {
+  const res = await apiFetch(`/api/v1/staff/tickets/${ticketId}/it-priority`, {
+    method: "PATCH",
+    body: JSON.stringify({ itPriority }),
+  });
+  if (!res.ok) throw await responseError(res, "Unable to update IT Priority");
+  return res.json();
+}
+
+export async function updateStaffTicketStatus(
+  ticketId: number,
+  status: TicketStatus,
+): Promise<Pick<StaffTicketDetail, "id" | "status" | "problemAppearsResolvedAt" | "updatedAt">> {
+  const res = await apiFetch(`/api/v1/staff/tickets/${ticketId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) throw await responseError(res, "Unable to update Ticket status");
+  return res.json();
+}
+
+export async function getInternalNotes(ticketId: number): Promise<InternalNote[]> {
+  const res = await apiFetch(`/api/v1/staff/tickets/${ticketId}/internal-notes`);
+  if (!res.ok) throw await responseError(res, "Unable to load Internal Notes");
+  const data = await res.json();
+  return data.items as InternalNote[];
+}
+
+export async function postInternalNote(ticketId: number, content: string): Promise<InternalNote> {
+  const res = await apiFetch(`/api/v1/staff/tickets/${ticketId}/internal-notes`, {
+    method: "POST",
+    body: JSON.stringify({ content }),
+  });
+  if (!res.ok) throw await responseError(res, "Unable to post Internal Note");
   return res.json();
 }
 

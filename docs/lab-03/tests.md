@@ -319,15 +319,15 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
-| UI-ST-01 | AC-20 | `StaffTicketDetail.test.tsx` | render | read-only requester vs editable operations clearly separated | Planned |
-| UI-ST-02 | AC-14 | same | claim/reassign | controls call correct APIs + busy states | Planned |
-| UI-ST-03 | AC-15 | same | IT Priority | Requested stays read-only; IT editable | Planned |
-| UI-ST-04 | AC-16 | same | status options | only allowed next statuses offered | Planned |
-| UI-ST-05 | AC-17/18 | same | Public vs Internal | explicit visible/private labels and distinct sections | Planned |
-| UI-ST-06 | AC-19 | same | blank note/comment | validation | Planned |
-| UI-ST-07 | AC-20 | same | attachments | active/removed continuity | Planned |
-| UI-ST-08 | AC-20 | same | Requester resolution indication | visible without auto status mutation | Planned |
-| UI-ST-09 | AC-29 | same | conflict/failure | safe feedback + refresh/retry path | Planned |
+| UI-ST-01 | AC-20 | `StaffTicketDetail.test.tsx` | render | read-only requester vs editable operations clearly separated | **Pass** |
+| UI-ST-02 | AC-14 | same | claim/reassign | controls call correct APIs + busy states | **Pass** |
+| UI-ST-03 | AC-15 | same | IT Priority | Requested stays read-only; IT editable | **Pass** |
+| UI-ST-04 | AC-16 | same | status options | only allowed next statuses offered | **Pass** |
+| UI-ST-05 | AC-17/18 | same | Public vs Internal | explicit visible/private labels and distinct sections | **Pass** |
+| UI-ST-06 | AC-19 | same | blank note/comment | validation | **Pass** |
+| UI-ST-07 | AC-20 | same | attachments | active/removed continuity | **Pass** |
+| UI-ST-08 | AC-20 | same | Requester resolution indication | visible without auto status mutation | **Pass** |
+| UI-ST-09 | AC-29 | same | conflict/failure | safe feedback + refresh/retry path | **Pass** |
 
 ### 13.7 Administrator User Management
 
@@ -364,7 +364,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | V-01 | AC-30 | Login/Change Password 1280/820/390 | no clipping/overflow; focus/labels | Planned |
 | V-02 | AC-30 | Requester major screens 1280/820/390 | Lab 2 responsive behavior preserved | Planned |
 | V-03 | AC-30 | `staff-queue-responsive.spec.ts` at 1280/820/390 | table/card adaptation; badges readable; no horizontal overflow | **Pass** |
-| V-04 | AC-30 | Staff Detail 1280/820/390 | controls/comments/notes/attachments no overlap | Planned |
+| V-04 | AC-30 | Staff Detail 1280/820/390 | controls/comments/notes/attachments no overlap | **Pass** |
 | V-05 | AC-30 | User Management 1280/820/390 | list/form adaptation no horizontal overflow | Planned |
 | V-06 | AC-30 | all major forms | labels, validation placement, visible focus | Planned |
 | V-07 | AC-30 | badges | role/status/priority meaning not colour-only | Planned |
@@ -670,6 +670,28 @@ cd ../e2e
 $env:E2E_DATABASE_URL='postgresql://toktickit:toktickit@127.0.0.1:5436/toktickit_pr44_r1_clean_test?schema=public'
 npx playwright test lab-03/staff-queue-responsive.spec.ts --config playwright.lab3.config.ts
 ```
+
+### Issue 5 verification — IT Staff Ticket Detail & Operations
+
+Issue #37 implementation continues on `feature/5-it-staff-ticket-detail` from the merged PR #44 `lab3-staging` baseline. The normal development database was not reset or replaced. DB-backed verification used isolated disposable PostgreSQL only.
+
+Current pre-PR Issue 5 evidence:
+
+- **Staff Ticket Detail/API:** focused Issue #37 server coverage for operational detail, owner claim/assign/reassign, IT Priority, status transitions, Requester-resolution indication, Internal Notes, Public Comments integration, attachment visibility/download, Origin protection, and owner concurrency passed **34/34 (3/3 test files)** against an isolated disposable PostgreSQL database.
+- **Full Server regression:** **137/137 passed (19/19 test files)** against the same isolated test target; Lab 1/Lab 2 and previous Lab 3 behavior remained green.
+- **Staff Ticket Detail UI:** `StaffTicketDetail.tsx` implements the approved Zen Green/TokTickIT mockup with clearly separated read-only Requester information and editable operational controls, Claim/Assign/Reassign, Requested-vs-IT Priority, allowed-next-status control, Requester-resolution indication, Public Comments, Internal Notes, and active/removed Attachment continuity. Staff UI exposes download only; it does not expose Requester-only attachment upload/remove controls.
+- **UI-ST suite:** `UI-ST-01`–`UI-ST-09` pass **9/9** in `StaffTicketDetail.test.tsx`, covering separation of read-only/editable data, owner operations, priority, allowed status options, Public-vs-Internal visibility labels, blank validation, attachment continuity, resolution indication, and conflict/refresh feedback.
+- **Full Client regression:** **63/63 passed (10/10 test files)** after adding the Staff Ticket Detail UI suite.
+- **Responsive V-04:** `staff-ticket-detail-responsive.spec.ts` passed at **1280 / 820 / 390 px**, including operational controls, Public Comments, Internal Notes, Attachments, mobile navigation context, and no horizontal page overflow. `V-04` is **Pass**.
+- **Browser Staff UI flow smoke:** `staff-ticket-flow.spec.ts` passed a routed-browser workflow covering Sign In UI → Ticket Queue search/filter → Ticket Detail → Claim/Reassign → IT Priority → Status → Public Comment → Internal Note → active/removed Attachment presentation/download. This browser smoke uses mocked API responses, so it is supporting UI evidence only and **does not claim full-stack `E2E-STAFF-01` Pass**; the full-stack row remains Planned until it runs against the real isolated backend/database/storage stack.
+- **Manual Staff workflow verification:** after the automated checks above, the user manually exercised the Issue #37 workflow in the running local application, including creating/opening a Ticket from the Staff queue, operational controls, comments/notes, responsive Ticket Detail presentation, and Attachment upload/download after the local SeaweedFS master/volume/filer services were restored. The user reported the manual verification complete before PR preparation.
+- **Server TypeScript build:** **Pass**.
+- **Client production build:** **Pass**.
+- **Prisma schema validation:** **Pass**.
+- **Production dependency audit:** `npm audit --omit=dev` reports **0 vulnerabilities** for both server and client.
+- **Diff hygiene:** `git diff --check` **Pass** on the current pre-PR working tree; only line-ending normalization warnings were reported.
+- **Review evidence:** `reviewer.md` is intentionally unchanged at this stage because no Issue #37 peer review/approval/merge has happened yet.
+- **Hosted CI:** no hosted CI result is claimed before the Issue #37 PR reports an actual check.
 
 ### Final Lab 3 regression template
 

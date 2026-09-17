@@ -7,6 +7,7 @@ import CreateTicket from "./CreateTicket.js";
 import MyTickets from "./MyTickets.js";
 import TicketDetail from "./TicketDetail.js";
 import StaffTicketQueue from "./StaffTicketQueue.js";
+import StaffTicketDetail from "./StaffTicketDetail.js";
 
 type UiState = "idle" | "loading" | "success" | "error";
 type View = "home" | "create" | "my-tickets" | "ticket-detail" | "staff-queue" | "staff-ticket-detail";
@@ -239,11 +240,11 @@ export default function App() {
         {isStaff && view === "staff-queue" ? (
           <StaffTicketQueue onOpenTicket={(ticketId) => { setSelectedTicketId(ticketId); setView("staff-ticket-detail"); }} />
         ) : isStaff && view === "staff-ticket-detail" && selectedTicketId !== null ? (
-          <section className="zen-card content-card role-placeholder">
-            <button type="button" className="btn btn-link px-0" onClick={() => { setSelectedTicketId(null); setView("staff-queue"); }}>← Back to Ticket Queue</button>
-            <h1 className="page-title">Ticket Detail</h1>
-            <p className="page-subtitle">Ticket #{selectedTicketId} selected. Staff operational detail and mutations are implemented in Issue #37.</p>
-          </section>
+          <StaffTicketDetail
+            ticketId={selectedTicketId}
+            currentUserId={user.id}
+            onBack={() => { setSelectedTicketId(null); setView("staff-queue"); }}
+          />
         ) : !isRequester ? (
           <section className="zen-card content-card role-placeholder">
             <h1 className="page-title">{user.role === "IT_STAFF" ? "Ticket Queue" : "User Management"}</h1>
