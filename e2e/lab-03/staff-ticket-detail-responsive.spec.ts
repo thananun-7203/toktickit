@@ -1,4 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
+import { mkdir } from "node:fs/promises";
+import path from "node:path";
+
+const CAPTURE_EVIDENCE = process.env.CAPTURE_EVIDENCE === "1";
+const EVIDENCE_DIR = path.resolve("../artifacts/lab-03/screenshots");
 
 const staffUser = {
   id: 200,
@@ -75,7 +80,13 @@ async function expectNoHorizontalOverflow(page: Page) {
   await expect.poll(async () => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
 }
 
-test("V-04 Staff Ticket Detail stays usable at desktop, tablet, and mobile widths", async ({ page }) => {
+async function capture(page: Page, name: string) {
+  if (!CAPTURE_EVIDENCE) return;
+  await mkdir(EVIDENCE_DIR, { recursive: true });
+  await page.screenshot({ path: path.join(EVIDENCE_DIR, name), fullPage: true });
+}
+
+test("V-04/V-08 Staff Ticket Detail stays usable and communication visibility is explicit", async ({ page }) => {
   await mockStaffDetailApis(page);
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/");
@@ -91,6 +102,7 @@ test("V-04 Staff Ticket Detail stays usable at desktop, tablet, and mobile width
   await expect(page.locator(".staff-detail-grid")).toHaveCSS("grid-template-columns", /.+/);
   await expect(page.getByText("Visible to Requester", { exact: true })).toBeVisible();
   await expect(page.getByText("Not visible to Requester", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Internal Notes .* not visible to Requester/i)).toBeVisible();
   await expectNoHorizontalOverflow(page);
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -100,4 +112,5 @@ test("V-04 Staff Ticket Detail stays usable at desktop, tablet, and mobile width
   await expect(page.getByLabel("Status")).toBeVisible();
   await expect(page.getByText("Requester says the problem appears resolved")).toBeVisible();
   await expectNoHorizontalOverflow(page);
+  await capture(page, "07-staff-ticket-detail-mobile.png");
 });

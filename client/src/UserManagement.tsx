@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   AdminUser,
   ApiError,
@@ -58,9 +58,65 @@ function safeFailure(error: unknown, fallback: string): string {
 }
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  const dialogRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const dialogElement = dialog;
+
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusableSelector = [
+      "button:not([disabled])",
+      "[href]",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      '[tabindex]:not([tabindex="-1"]):not([disabled])',
+    ].join(",");
+
+    const explicit = dialogElement.querySelector<HTMLElement>("[data-autofocus]");
+    const first = dialogElement.querySelector<HTMLElement>(focusableSelector);
+    (explicit ?? first ?? dialogElement).focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const focusable = Array.from(dialogElement.querySelectorAll<HTMLElement>(focusableSelector));
+      if (focusable.length === 0) {
+        event.preventDefault();
+        dialogElement.focus();
+        return;
+      }
+
+      const firstFocusable = focusable[0];
+      const lastFocusable = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === firstFocusable) {
+        event.preventDefault();
+        lastFocusable.focus();
+      } else if (!event.shiftKey && document.activeElement === lastFocusable) {
+        event.preventDefault();
+        firstFocusable.focus();
+      }
+    }
+
+    dialogElement.addEventListener("keydown", handleKeyDown);
+    return () => {
+      dialogElement.removeEventListener("keydown", handleKeyDown);
+      previousFocus?.focus();
+    };
+  }, []);
+
   return (
     <div className="admin-modal-backdrop" role="presentation">
-      <section className="admin-modal" role="dialog" aria-modal="true" aria-labelledby="admin-modal-title">
+      <section ref={dialogRef} tabIndex={-1} className="admin-modal" role="dialog" aria-modal="true" aria-labelledby="admin-modal-title">
         <div className="admin-modal-header">
           <h2 id="admin-modal-title">{title}</h2>
           <button type="button" className="admin-modal-close" aria-label={`Close ${title}`} onClick={onClose}>×</button>
@@ -83,17 +139,17 @@ function UserFields({
   return (
     <div className="admin-form-grid">
       <label>
-        Name <span aria-hidden="true">*</span>
-        <input className={`form-control ${errors.name ? "is-invalid" : ""}`} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        <span>Name <span aria-hidden="true">*</span></span>
+        <input data-autofocus className={`form-control ${errors.name ? "is-invalid" : ""}`} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         {errors.name && <span className="admin-field-error">{errors.name}</span>}
       </label>
       <label>
-        Email <span aria-hidden="true">*</span>
+        <span>Email <span aria-hidden="true">*</span></span>
         <input className={`form-control ${errors.email ? "is-invalid" : ""}`} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         {errors.email && <span className="admin-field-error">{errors.email}</span>}
       </label>
       <label>
-        Role <span aria-hidden="true">*</span>
+        <span>Role <span aria-hidden="true">*</span></span>
         <select className={`form-select ${errors.role ? "is-invalid" : ""}`} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as UserRole })}>
           {ROLES.map((role) => <option key={role} value={role}>{roleLabel(role)}</option>)}
         </select>
@@ -383,7 +439,7 @@ export default function UserManagement({ currentUserId }: Props) {
             <div className="admin-modal-body">
               {createError && <div className="alert alert-danger" role="alert">{createError}</div>}
               <UserFields form={createForm} setForm={setCreateForm} errors={createErrors} />
-              <label className="admin-password-field">Initial Password <span aria-hidden="true">*</span>
+              <label className="admin-password-field"><span>Initial Password <span aria-hidden="true">*</span></span>
                 <input type="password" className={`form-control ${createErrors.initialPassword ? "is-invalid" : ""}`} value={createPassword} onChange={(e) => setCreatePassword(e.target.value)} />
                 {createErrors.initialPassword && <span className="admin-field-error">{createErrors.initialPassword}</span>}
               </label>
@@ -413,7 +469,7 @@ export default function UserManagement({ currentUserId }: Props) {
           <div className="admin-modal-body">
             <div className="admin-danger-copy"><strong>Deactivate {editing.name}?</strong><p>The user will no longer be able to sign in. If this user owns tickets, the operation will be blocked until those tickets are reassigned.</p></div>
           </div>
-          <div className="admin-modal-footer"><button type="button" className="btn btn-outline-secondary" disabled={editBusy} onClick={() => setConfirmDeactivate(false)}>Cancel</button><button type="button" className="btn btn-danger" disabled={editBusy} onClick={() => void saveEdit()}>{editBusy ? "Deactivating…" : "Deactivate User"}</button></div>
+          <div className="admin-modal-footer"><button data-autofocus type="button" className="btn btn-outline-secondary" disabled={editBusy} onClick={() => setConfirmDeactivate(false)}>Cancel</button><button type="button" className="btn btn-danger" disabled={editBusy} onClick={() => void saveEdit()}>{editBusy ? "Deactivating…" : "Deactivate User"}</button></div>
         </Modal>
       )}
 
@@ -424,8 +480,8 @@ export default function UserManagement({ currentUserId }: Props) {
               <p className="admin-modal-intro">Set a new initial password for <strong>{passwordUser.name}</strong>.</p>
               {passwordError && <div className="alert alert-danger" role="alert">{passwordError}</div>}
               <div className="admin-password-note">Existing sessions will end. The user must change this password after the next sign-in.</div>
-              <label className="admin-password-field">New Initial Password <span aria-hidden="true">*</span><input type="password" className={`form-control ${passwordErrors.initialPassword ? "is-invalid" : ""}`} value={password} onChange={(e) => setPassword(e.target.value)} />{passwordErrors.initialPassword && <span className="admin-field-error">{passwordErrors.initialPassword}</span>}</label>
-              <label className="admin-password-field">Confirm Password <span aria-hidden="true">*</span><input type="password" className={`form-control ${passwordErrors.confirmPassword ? "is-invalid" : ""}`} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />{passwordErrors.confirmPassword && <span className="admin-field-error">{passwordErrors.confirmPassword}</span>}</label>
+              <label className="admin-password-field"><span>New Initial Password <span aria-hidden="true">*</span></span><input data-autofocus type="password" className={`form-control ${passwordErrors.initialPassword ? "is-invalid" : ""}`} value={password} onChange={(e) => setPassword(e.target.value)} />{passwordErrors.initialPassword && <span className="admin-field-error">{passwordErrors.initialPassword}</span>}</label>
+              <label className="admin-password-field"><span>Confirm Password <span aria-hidden="true">*</span></span><input type="password" className={`form-control ${passwordErrors.confirmPassword ? "is-invalid" : ""}`} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />{passwordErrors.confirmPassword && <span className="admin-field-error">{passwordErrors.confirmPassword}</span>}</label>
             </div>
             <div className="admin-modal-footer"><button type="button" className="btn btn-outline-secondary" disabled={passwordBusy} onClick={() => setPasswordUser(null)}>Cancel</button><button className="btn btn-success" disabled={passwordBusy}>{passwordBusy ? "Saving…" : "Set Password"}</button></div>
           </form>

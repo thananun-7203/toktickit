@@ -334,10 +334,13 @@ Required review focus:
 
 ## 9. Issue 6 — Administrator User Management
 
-- PR: Pending.
-- Reviewer feedback: Pending.
-- Response: Pending.
-- Verdict: Pending.
+- PR: [#46](https://github.com/thananun-7203/toktickit/pull/46), merged into `lab3-staging`.
+- Reviewed head: `e1e6b06cf3506572c457610c93ec83dc0bab9c99`.
+- Reviewer: `Tanaboonnnnn` — **APPROVED** on the reviewed head.
+- Merge commit: `cd61fa1dc660d35218b4d2187abfef36b1cc412f`.
+- Reviewer feedback: no blocking correctness/spec findings. Two non-blocking follow-ups were recorded for later cleanup/final QA: (1) consider decomposing `UserManagement.tsx` into smaller Create/Edit/Initial-Password modal components if the Admin surface grows, and (2) strengthen modal accessibility with initial focus, focus trapping, and Escape-to-close behavior.
+- Response: accepted both notes as deferred non-blocking cleanup; no post-approval code change was required for Issue #38.
+- Verdict: **APPROVED and merged**.
 
 Required review focus:
 
@@ -356,6 +359,8 @@ Required review focus:
 - Reviewer feedback: Pending.
 - Response: Pending.
 - Verdict: Pending.
+- PR #46 accessibility follow-up status: implemented in Issue #39 with Administrator modal initial focus, Tab/Shift+Tab focus containment, Escape-close, and focus restoration; responsive visual evidence was regenerated after the fix.
+- PR #46 component-decomposition note: retained as non-blocking technical debt. Issue #39 did not materially expand `UserManagement.tsx` business scope, so no refactor was introduced solely for file-size cleanup during final QA.
 
 Required review focus:
 
@@ -365,7 +370,8 @@ Required review focus:
 - migration verification,
 - complete role E2E,
 - desktop/tablet/mobile visual checklist,
-- accessibility/focus/overflow,
+- accessibility/focus/overflow, including the deferred PR #46 Admin-modal initial-focus/focus-trap/Escape behavior,
+- keep the PR #46 `UserManagement.tsx` decomposition note in view if Issue #39 changes the Admin UI materially,
 - builds/Prisma/CI.
 
 ## 11. Issue 8 — Final Evidence & Release Readiness

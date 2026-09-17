@@ -1,4 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
+import { mkdir } from "node:fs/promises";
+import path from "node:path";
+
+const CAPTURE_EVIDENCE = process.env.CAPTURE_EVIDENCE === "1";
+const EVIDENCE_DIR = path.resolve("../artifacts/lab-03/screenshots");
 
 const adminUser = {
   id: 500,
@@ -30,7 +35,13 @@ async function expectNoHorizontalOverflow(page: Page) {
   await expect.poll(async () => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
 }
 
-test("V-05 User Management stays usable at desktop, tablet, and mobile widths", async ({ page }) => {
+async function capture(page: Page, name: string, fullPage = true) {
+  if (!CAPTURE_EVIDENCE) return;
+  await mkdir(EVIDENCE_DIR, { recursive: true });
+  await page.screenshot({ path: path.join(EVIDENCE_DIR, name), fullPage });
+}
+
+test("V-05/V-06 User Management stays usable and modal focus stays contained", async ({ page }) => {
   await mockAdminApis(page);
 
   await page.setViewportSize({ width: 1280, height: 900 });
@@ -40,6 +51,7 @@ test("V-05 User Management stays usable at desktop, tablet, and mobile widths", 
   await expect(page.locator(".admin-users-table-wrap")).toBeVisible();
   await expect(page.getByRole("button", { name: "Edit Narin Support" })).toBeVisible();
   await expectNoHorizontalOverflow(page);
+  await capture(page, "08-admin-user-management-desktop.png");
 
   await page.setViewportSize({ width: 820, height: 1000 });
   await expect(page.getByLabel("Search")).toBeVisible();
@@ -54,7 +66,23 @@ test("V-05 User Management stays usable at desktop, tablet, and mobile widths", 
   await expect(page.getByRole("button", { name: "Edit User" }).first()).toBeVisible();
   await expectNoHorizontalOverflow(page);
 
-  await page.getByRole("button", { name: /Create User/i }).click();
-  await expect(page.getByRole("dialog", { name: "Create User" })).toBeVisible();
+  const opener = page.getByRole("button", { name: /Create User/i });
+  await opener.click();
+  const dialog = page.getByRole("dialog", { name: "Create User" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByLabel(/Name/i)).toBeFocused();
+  await capture(page, "09-admin-create-user-mobile.png", false);
+
+  const close = dialog.getByRole("button", { name: "Close Create User" });
+  const submit = dialog.getByRole("button", { name: "Create User", exact: true });
+  await close.focus();
+  await page.keyboard.press("Shift+Tab");
+  await expect(submit).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(close).toBeFocused();
+
   await expectNoHorizontalOverflow(page);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(opener).toBeFocused();
 });

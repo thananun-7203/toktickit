@@ -111,19 +111,19 @@ These tests intentionally call APIs directly rather than relying on hidden front
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
-| AZ-01 | AC-06 | `authorization.api.test.ts` | no session → Requester ticket list | `401` | Planned |
+| AZ-01 | AC-06 | `authorization.api.test.ts` | no session → Requester ticket list | `401` | **Pass** |
 | AZ-02 | AC-06 | `staff-queue.api.test.ts` | Requester → Staff Queue | `403` | **Pass** |
-| AZ-03 | AC-26 | same | Requester → Admin users | `403` | Planned |
-| AZ-04 | AC-26 | same | IT Staff → Admin users | `403` | Planned |
-| AZ-05 | AC-06 | same | Admin → Admin users | allowed | Planned |
+| AZ-03 | AC-26 | same | Requester → Admin users | `403` | **Pass** |
+| AZ-04 | AC-26 | same | IT Staff → Admin users | `403` | **Pass** |
+| AZ-05 | AC-06 | same | Admin → Admin users | allowed | **Pass** |
 | AZ-06 | AC-06 | `staff-queue.api.test.ts` | IT Staff/Admin → Staff Queue | allowed | **Pass** |
 | AZ-07 | AC-06 | same | user requiring password change → normal protected API | `403 PASSWORD_CHANGE_REQUIRED` | **Pass** |
-| AZ-08 | AC-18 | same | Requester → Internal Notes endpoint | `403`, no note content | Planned |
+| AZ-08 | AC-18 | same | Requester → Internal Notes endpoint | `403`, no note content | **Pass** |
 | AZ-09 | AC-07 | `requester-regression.api.test.ts` | Requester sends another `requesterId` in body/query/header, including retired development header | ignored for ownership; no session means `401`; cannot impersonate | **Pass** |
 | AZ-10 | AC-07 | `requester-regression.api.test.ts` | Requester opens another Requester's Ticket id | `404`, no existence leak | **Pass** |
 | AZ-11 | AC-09 | adapted `ticketDetail.api.test.ts` | Requester opens/downloads another Requester's Attachment id | `404`, no existence leak | **Pass** |
-| AZ-12 | AC-20 | same | IT Staff/Admin downloads active attachment on any Ticket | allowed; file returned | Planned |
-| AZ-13 | AC-20 | same | IT Staff/Admin attempts Requester attachment upload or soft-remove | `403`; no attachment mutation | Planned |
+| AZ-12 | AC-20 | same | IT Staff/Admin downloads active attachment on any Ticket | allowed; file returned | **Pass** |
+| AZ-13 | AC-20 | same | IT Staff/Admin attempts Requester attachment upload or soft-remove | `403`; no attachment mutation | **Pass** |
 | AZ-14 | AC-06 | same | unauthenticated request to `/api/categories`, `/api/v1/categories`, or `/api/v1/related-systems` | `401`; legacy alias and v1 reference data remain authenticated-only | **Pass** |
 
 ## 6. Requester Regression API Tests
@@ -255,8 +255,8 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | MIG-10 | AC-28 | `seed-regression.test.ts` | seed once → mutate seeded password/role/active state/Ticket status-owner-priority → seed again | no duplicate rows and mutable state is not reset to original demo values | **Pass** |
 | MIG-11 | AC-27 | manual isolated PostgreSQL rehearsal; fixture `server/tests/lab-03/fixtures/lab2-email-collision.sql`; exact commands in §18 | Lab 2-shaped DB contains two distinct Development Requesters whose emails collide after trim+lowercase | migration aborts explicitly before User/Ticket mutation; no silent merge/overwrite/partial ownership rewrite | **Pass — manual isolated collision preflight evidence** |
 | MIG-12 | AC-27 | manual injected-failure rehearsal in §18 | force a SQL error after the Lab 3 migration has already created/copied/altered data but before `COMMIT` | whole migration transaction rolls back: no `User` table, original `DevelopmentRequester` + Ticket/Attachment rows remain, no Lab 3 Ticket columns survive | **Pass — manual post-mutation rollback evidence** |
-| REG-01 | AC-08/09 | existing Lab 2 server suite adapted/retained + Lab 3 Requester regression tests | full Requester regression under authenticated session identity | green | **Pass — included in 99/99 server tests** |
-| REG-02 | AC-08/09 | existing Lab 2 client suite adapted/retained + Lab 3 Requester UI tests | Requester UI regression under authenticated shell | green | **Pass — 46/46 client tests** |
+| REG-01 | AC-08/09 | existing Lab 2 server suite adapted/retained + Lab 3 Requester regression tests | full Requester regression under authenticated session identity | green | **Pass — included in final 162/162 server tests** |
+| REG-02 | AC-08/09 | existing Lab 2 client suite adapted/retained + Lab 3 Requester UI tests | Requester UI regression under authenticated shell | green | **Pass — included in final 75/75 client tests** |
 
 ## 13. Client UI Tests
 
@@ -349,27 +349,27 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 
 | ID | AC | Planned file | Browser flow | Expected | Final |
 |---|---|---|---|---|---|
-| E2E-AUTH-01 | AC-01–06 | `authentication.spec.ts` | invalid login → valid initial login → mandatory change → role app → logout → direct access | each auth boundary enforced | Planned |
-| E2E-AUTH-02 | AC-03/29 | same | inactive login + simulated safe backend failure | visible safe feedback | Planned |
+| E2E-AUTH-01 | AC-01–06 | `authentication.spec.ts` | invalid login → valid initial login → mandatory change → role app → logout → direct access | each auth boundary enforced | **Pass** |
+| E2E-AUTH-02 | AC-03/29 | same | inactive login + simulated safe backend failure | visible safe feedback | **Pass** |
 | E2E-REQ-01 | AC-07–11 | `e2e/lab-03/requester-regression.spec.ts` with `playwright.lab3.config.ts` | login Requester → mandatory password change → create → list/search → detail → attachment upload/download → public comment → appears resolved → logout | Lab 2 behavior + Lab 3 extension works under authenticated identity | **Pass** |
 | E2E-REQ-02 | AC-07/09 | same | second Requester searches for first Requester's Ticket, then directly requests first Requester's Ticket/Attachment using the second Requester's browser session | UI shows no result; direct Ticket and Attachment requests return `404` | **Pass** |
-| E2E-STAFF-01 | AC-12–20 | `staff-ticket-flow.spec.ts` | login Staff → Queue search/filter → open → claim/reassign → priority → status → Public Comment → Internal Note → attachment | operational flow works | Planned |
-| E2E-STAFF-02 | AC-16/18 | same | direct forbidden transition / Requester note endpoint evidence | backend rejects safely | Planned |
-| E2E-ADMIN-01 | AC-21–26 | `user-administration.spec.ts` | login Admin → search → create user → edit → initial password reset → new user forced change | Admin flow works | Planned |
-| E2E-ADMIN-02 | AC-24–26/31 | same | self-deactivate + last-admin protection + assigned-owner deactivate/demote + non-Admin direct access | safe blocks visible/API enforced; owner invariant preserved | Planned |
+| E2E-STAFF-01 | AC-12–20 | `staff-ticket-flow.spec.ts` | login Staff → Queue search/filter → open → claim/reassign → priority → status → Public Comment → Internal Note → attachment | operational flow works | **Pass** |
+| E2E-STAFF-02 | AC-16/18 | same | direct forbidden transition / Requester note endpoint evidence | backend rejects safely | **Pass** |
+| E2E-ADMIN-01 | AC-21–26 | `user-administration.spec.ts` | login Admin → search → create user → edit → initial password reset → new user forced change | Admin flow works | **Pass** |
+| E2E-ADMIN-02 | AC-24–26/31 | same | self-deactivate + last-admin protection + assigned-owner deactivate/demote + non-Admin direct access | safe blocks visible/API enforced; owner invariant preserved | **Pass** |
 
 ## 15. Responsive / Accessibility / Visual Tests
 
 | ID | AC | Evidence target | Check | Final |
 |---|---|---|---|---|
-| V-01 | AC-30 | Login/Change Password 1280/820/390 | no clipping/overflow; focus/labels | Planned |
-| V-02 | AC-30 | Requester major screens 1280/820/390 | Lab 2 responsive behavior preserved | Planned |
+| V-01 | AC-30 | Login/Change Password 1280/820/390 | no clipping/overflow; focus/labels | **Pass** |
+| V-02 | AC-30 | Requester major screens 1280/820/390 | Lab 2 responsive behavior preserved | **Pass** |
 | V-03 | AC-30 | `staff-queue-responsive.spec.ts` at 1280/820/390 | table/card adaptation; badges readable; no horizontal overflow | **Pass** |
 | V-04 | AC-30 | Staff Detail 1280/820/390 | controls/comments/notes/attachments no overlap | **Pass** |
 | V-05 | AC-30 | `user-management-responsive.spec.ts` at 1280/820/390 | list/form adaptation no horizontal overflow | **Pass** |
-| V-06 | AC-30 | all major forms | labels, validation placement, visible focus | Planned |
-| V-07 | AC-30 | badges | role/status/priority meaning not colour-only | Planned |
-| V-08 | AC-30 | communication | Public vs Internal distinction includes explicit text | Planned |
+| V-06 | AC-30 | all major forms | labels, validation placement, visible focus | **Pass** |
+| V-07 | AC-30 | badges | role/status/priority meaning not colour-only | **Pass** |
+| V-08 | AC-30 | communication | Public vs Internal distinction includes explicit text | **Pass** |
 
 ## 16. Acceptance Criteria → Planned Test Traceability
 
@@ -725,20 +725,39 @@ Current Issue 6 evidence after the approved Administrator UI mockup and implemen
 - **Administrator routed-browser smoke:** `user-administration.spec.ts` passes a browser workflow covering Sign In UI → User Management → search/role filter → create → edit → set initial password → assigned-owner deactivation conflict. The test uses routed/mock API responses and is supporting UI interaction evidence only; it does **not** claim full-stack `E2E-ADMIN-01` or `E2E-ADMIN-02` Pass. Those rows remain Planned until run against the real isolated backend/database stack.
 - **Manual local verification:** the student manually verified the Administrator login/User Management flow in the local development app after implementation and reported no remaining Issue #38 UI problems before commit/push/PR preparation.
 
+### Issue 7 final integrated verification — Security, Regression, E2E & Visual QA
+
+Issue #39 verification used isolated disposable infrastructure only. PostgreSQL `toktickit_issue7_e2e` ran on local port `5440`, with an isolated SeaweedFS master/volume/filer stack and filer exposed on `18889`. The normal development PostgreSQL/SeaweedFS services were not reset, migrated, or deleted.
+
+- **Security authorization closure:** direct API coverage now marks `AZ-01`, `AZ-03`, `AZ-04`, `AZ-05`, `AZ-08`, `AZ-12`, and `AZ-13` Pass. Staff/Admin active-attachment download is allowed while Staff/Admin attachment upload/soft-remove remains forbidden; Requester Internal Notes access returns `403` without leaking note content.
+- **Full Server regression:** **162/162 passed (21/21 files)** on the isolated Issue #39 test database.
+- **Full Client regression:** **75/75 passed (11/11 files)**.
+- **Full-stack Playwright:** **12/12 passed** in one integrated Lab 3 run, covering Authentication, authenticated Requester regression, Staff workflow/authorization, Administrator workflow/safety, and responsive/accessibility checks.
+- **Authentication E2E:** `E2E-AUTH-01/02` Pass, including invalid credentials, mandatory initial-password change, logout/direct-access gating, inactive-account feedback, and bootstrap-failure Retry behavior.
+- **Staff full-stack E2E:** `E2E-STAFF-01/02` Pass against the real backend/PostgreSQL/SeaweedFS stack, including Queue search/filter, Ticket Detail, Claim/Reassign, IT Priority, Status, Public Comment, Internal Note, Attachment download, invalid transition rejection, and Requester Internal Notes denial.
+- **Administrator full-stack E2E:** `E2E-ADMIN-01/02` Pass against the real backend/database, including search/create/edit/initial-password reset plus self-deactivation, last-active-Administrator, assigned-owner, and non-Admin authorization boundaries.
+- **Accessibility review follow-up:** Administrator modals now implement initial focus, Tab/Shift+Tab focus containment, Escape-close, and focus restoration. The modal required-field marker layout was also corrected for mobile presentation.
+- **Responsive/visual:** `V-01`–`V-08` are Pass. Automated checks cover 1280/820/390 layouts, no page-level horizontal overflow, labels/validation/focus, text-readable badge meaning, and explicit Public/Internal visibility text. Nine Lab 3 screenshots were regenerated under `artifacts/lab-03/screenshots` and visually inspected for representative Login, Requester, Staff, and Administrator screens.
+- **Lab 2-shaped migration preservation rerun:** a fresh disposable database `toktickit_issue7_migration_test` applied the four Lab 1/Lab 2 migrations, loaded the committed preservation fixture, then applied the Lab 3 migration successfully. Final state remained **2 Users / 2 Tickets / 2 Attachments**, with **0 orphan requester references / 0 orphan attachment references**, exact requester ids preserved, `High → High` IT Priority continuity, historical null preserved, and `Duplicate upload` removal metadata retained.
+- **Seed regression:** `MIG-07`–`MIG-10` remain green inside the final server suite, including repeated seed behavior and mutable-state preservation.
+- **Build/schema/dependencies:** Server build Pass; Client production build Pass; Prisma validate Pass; Prisma migration status reports the Issue #39 E2E database up to date; `npm audit --omit=dev` reports **0 vulnerabilities** for server and client.
+- **Manual final verification:** after the final integrated automated run and visual evidence review, the student manually rechecked the running local application across Requester, IT Staff, and Administrator flows, including the Administrator modal keyboard/focus behavior and responsive layouts, and reported the Issue #39 final check complete before commit/push/PR preparation.
+- **Hosted CI:** not claimed green unless GitHub reports an actual check for the PR head.
+
 ### Final Lab 3 regression template
 
 | Check | Final result |
 |---|---|
-| Server unit/API/integration | Pending |
-| Client Vitest | Pending |
-| Migration from Lab 2-shaped DB | Pending |
-| Seed idempotency | Pending |
-| Server build | Pending |
-| Client build | Pending |
-| Prisma validate | Pending |
-| Authentication E2E | Pending |
-| Requester regression E2E | Pending |
-| Staff workflow E2E | Pending |
-| User administration E2E | Pending |
-| Desktop/tablet/mobile visual QA | Pending |
-| Hosted CI | Pending |
+| Server unit/API/integration | **Pass — 162/162 (21/21 files)** |
+| Client Vitest | **Pass — 75/75 (11/11 files)** |
+| Migration from Lab 2-shaped DB | **Pass — Issue #39 isolated preservation rerun; 2 Users / 2 Tickets / 2 Attachments; 0 orphans** |
+| Seed idempotency | **Pass — `MIG-07`–`MIG-10` in final server regression** |
+| Server build | **Pass** |
+| Client build | **Pass** |
+| Prisma validate | **Pass** |
+| Authentication E2E | **Pass — `E2E-AUTH-01/02`** |
+| Requester regression E2E | **Pass — `E2E-REQ-01/02`** |
+| Staff workflow E2E | **Pass — `E2E-STAFF-01/02` full-stack** |
+| User administration E2E | **Pass — `E2E-ADMIN-01/02` full-stack** |
+| Desktop/tablet/mobile visual QA | **Pass — `V-01`–`V-08`; 9 Lab 3 screenshots** |
+| Hosted CI | Not available locally; do not claim until GitHub reports a PR check |

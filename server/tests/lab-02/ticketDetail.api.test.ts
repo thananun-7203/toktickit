@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { UserRole } from "@prisma/client";
 import request from "supertest";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
@@ -16,10 +17,14 @@ import {
 
 let R1 = 0;
 let R2 = 0;
+let STAFF = 0;
+let ADMIN = 0;
 
 let createdTicketIds: number[] = [];
 let r1Cookie = "";
 let r2Cookie = "";
+let staffCookie = "";
+let adminCookie = "";
 let sessionIds: string[] = [];
 
 class MemoryStorage implements AttachmentStorage {
@@ -49,24 +54,35 @@ class MemoryStorage implements AttachmentStorage {
 let storage: MemoryStorage;
 
 beforeAll(async () => {
-  const [r1, r2] = await Promise.all([
+  const [r1, r2, staff, admin] = await Promise.all([
     createTestUser({ mustChangePassword: false, name: "Detail Requester One" }),
     createTestUser({ mustChangePassword: false, name: "Detail Requester Two" }),
+    createTestUser({ mustChangePassword: false, name: "Detail Staff", role: UserRole.IT_STAFF }),
+    createTestUser({ mustChangePassword: false, name: "Detail Admin", role: UserRole.ADMINISTRATOR }),
   ]);
   R1 = r1.id;
   R2 = r2.id;
+  STAFF = staff.id;
+  ADMIN = admin.id;
 });
 afterAll(async () => {
-  await cleanupTestUsers([R1, R2].filter(Boolean));
+  await cleanupTestUsers([R1, R2, STAFF, ADMIN].filter(Boolean));
 });
 
 beforeEach(async () => {
   storage = new MemoryStorage();
   setAttachmentStorageForTests(storage);
-  const [r1, r2] = await Promise.all([createSessionCookie(R1), createSessionCookie(R2)]);
+  const [r1, r2, staff, admin] = await Promise.all([
+    createSessionCookie(R1),
+    createSessionCookie(R2),
+    createSessionCookie(STAFF),
+    createSessionCookie(ADMIN),
+  ]);
   r1Cookie = r1.cookie;
   r2Cookie = r2.cookie;
-  sessionIds = [r1.sessionId, r2.sessionId];
+  staffCookie = staff.cookie;
+  adminCookie = admin.cookie;
+  sessionIds = [r1.sessionId, r2.sessionId, staff.sessionId, admin.sessionId];
 });
 
 afterEach(async () => {
@@ -142,6 +158,67 @@ describe("GET /api/v1/tickets/:id", () => {
 });
 
 describe("Ticket attachments", () => {
+  it("AZ-12: IT Staff and Administrator can download an active attachment from any Ticket", async () => {
+    const ticket = await createTicket(R1);
+    const body = Buffer.from("shared staff attachment");
+    const upload = await request(app)
+      .post(`/api/v1/tickets/${ticket.id}/attachments`)
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie)
+      .attach("files", body, { filename: "staff-visible.pdf", contentType: "application/pdf" });
+    expect(upload.status).toBe(201);
+    const attachmentId = upload.body[0].id as number;
+
+    for (const cookie of [staffCookie, adminCookie]) {
+      const download = await request(app)
+        .get(`/api/v1/attachments/${attachmentId}/download`)
+        .set("Cookie", cookie);
+      expect(download.status).toBe(200);
+      expect(download.headers["content-type"]).toMatch(/application\/pdf/);
+      expect(Buffer.compare(download.body, body)).toBe(0);
+    }
+  });
+
+  it("AZ-13: IT Staff and Administrator cannot upload or soft-remove Requester attachments", async () => {
+    const ticket = await createTicket(R1);
+    const upload = await request(app)
+      .post(`/api/v1/tickets/${ticket.id}/attachments`)
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie)
+      .attach("files", Buffer.from("requester-owned attachment"), {
+        filename: "requester-owned.pdf",
+        contentType: "application/pdf",
+      });
+    expect(upload.status).toBe(201);
+    const attachmentId = upload.body[0].id as number;
+
+    for (const cookie of [staffCookie, adminCookie]) {
+      const forbiddenUpload = await request(app)
+        .post(`/api/v1/tickets/${ticket.id}/attachments`)
+        .set("Origin", TEST_ORIGIN)
+        .set("Cookie", cookie)
+        .attach("files", Buffer.from("must not persist"), {
+          filename: "forbidden.pdf",
+          contentType: "application/pdf",
+        });
+      expect(forbiddenUpload.status).toBe(403);
+      expect(forbiddenUpload.body.error.code).toBe("FORBIDDEN");
+
+      const forbiddenRemove = await request(app)
+        .delete(`/api/v1/attachments/${attachmentId}`)
+        .set("Origin", TEST_ORIGIN)
+        .set("Cookie", cookie)
+        .send({ reason: "Staff/Admin must not remove Requester attachments" });
+      expect(forbiddenRemove.status).toBe(403);
+      expect(forbiddenRemove.body.error.code).toBe("FORBIDDEN");
+    }
+
+    const persisted = await getPrisma().attachment.findUniqueOrThrow({ where: { id: attachmentId } });
+    expect(persisted.removedAt).toBeNull();
+    expect(await getPrisma().attachment.count({ where: { ticketId: ticket.id } })).toBe(1);
+    expect(storage.objects.size).toBe(1);
+  });
+
   it("A-10: uploads a valid file and returns it in ticket detail", async () => {
     const ticket = await createTicket(R1);
     const body = Buffer.from("sample screenshot bytes");
