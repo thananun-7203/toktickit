@@ -152,6 +152,14 @@ export interface InternalNote {
   author: { id: number; name: string; role: UserRole };
 }
 
+export interface InternalNotesResponse {
+  items: InternalNote[];
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+}
+
 export interface NewTicketInput {
   categoryId: number;
   relatedSystemId: number;
@@ -457,11 +465,15 @@ export async function updateStaffTicketStatus(
   return res.json();
 }
 
-export async function getInternalNotes(ticketId: number): Promise<InternalNote[]> {
-  const res = await apiFetch(`/api/v1/staff/tickets/${ticketId}/internal-notes`);
+export async function getInternalNotes(
+  ticketId: number,
+  page = 1,
+  pageSize = 50,
+): Promise<InternalNotesResponse> {
+  const qs = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  const res = await apiFetch(`/api/v1/staff/tickets/${ticketId}/internal-notes?${qs.toString()}`);
   if (!res.ok) throw await responseError(res, "Unable to load Internal Notes");
-  const data = await res.json();
-  return data.items as InternalNote[];
+  return res.json();
 }
 
 export async function postInternalNote(ticketId: number, content: string): Promise<InternalNote> {

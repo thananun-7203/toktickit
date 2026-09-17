@@ -63,7 +63,13 @@ describe("Lab 3 IT Staff Ticket Detail", () => {
     vi.restoreAllMocks();
     vi.spyOn(api, "getStaffAssignees").mockResolvedValue([STAFF, OTHER_STAFF]);
     vi.spyOn(api, "getPublicComments").mockResolvedValue([PUBLIC_COMMENT]);
-    vi.spyOn(api, "getInternalNotes").mockResolvedValue([INTERNAL_NOTE]);
+    vi.spyOn(api, "getInternalNotes").mockResolvedValue({
+      items: [INTERNAL_NOTE],
+      page: 1,
+      pageSize: 20,
+      totalItems: 1,
+      totalPages: 1,
+    });
     vi.spyOn(api, "postPublicComment").mockResolvedValue(PUBLIC_COMMENT);
     vi.spyOn(api, "postInternalNote").mockResolvedValue(INTERNAL_NOTE);
     vi.spyOn(api, "updateStaffTicketOwner").mockResolvedValue({ id: TICKET.id, owner: STAFF, updatedAt: TICKET.updatedAt });
@@ -141,6 +147,41 @@ describe("Lab 3 IT Staff Ticket Detail", () => {
     expect(screen.getByRole("heading", { name: "Internal Notes" })).toBeInTheDocument();
     expect(screen.getAllByText(/not visible to Requester/i).length).toBeGreaterThan(0);
     expect(screen.getByText("Private operational context")).toBeInTheDocument();
+  });
+
+  it("review regression: pages Internal Notes instead of loading an unbounded list", async () => {
+    const secondPageNote: api.InternalNote = {
+      ...INTERNAL_NOTE,
+      id: 3,
+      content: "Newest private note on page two",
+    };
+    const getNotes = vi.mocked(api.getInternalNotes)
+      .mockResolvedValueOnce({
+        items: [INTERNAL_NOTE],
+        page: 1,
+        pageSize: 20,
+        totalItems: 21,
+        totalPages: 2,
+      })
+      .mockResolvedValueOnce({
+        items: [secondPageNote],
+        page: 2,
+        pageSize: 20,
+        totalItems: 21,
+        totalPages: 2,
+      });
+    const user = userEvent.setup();
+    renderDetail();
+
+    expect(await screen.findByText("Private operational context")).toBeInTheDocument();
+    expect(getNotes).toHaveBeenCalledWith(TICKET.id, 1, 20);
+    const pagination = screen.getByLabelText("Internal Notes pagination");
+    expect(within(pagination).getByText(/Page 1 of 2/)).toBeInTheDocument();
+
+    await user.click(within(pagination).getByRole("button", { name: "Next Internal Notes page" }));
+    expect(await screen.findByText(secondPageNote.content)).toBeInTheDocument();
+    await waitFor(() => expect(getNotes).toHaveBeenLastCalledWith(TICKET.id, 2, 20));
+    expect(screen.queryByText("Private operational context")).not.toBeInTheDocument();
   });
 
   it("UI-ST-06: blank Public Comment and Internal Note are rejected client-side", async () => {

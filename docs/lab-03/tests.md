@@ -185,31 +185,32 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
-| ST-01 | AC-20 | `staff-ticket-detail.api.test.ts` | open operational detail | Ticket, requester, owner, priorities, status, attachment metadata; comments/notes are fetched from dedicated endpoints | Planned |
-| ST-02 | AC-14 | same | claim unassigned Ticket | owner=current staff | Planned |
-| ST-03 | AC-14 | same | assign active IT Staff | owner updated | Planned |
-| ST-04 | AC-14 | same | assign active Administrator | allowed per matrix | Planned |
-| ST-05 | AC-14 | same | assign inactive user | rejected | Planned |
-| ST-06 | AC-14 | same | assign Requester as owner | rejected | Planned |
-| ST-08 | AC-15 | same | update IT Priority | IT Priority changes, Requested Priority unchanged | Planned |
-| ST-09 | AC-15 | same | invalid IT Priority | `400`, no mutation | Planned |
-| ST-10 | AC-16 | same | each permitted status transition | succeeds | Planned |
-| ST-11 | AC-16 | same | each representative forbidden/self transition | `409`, status unchanged | Planned |
-| ST-12 | AC-16 | same | unknown status string | `400` | Planned |
-| ST-13 | AC-20/11 | same | detail after indication then transition to Reopened | indication visible before reopen, cleared after reopen | Planned |
-| ST-14 | AC-20 | same | historical null IT Priority | safe `null`/Not recorded, no crash | Planned |
+| ST-01 | AC-20 | `staff-ticket-detail.api.test.ts` | open operational detail | Ticket, requester, owner, priorities, status, attachment metadata; comments/notes are fetched from dedicated endpoints | **Pass** |
+| ST-02 | AC-14 | same | claim unassigned Ticket | owner=current staff | **Pass** |
+| ST-03 | AC-14 | same | assign active IT Staff | owner updated | **Pass** |
+| ST-04 | AC-14 | same | assign active Administrator | allowed per matrix | **Pass** |
+| ST-05 | AC-14 | same | assign inactive user | rejected | **Pass** |
+| ST-06 | AC-14 | same | assign Requester as owner | rejected | **Pass** |
+| ST-08 | AC-15 | same | update IT Priority | IT Priority changes, Requested Priority unchanged | **Pass** |
+| ST-09 | AC-15 | same | invalid IT Priority | `400`, no mutation | **Pass** |
+| ST-10 | AC-16 | same | each permitted status transition | succeeds | **Pass** |
+| ST-11 | AC-16 | same | each representative forbidden/self transition | `409`, status unchanged | **Pass** |
+| ST-12 | AC-16 | same | unknown status string | `400` | **Pass** |
+| ST-13 | AC-20/11 | same | detail after indication then transition to Reopened | indication visible before reopen, cleared after reopen | **Pass** |
+| ST-14 | AC-20 | same | historical null IT Priority | safe `null`/Not recorded, no crash | **Pass** |
 
 ## 10. Internal Notes API Tests
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
-| NOTE-01 | AC-18 | `comments-notes.api.test.ts` | IT Staff posts Internal Note | `201`, backend author/time | Planned |
-| NOTE-02 | AC-18 | same | IT Staff reads notes | chronological list | Planned |
-| NOTE-03 | AC-18 | same | Administrator reads/posts notes | allowed | Planned |
-| NOTE-04 | AC-18 | same | Requester direct GET notes | `403`, no content | Planned |
-| NOTE-05 | AC-18 | same | Requester direct POST note | `403` | Planned |
-| NOTE-06 | AC-19 | same | blank/whitespace note | `400` | Planned |
-| NOTE-07 | AC-19 | same | 2,000/2,001 char boundary | accepted/rejected respectively | Planned |
+| NOTE-01 | AC-18 | `comments-notes.api.test.ts` | IT Staff posts Internal Note | `201`, backend author/time | **Pass** |
+| NOTE-02 | AC-18 | same | IT Staff reads notes | chronological list | **Pass** |
+| NOTE-03 | AC-18 | same | Administrator reads/posts notes | allowed | **Pass** |
+| NOTE-04 | AC-18 | same | Requester direct GET notes | `403`, no content | **Pass** |
+| NOTE-05 | AC-18 | same | Requester direct POST note | `403` | **Pass** |
+| NOTE-06 | AC-19 | same | blank/whitespace note | `400` | **Pass** |
+| NOTE-07 | AC-19 | same | 2,000/2,001 char boundary | accepted/rejected respectively | **Pass** |
+| NOTE-08 | AC-18 | same | page/pageSize pagination, duplicate/unsafe pagination query | deterministic chronological page + metadata; invalid input `400` | **Pass — review regression** |
 
 ## 11. Administrator API Tests
 
@@ -675,23 +676,25 @@ npx playwright test lab-03/staff-queue-responsive.spec.ts --config playwright.la
 
 Issue #37 implementation continues on `feature/5-it-staff-ticket-detail` from the merged PR #44 `lab3-staging` baseline. The normal development database was not reset or replaced. DB-backed verification used isolated disposable PostgreSQL only.
 
-Current pre-PR Issue 5 evidence:
+Current Issue 5 / PR #45 evidence after reviewer follow-up fixes:
 
-- **Staff Ticket Detail/API:** focused Issue #37 server coverage for operational detail, owner claim/assign/reassign, IT Priority, status transitions, Requester-resolution indication, Internal Notes, Public Comments integration, attachment visibility/download, Origin protection, and owner concurrency passed **34/34 (3/3 test files)** against an isolated disposable PostgreSQL database.
-- **Full Server regression:** **137/137 passed (19/19 test files)** against the same isolated test target; Lab 1/Lab 2 and previous Lab 3 behavior remained green.
+- **Staff Ticket Detail/API:** focused Issue #37 server coverage for operational detail, owner claim/assign/reassign, IT Priority, status transitions, Requester-resolution indication, Internal Notes, Public Comments integration, attachment visibility/download, Origin protection, owner concurrency, and Internal Notes pagination passed **35/35 (3/3 test files)** against an isolated disposable PostgreSQL database.
+- **Reviewer timeout follow-up:** server Vitest now uses a **15,000 ms test timeout** for the integration-style server suite. Password hashing cost is unchanged; the fix gives real bcrypt/seed work enough headroom under machine load instead of weakening password security in tests. The final full run showed a seed-regression case taking about **5.96 s**, confirming why the default 5 s limit was marginal.
+- **Internal Notes pagination follow-up:** `GET /api/v1/staff/tickets/:id/internal-notes` now supports `page` + `pageSize`, defaults to `1 / 50`, caps page size at `100`, rejects duplicate/invalid/unsafe-large pagination with `400 VALIDATION_ERROR`, and uses database `count + findMany(skip/take)` in one transaction with deterministic `createdAt,id` ordering. The Staff UI requests **20 notes/page** and exposes Previous/Next controls instead of silently loading an unbounded list.
+- **Full Server regression:** **138/138 passed (19/19 test files)** on the current reviewer-fix working tree against the isolated test database; Lab 1/Lab 2 and previous Lab 3 behavior remained green.
 - **Staff Ticket Detail UI:** `StaffTicketDetail.tsx` implements the approved Zen Green/TokTickIT mockup with clearly separated read-only Requester information and editable operational controls, Claim/Assign/Reassign, Requested-vs-IT Priority, allowed-next-status control, Requester-resolution indication, Public Comments, Internal Notes, and active/removed Attachment continuity. Staff UI exposes download only; it does not expose Requester-only attachment upload/remove controls.
-- **UI-ST suite:** `UI-ST-01`–`UI-ST-09` pass **9/9** in `StaffTicketDetail.test.tsx`, covering separation of read-only/editable data, owner operations, priority, allowed status options, Public-vs-Internal visibility labels, blank validation, attachment continuity, resolution indication, and conflict/refresh feedback.
-- **Full Client regression:** **63/63 passed (10/10 test files)** after adding the Staff Ticket Detail UI suite.
+- **UI-ST suite:** the original `UI-ST-01`–`UI-ST-09` coverage remains green and a reviewer-regression pagination case was added; `StaffTicketDetail.test.tsx` now passes **10/10**.
+- **Full Client regression:** **64/64 passed (10/10 test files)** on the current reviewer-fix working tree.
 - **Responsive V-04:** `staff-ticket-detail-responsive.spec.ts` passed at **1280 / 820 / 390 px**, including operational controls, Public Comments, Internal Notes, Attachments, mobile navigation context, and no horizontal page overflow. `V-04` is **Pass**.
-- **Browser Staff UI flow smoke:** `staff-ticket-flow.spec.ts` passed a routed-browser workflow covering Sign In UI → Ticket Queue search/filter → Ticket Detail → Claim/Reassign → IT Priority → Status → Public Comment → Internal Note → active/removed Attachment presentation/download. This browser smoke uses mocked API responses, so it is supporting UI evidence only and **does not claim full-stack `E2E-STAFF-01` Pass**; the full-stack row remains Planned until it runs against the real isolated backend/database/storage stack.
+- **Browser Staff UI + responsive smoke:** `staff-ticket-detail-responsive.spec.ts` and `staff-ticket-flow.spec.ts` pass **2/2** after the pagination response change. The flow covers Sign In UI → Ticket Queue search/filter → Ticket Detail → Claim/Reassign → IT Priority → Status → Public Comment → paginated Internal Note integration → active/removed Attachment presentation/download. These project Playwright cases use routed API responses, so they remain supporting UI evidence rather than a new claim of full-stack `E2E-STAFF-01`.
+- **Peer full-stack evidence:** reviewer `Peepipat-Suesoongnuen` reported running `E2E-STAFF-01` successfully during the initial PR #45 review. This is recorded as reviewer evidence, distinct from the repository's routed-browser smoke above.
 - **Manual Staff workflow verification:** after the automated checks above, the user manually exercised the Issue #37 workflow in the running local application, including creating/opening a Ticket from the Staff queue, operational controls, comments/notes, responsive Ticket Detail presentation, and Attachment upload/download after the local SeaweedFS master/volume/filer services were restored. The user reported the manual verification complete before PR preparation.
 - **Server TypeScript build:** **Pass**.
 - **Client production build:** **Pass**.
 - **Prisma schema validation:** **Pass**.
 - **Production dependency audit:** `npm audit --omit=dev` reports **0 vulnerabilities** for both server and client.
-- **Diff hygiene:** `git diff --check` **Pass** on the current pre-PR working tree; only line-ending normalization warnings were reported.
-- **Review evidence:** `reviewer.md` is intentionally unchanged at this stage because no Issue #37 peer review/approval/merge has happened yet.
-- **Hosted CI:** no hosted CI result is claimed before the Issue #37 PR reports an actual check.
+- **Initial PR #45 peer review:** `Peepipat-Suesoongnuen` submitted **Approved** on exact head `22672275a96f49303ffe01cc44a0771ce2991172`. The reviewer identified two non-blocking follow-ups: bcrypt/seed tests were timing-marginal under load, and Internal Notes were read with an unbounded `findMany`. Both are addressed in the follow-up working tree described above; re-review is requested after commit/push.
+- **Hosted CI:** no hosted CI result is claimed unless GitHub reports an actual check for the current PR head.
 
 ### Final Lab 3 regression template
 

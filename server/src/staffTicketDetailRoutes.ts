@@ -53,9 +53,24 @@ class TicketMissingError extends Error {}
 class OwnerNotEligibleError extends Error {}
 class StaleTicketStateError extends Error {}
 
+const INTERNAL_NOTES_DEFAULT_PAGE_SIZE = 50;
+const INTERNAL_NOTES_MAX_PAGE_SIZE = 100;
+
 function parseTicketId(raw: string): number | null {
   const id = Number(raw);
   return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+function parsePositiveQueryInteger(
+  raw: unknown,
+  defaultValue: number,
+  maximum?: number,
+): number | null {
+  if (raw === undefined) return defaultValue;
+  if (typeof raw !== "string" || !/^\d+$/.test(raw)) return null;
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value) || value < 1 || (maximum !== undefined && value > maximum)) return null;
+  return value;
 }
 
 function validationError(fields: Record<string, string>) {
@@ -301,17 +316,46 @@ staffTicketDetailRouter.get(
         res.status(404).json({ error: { message: "Ticket not found" } });
         return;
       }
-      const items = await prisma.internalNote.findMany({
-        where: { ticketId },
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        select: {
-          id: true,
-          content: true,
-          createdAt: true,
-          author: { select: { id: true, name: true, role: true } },
-        },
+      const page = parsePositiveQueryInteger(req.query.page, 1);
+      const pageSize = parsePositiveQueryInteger(
+        req.query.pageSize,
+        INTERNAL_NOTES_DEFAULT_PAGE_SIZE,
+        INTERNAL_NOTES_MAX_PAGE_SIZE,
+      );
+      const fields: Record<string, string> = {};
+      if (page === null) fields.page = "page must be a positive integer";
+      if (pageSize === null) fields.pageSize = `pageSize must be between 1 and ${INTERNAL_NOTES_MAX_PAGE_SIZE}`;
+      const skip = page !== null && pageSize !== null ? (page - 1) * pageSize : 0;
+      if (page !== null && pageSize !== null && !Number.isSafeInteger(skip)) {
+        fields.page = "page is too large";
+      }
+      if (Object.keys(fields).length > 0) {
+        res.status(400).json(validationError(fields));
+        return;
+      }
+
+      const [totalItems, items] = await prisma.$transaction([
+        prisma.internalNote.count({ where: { ticketId } }),
+        prisma.internalNote.findMany({
+          where: { ticketId },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          skip,
+          take: pageSize!,
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+            author: { select: { id: true, name: true, role: true } },
+          },
+        }),
+      ]);
+      res.json({
+        items,
+        page,
+        pageSize,
+        totalItems,
+        totalPages: totalItems === 0 ? 0 : Math.ceil(totalItems / pageSize!),
       });
-      res.json({ items });
     } catch {
       res.status(500).json({ error: { code: "INTERNAL_NOTES_FAILED", message: "Unable to load Internal Notes" } });
     }

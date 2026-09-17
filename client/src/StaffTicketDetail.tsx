@@ -30,6 +30,7 @@ type LoadState = "loading" | "success" | "not-found" | "error";
 type PanelState = "loading" | "success" | "error";
 
 const MAX_MESSAGE_CHARACTERS = 2000;
+const INTERNAL_NOTES_PAGE_SIZE = 20;
 
 const STATUS_TRANSITIONS: Record<TicketStatus, readonly TicketStatus[]> = {
   New: ["Open", "Cancelled"],
@@ -105,6 +106,9 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
 
   const [notes, setNotes] = useState<InternalNote[]>([]);
   const [notesState, setNotesState] = useState<PanelState>("loading");
+  const [notesPage, setNotesPage] = useState(1);
+  const [notesTotalItems, setNotesTotalItems] = useState(0);
+  const [notesTotalPages, setNotesTotalPages] = useState(0);
   const [noteDraft, setNoteDraft] = useState("");
   const [noteError, setNoteError] = useState<string | null>(null);
   const [postingNote, setPostingNote] = useState(false);
@@ -145,21 +149,32 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
     }
   }, [ticketId]);
 
-  const loadNotes = useCallback(async () => {
+  const loadNotes = useCallback(async (page = notesPage) => {
     setNotesState("loading");
     try {
-      setNotes(await getInternalNotes(ticketId));
+      const result = await getInternalNotes(ticketId, page, INTERNAL_NOTES_PAGE_SIZE);
+      setNotes(result.items);
+      setNotesPage(result.page);
+      setNotesTotalItems(result.totalItems);
+      setNotesTotalPages(result.totalPages);
       setNotesState("success");
     } catch {
       setNotesState("error");
     }
+  }, [notesPage, ticketId]);
+
+  useEffect(() => {
+    setNotesPage(1);
   }, [ticketId]);
 
   useEffect(() => {
     void loadDetail();
     void loadComments();
+  }, [loadDetail, loadComments]);
+
+  useEffect(() => {
     void loadNotes();
-  }, [loadDetail, loadComments, loadNotes]);
+  }, [loadNotes]);
 
   const allowedStatuses = useMemo(() => ticket ? STATUS_TRANSITIONS[ticket.status] : [], [ticket]);
   const ownerIsCurrentUser = ticket?.owner?.id === currentUserId;
@@ -286,10 +301,14 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
     setPostingNote(true);
     setNoteError(null);
     try {
-      const created = await postInternalNote(ticketId, content);
-      setNotes((current) => [...current, created]);
-      setNotesState("success");
+      await postInternalNote(ticketId, content);
       setNoteDraft("");
+      const targetPage = Math.max(1, Math.ceil((notesTotalItems + 1) / INTERNAL_NOTES_PAGE_SIZE));
+      if (targetPage === notesPage) {
+        await loadNotes(targetPage);
+      } else {
+        setNotesPage(targetPage);
+      }
     } catch (error) {
       setNoteError(error instanceof ApiError && error.fields?.content
         ? error.fields.content
@@ -541,6 +560,33 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
               </div>
             </div>
             <MessageList state={notesState} items={notes} empty="No internal notes yet." onRetry={() => void loadNotes()} privateMode />
+            {notesState === "success" && notesTotalItems > 0 && (
+              <div className="staff-notes-pagination" aria-label="Internal Notes pagination">
+                <span>
+                  {notesTotalItems} note{notesTotalItems === 1 ? "" : "s"} · Page {notesPage} of {Math.max(notesTotalPages, 1)}
+                </span>
+                <div>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    aria-label="Previous Internal Notes page"
+                    disabled={notesPage <= 1}
+                    onClick={() => setNotesPage((page) => Math.max(1, page - 1))}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    aria-label="Next Internal Notes page"
+                    disabled={notesTotalPages === 0 || notesPage >= notesTotalPages}
+                    onClick={() => setNotesPage((page) => Math.min(notesTotalPages, page + 1))}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </section>
         </div>
       </div>

@@ -46,9 +46,15 @@ async function mockStaffDetailApis(page: Page) {
   await page.route("**/api/v1/staff/tickets**", async (route) => {
     const url = new URL(route.request().url());
     if (url.pathname === "/api/v1/staff/tickets/501/internal-notes") {
-      await route.fulfill({ json: { items: [
-        { id: 2, content: "Private operational context", createdAt: "2026-09-16T11:30:00.000Z", author: assignees[1] },
-      ] } });
+      await route.fulfill({ json: {
+        items: [
+          { id: 2, content: "Private operational context", createdAt: "2026-09-16T11:30:00.000Z", author: assignees[1] },
+        ],
+        page: 1,
+        pageSize: 20,
+        totalItems: 1,
+        totalPages: 1,
+      } });
       return;
     }
     if (url.pathname === "/api/v1/staff/tickets/501") {

@@ -143,7 +143,13 @@ async function installStaffFlowApi(page: Page) {
     }
 
     if (path === "/api/v1/staff/tickets/501/internal-notes" && method === "GET") {
-      await fulfillJson(route, { items: internalNotes });
+      await fulfillJson(route, {
+        items: internalNotes,
+        page: 1,
+        pageSize: 20,
+        totalItems: internalNotes.length,
+        totalPages: internalNotes.length === 0 ? 0 : 1,
+      });
       return;
     }
     if (path === "/api/v1/staff/tickets/501/internal-notes" && method === "POST") {

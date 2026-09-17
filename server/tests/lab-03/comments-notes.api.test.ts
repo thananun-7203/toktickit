@@ -258,6 +258,49 @@ describe("Lab 3 Internal Notes", () => {
       .set("Cookie", staffCookie);
     expect(list.status).toBe(200);
     expect(list.body.items.map((item: { id: number }) => item.id)).toEqual([first.body.id, second.body.id]);
+    expect(list.body).toMatchObject({ page: 1, pageSize: 50, totalItems: 2, totalPages: 1 });
+  });
+
+  it("review regression: paginates Internal Notes deterministically and rejects unsafe pagination", async () => {
+    const ticket = await createTicket();
+    await getPrisma().internalNote.createMany({
+      data: Array.from({ length: 5 }, (_, index) => ({
+        ticketId: ticket.id,
+        authorId: staffId,
+        content: `Private page note ${index + 1}`,
+      })),
+    });
+
+    const firstPage = await request(app)
+      .get(`/api/v1/staff/tickets/${ticket.id}/internal-notes?page=1&pageSize=2`)
+      .set("Cookie", staffCookie);
+    expect(firstPage.status).toBe(200);
+    expect(firstPage.body).toMatchObject({ page: 1, pageSize: 2, totalItems: 5, totalPages: 3 });
+    expect(firstPage.body.items.map((item: { content: string }) => item.content)).toEqual([
+      "Private page note 1",
+      "Private page note 2",
+    ]);
+
+    const lastPage = await request(app)
+      .get(`/api/v1/staff/tickets/${ticket.id}/internal-notes?page=3&pageSize=2`)
+      .set("Cookie", staffCookie);
+    expect(lastPage.status).toBe(200);
+    expect(lastPage.body.items.map((item: { content: string }) => item.content)).toEqual([
+      "Private page note 5",
+    ]);
+
+    for (const query of [
+      "page=0",
+      "pageSize=101",
+      "page=1&page=2",
+      "page=9007199254740991&pageSize=100",
+    ]) {
+      const invalid = await request(app)
+        .get(`/api/v1/staff/tickets/${ticket.id}/internal-notes?${query}`)
+        .set("Cookie", staffCookie);
+      expect(invalid.status).toBe(400);
+      expect(invalid.body.error.code).toBe("VALIDATION_ERROR");
+    }
   });
 
   it("NOTE-03: Administrator may read and post Internal Notes", async () => {

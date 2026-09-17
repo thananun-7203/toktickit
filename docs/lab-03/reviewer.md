@@ -293,10 +293,34 @@ Required review focus:
 
 ## 8. Issue 5 — IT Staff Ticket Detail & Operations
 
-- PR: Pending.
-- Reviewer feedback: Pending.
-- Response: Pending.
-- Verdict: Pending.
+- PR: #45 — `[Lab 3] Issue 5: IT Staff Ticket Detail & Operations`.
+- Base/head: `lab3-staging` ← `feature/5-it-staff-ticket-detail`.
+- Initial reviewer: `Peepipat-Suesoongnuen`.
+- Initial reviewed head: `22672275a96f49303ffe01cc44a0771ce2991172`.
+- Initial submitted: 2026-09-17T12:32:14Z.
+- Initial reviewer state: **Approved**.
+- Requested reviewer `Tanaboonnnnn` remains requested on the PR.
+
+### Initial reviewer feedback
+
+The reviewer confirmed the owner concurrency protocol, stale/eligibility conflicts, complete status-transition matrix, Reopened resolution-indication clearing, Staff-only Internal Notes authorization/backend authorship, accessibility labeling, and Issue #37 DoD coverage. The reviewer also reported that the focused Staff tests matched the claimed results and that `E2E-STAFF-01` passed in the reviewer environment.
+
+Two non-blocking follow-ups were requested:
+
+1. **Timing-marginal bcrypt/seed tests:** under full-suite load the reviewer saw three auth cases and seed regression exceed Vitest's default 5 s timeout even though isolated reruns and the base behavior passed. The reviewer recommended increasing timeout for hashing-heavy tests or using a cheaper test-only cost.
+2. **Unbounded Internal Notes list:** the Internal Notes GET used an unbounded `findMany`; the reviewer recommended pagination for Tickets that accumulate many notes.
+
+### Response to reviewer follow-ups
+
+- Kept production-equivalent bcrypt behavior intact and raised the server Vitest `testTimeout` to **15 s** rather than lowering hashing cost. On the final full regression, one seed-regression test took about **5.96 s**, demonstrating that the old 5 s threshold could fail a correct run under load.
+- Added database-backed Internal Notes pagination: optional positive `page`, `pageSize` default `50` / max `100`, deterministic `createdAt,id` ordering, transactional `count + findMany(skip/take)`, and validation for duplicate/invalid/unsafe-large pagination inputs.
+- Updated the Staff UI to request **20 notes/page**, expose Previous/Next controls with page/count context, and reload the correct last page after posting a note rather than allowing the client list to grow without bound.
+- Added server and client regression coverage for pagination, updated the API specification, and updated routed Playwright fixtures to use the paginated response shape.
+- Verification after the follow-up fixes: focused Issue #37 server **35/35**, full Server **138/138 (19/19)**, Staff Detail client **10/10**, full Client **64/64 (10/10)**, Staff Playwright smoke/responsive **2/2**, Server/Client builds **Pass**, Prisma validate **Pass**, and production audits **0 vulnerabilities**.
+
+### Current verdict
+
+The initial review was **Approved** and both non-blocking reviewer suggestions have now been implemented. A re-review is requested on the follow-up commit before merge; PR #45 remains open and Issue #37 remains open.
 
 Required review focus:
 
