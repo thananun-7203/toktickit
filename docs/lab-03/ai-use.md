@@ -1,6 +1,6 @@
 # TokTickIT Lab 3 — AI Use & Reflection
 
-## 1. How AI Is Used in Sprint 3
+## How AI was used
 
 AI is used as a **specification agent** and later as a **coding/review assistant**. The student remains responsible for approving scope, implementation decisions, Git actions, peer-review responses, and final submission evidence.
 
@@ -17,7 +17,7 @@ Current working rules:
 - Record only real test/review/AI evidence.
 - Do not commit/push/merge unless the student has authorized that Git action.
 
-## 2. Selected Key Prompts — Specification, Implementation & Review
+## Selected Key Prompts
 
 The prompts below are real user requests from the Lab 3 conversations. They were selected from the actual specification, implementation, UI-approval, and peer-review workflow rather than invented afterward.
 
@@ -34,13 +34,15 @@ The prompts below are real user requests from the Lab 3 conversations. They were
 | 9 | `โอเคเก็บคำแนะนำตามรีวิวไว้แก้ไขทีหลัง ดำเนินการขั้นต่อไปได้เลย` | Preserve non-blocking PR #46 review notes for the later QA pass while moving into Issue #39 rather than silently dropping reviewer feedback. |
 | 10 | `เพื่อน review PR #47 ให้แล้ว ตรวจสอบและแก้ไขที` | Read the exact peer review, fix the E2E database-isolation blocker, rerun the isolated 12-test Lab 3 Playwright suite, push the correction, and request re-review. |
 
-## 3. Specification-Agent Assistance — Issue 1
+## Prompt / Assistance Log
 
-### Student request
+### Issue 1 - Sprint 3 Engineering Contract & Test Plan
+
+#### Student request
 
 Prepare the Sprint 3 engineering contract in detail before implementation.
 
-### AI assistance performed
+#### AI assistance performed
 
 - Read the Lab 3 handout and retained its scope boundaries.
 - Read the existing Lab 2 Prisma schema, seed, server routes, Requester identity helper, client shell/API/context/theme, Lab 2 specification/API/UI/test/reviewer/AI-use documents, and E2E flow.
@@ -60,7 +62,7 @@ Prepare the Sprint 3 engineering contract in detail before implementation.
 - Re-ran the previously blocked Lab 2 database-backed baseline after Docker Desktop became available: all **49/49** server tests passed against a disposable PostgreSQL database, Client remained **25/25**, builds/Prisma validation passed, and the temporary baseline containers/volumes were removed afterward without touching the development database.
 - Opened PR [#41](https://github.com/thananun-7203/toktickit/pull/41) from `feature/1-sprint3-engineering-contract` to `lab3-staging` with the real baseline verification recorded in the PR description.
 
-### Human oversight / decisions
+#### Human oversight / decisions
 
 The student explicitly chose:
 
@@ -71,7 +73,7 @@ The student explicitly chose:
 
 The specification choices that are not dictated verbatim by the handout (session mechanism, password bounds, rate limit, exact status transitions, API paths, queue fields, comment length) must remain open to peer-review revision during Issue #33. They are documented rather than silently assumed.
 
-## 4. Baseline / Environment Assistance
+### Baseline / Environment Assistance
 
 At Sprint startup AI checked the final Lab 2 repository state and ran non-destructive verification:
 
@@ -86,8 +88,6 @@ At Sprint startup AI checked the final Lab 2 repository state and ran non-destru
 - All four inherited migrations applied successfully to that clean database and the Lab 2 seed produced 4 Categories, 7 Related Systems, and 5 Development Requesters (4 active). A second seed run produced the same logical counts.
 - The complete DB-backed Lab 2 server suite then passed **49/49 tests across 7/7 files**, confirming the earlier API `500` results were caused by the missing database environment rather than a code regression.
 - The disposable baseline containers/volumes were removed after the check.
-
-## 5. Coding-Agent Log
 
 ### Issue 2 — Authentication Foundation
 
@@ -117,11 +117,11 @@ AI closed the remaining direct authorization matrix gaps, created full-stack Aut
 
 AI is being used to reconcile final documentation with the merged implementation, index the submission evidence, add missing failure/boundary screenshots, modernize the Lab 3 CI workflow so its database guards are respected, and rerun the release-candidate test/build/Prisma/E2E checks. The student still controls the final Issue #40 PR and the later `lab3-staging → main` release decision.
 
-## 6. Example AI-Assisted Debugging
+## Example of AI-assisted debugging
 
 One real debugging case occurred during Issue 6 concurrency testing. The `ADM-21/ADM-22` race cases intermittently returned HTTP `500` even though the intended loser of an assign/reassign versus deactivate/demote race should receive a safe stale-state `409`. AI inspected the actual Prisma error instead of assuming the documented `P2034` path and found PostgreSQL SQLSTATE `40001` wrapped as Prisma `P2010` with `meta.code=40001`. The fix centralized retryable serialization/deadlock detection and made both Staff owner mutation and Administrator user mutation map those raw conflicts to their existing `409` stale-state responses. Focused race tests then passed, and the later full server regressions remained green through the final **162/162** Issue 7 run.
 
-## 7. My Reflection — Final
+## My Reflection
 
 The most useful part of AI assistance in Lab 3 was keeping a large, cross-cutting change traceable from specification to code, tests, review, and evidence. Starting with the engineering contract made later decisions about authentication, ownership, status transitions, comments versus Internal Notes, migration, and Administrator safety easier to check instead of relying on what the UI happened to show.
 

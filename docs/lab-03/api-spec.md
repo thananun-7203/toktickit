@@ -2,7 +2,24 @@
 
 This document records the final Sprint 3 REST contract after implementation and review. It extends the existing Lab 2 `/api/v1` API and replaces `X-Dev-Requester-Id` ownership with authenticated session identity.
 
-## 1. Global Conventions
+## Endpoints Overview
+
+| Group | Endpoint | Implementation issue |
+|---|---|---|
+| Auth | `POST /auth/login` | Issue 2 |
+| Auth | `POST /auth/logout` | Issue 2 |
+| Auth | `GET /auth/me` | Issue 2 |
+| Auth | `POST /auth/change-password` | Issue 2 |
+| Requester | Lab 2 Ticket/Attachment endpoints using session identity | Issue 3 |
+| Requester | Public Comments / Problem Appears Resolved | Issue 3 |
+| Staff | Queue / assignee list | Issue 4 |
+| Staff | Operational detail / owner / priority / status | Issue 5 |
+| Staff | Public Comments / Internal Notes | Issue 5 |
+| Admin | User list/search/filter/create/edit | Issue 6 |
+| Admin | Set initial password | Issue 6 |
+| Cross-cutting | authorization/safe errors/regression | Issue 7 |
+
+## API Conventions
 
 ### 1.1 Base URL
 
@@ -77,9 +94,9 @@ List APIs that paginate return:
 }
 ```
 
-## 2. Authentication and Session API
+## 1. Authentication and Session API
 
-### 2.1 POST `/api/v1/auth/login`
+### 1. POST `/api/v1/auth/login`
 
 Purpose: authenticate an active user.
 
@@ -131,7 +148,7 @@ On success:
 - Set `toktickit_session` cookie.
 - Clear failed-login counter for that normalized email.
 
-### 2.2 POST `/api/v1/auth/logout`
+### 2. POST `/api/v1/auth/logout`
 
 Authentication: any current session; idempotent when cookie is missing/expired.
 
@@ -143,7 +160,7 @@ Behavior:
 - Expire `toktickit_session` cookie.
 - Reuse of old cookie must not restore access.
 
-### 2.3 GET `/api/v1/auth/me`
+### 3. GET `/api/v1/auth/me`
 
 Purpose: bootstrap authenticated client state.
 
@@ -164,7 +181,7 @@ Errors: `401` missing/expired/invalid session.
 
 Password hash/session token are never returned.
 
-### 2.4 POST `/api/v1/auth/change-password`
+### 4. POST `/api/v1/auth/change-password`
 
 Authentication: required. Allowed when `mustChangePassword=true` and as a normal profile password action.
 
@@ -204,11 +221,11 @@ Success `200`:
 
 Errors: `400` field validation, `401` current password/session invalid, `500` safe failure.
 
-## 3. Reference Data API
+## 2. Reference Data API
 
 These endpoints continue to serve Create Ticket/filters. In Lab 3 they are authenticated-only and available to `REQUESTER`, `IT_STAFF`, and `ADMINISTRATOR`. Unauthenticated access returns `401`; an implementation PR must not make these endpoints public without a reviewed contract change.
 
-### 3.1 GET `/api/v1/categories`
+### 1. GET `/api/v1/categories`
 
 Roles: Requester, IT Staff, Administrator.
 
@@ -221,17 +238,17 @@ Success `200`:
 ]
 ```
 
-### 3.2 GET `/api/v1/related-systems`
+### 2. GET `/api/v1/related-systems`
 
 Roles: Requester, IT Staff, Administrator.
 
 Success `200`: array of `{ id, name }`.
 
-## 4. Requester Ticket APIs — Lab 2 Continuation
+## 3. Requester Ticket APIs — Lab 2 Continuation
 
 All routes in this section require authenticated role `REQUESTER` unless stated otherwise. Identity comes from the session.
 
-### 4.1 POST `/api/v1/tickets`
+### 1. POST `/api/v1/tickets`
 
 Purpose: Create Requester Ticket.
 
@@ -264,7 +281,7 @@ Server behavior:
 
 Success `201`: Ticket summary object.
 
-### 4.2 GET `/api/v1/tickets`
+### 2. GET `/api/v1/tickets`
 
 Purpose: My Tickets for authenticated Requester only.
 
@@ -281,7 +298,7 @@ Query:
 
 Success `200`: standard pagination shape; items scoped to authenticated user.
 
-### 4.3 GET `/api/v1/tickets/:id`
+### 3. GET `/api/v1/tickets/:id`
 
 Purpose: Requester Ticket Detail.
 
@@ -295,7 +312,7 @@ Success `200` includes:
 
 Errors: `404` unknown or not owned.
 
-### 4.4 POST `/api/v1/tickets/:id/attachments`
+### 4. POST `/api/v1/tickets/:id/attachments`
 
 Multipart field `files`.
 
@@ -311,7 +328,7 @@ Lab 2 rules preserved:
 
 Success `201`: created attachment metadata.
 
-### 4.5 GET `/api/v1/attachments/:id/download`
+### 5. GET `/api/v1/attachments/:id/download`
 
 Roles:
 
@@ -322,7 +339,7 @@ This is the only Attachment endpoint in section 4 intentionally shared with staf
 
 Errors: `403` role forbidden where applicable, `404` unknown/hidden resource, `409` removed, `502` storage failure.
 
-### 4.6 DELETE `/api/v1/attachments/:id`
+### 6. DELETE `/api/v1/attachments/:id`
 
 Soft remove; owned Ticket only.
 
@@ -334,9 +351,9 @@ Request:
 
 Reason required/non-blank. Existing atomic concurrency behavior remains: one simultaneous removal can succeed, later/current-state conflict returns `409`.
 
-## 5. Public Comments and Requester Resolution Indication
+## 4. Public Comments and Requester Resolution Indication
 
-### 5.1 GET `/api/v1/tickets/:id/public-comments`
+### 1. GET `/api/v1/tickets/:id/public-comments`
 
 Roles:
 
@@ -364,7 +381,7 @@ Success `200`:
 
 Ordered oldest→newest, then id ascending.
 
-### 5.2 POST `/api/v1/tickets/:id/public-comments`
+### 2. POST `/api/v1/tickets/:id/public-comments`
 
 Roles/visibility same as GET.
 
@@ -380,7 +397,7 @@ Success `201`: created comment.
 
 Errors: `400`, `403` role forbidden, `404` missing/hidden Ticket.
 
-### 5.3 POST `/api/v1/tickets/:id/problem-appears-resolved`
+### 3. POST `/api/v1/tickets/:id/problem-appears-resolved`
 
 Role: Requester, own Ticket only.
 
@@ -405,11 +422,11 @@ Success `200`:
 }
 ```
 
-## 6. IT Staff Ticket Queue API
+## 5. IT Staff Ticket Queue API
 
 Roles: `IT_STAFF`, `ADMINISTRATOR`.
 
-### 6.1 GET `/api/v1/staff/tickets`
+### 1. GET `/api/v1/staff/tickets`
 
 Searchable fields:
 
@@ -454,7 +471,7 @@ Success `200` item example:
 
 Invalid query → `400` with field errors.
 
-### 6.2 GET `/api/v1/staff/tickets/:id`
+### 2. GET `/api/v1/staff/tickets/:id`
 
 Roles: IT Staff/Admin.
 
@@ -472,9 +489,9 @@ Success `200` includes:
 
 Communication is loaded through the dedicated section 5 Public Comment endpoints and section 8 Internal Note endpoints. This endpoint must never put Internal Notes into Requester-facing response serializers.
 
-## 7. IT Staff Ticket Operations
+## 6. IT Staff Ticket Operations
 
-### 7.1 PATCH `/api/v1/staff/tickets/:id/owner`
+### 1. PATCH `/api/v1/staff/tickets/:id/owner`
 
 Roles: IT Staff/Admin.
 
@@ -503,7 +520,7 @@ Rules:
 
 Success `200`: updated owner + `updatedAt`.
 
-### 7.2 PATCH `/api/v1/staff/tickets/:id/it-priority`
+### 2. PATCH `/api/v1/staff/tickets/:id/it-priority`
 
 Request:
 
@@ -517,7 +534,7 @@ Requested Priority is not changed.
 
 Success `200`: `requestedPriority`, `itPriority`, `updatedAt`.
 
-### 7.3 PATCH `/api/v1/staff/tickets/:id/status`
+### 3. PATCH `/api/v1/staff/tickets/:id/status`
 
 Request:
 
@@ -539,9 +556,9 @@ Errors:
 
 The API does not rely on a client confirmation flag for safety; confirmation is UI feedback. Server authorization + transition validation remain authoritative.
 
-## 8. Internal Notes
+## 7. Internal Notes
 
-### 8.1 GET `/api/v1/staff/tickets/:id/internal-notes`
+### 1. GET `/api/v1/staff/tickets/:id/internal-notes`
 
 Roles: IT Staff/Admin only.
 
@@ -556,7 +573,7 @@ Success `200`: paginated append-only note list oldest→newest with
 
 Requester direct call → `403` and no note content.
 
-### 8.2 POST `/api/v1/staff/tickets/:id/internal-notes`
+### 2. POST `/api/v1/staff/tickets/:id/internal-notes`
 
 Roles: IT Staff/Admin only.
 
@@ -570,11 +587,11 @@ Validation: trimmed 1–2,000 chars. Backend author/time.
 
 Success `201`: created note.
 
-## 9. Administrator User Management API
+## 8. Administrator User Management API
 
 All endpoints require `ADMINISTRATOR`.
 
-### 9.1 GET `/api/v1/admin/users`
+### 1. GET `/api/v1/admin/users`
 
 Query:
 
@@ -606,7 +623,7 @@ Success `200`:
 
 No password hash returned.
 
-### 9.2 POST `/api/v1/admin/users`
+### 2. POST `/api/v1/admin/users`
 
 Request:
 
@@ -634,7 +651,7 @@ Success `201`: safe user object.
 
 Errors: `400`, `409 DUPLICATE_EMAIL`.
 
-### 9.3 PATCH `/api/v1/admin/users/:id`
+### 3. PATCH `/api/v1/admin/users/:id`
 
 Request may include one or more:
 
@@ -660,7 +677,7 @@ Rules:
 
 Success `200`: updated safe user object.
 
-### 9.4 POST `/api/v1/admin/users/:id/initial-password`
+### 4. POST `/api/v1/admin/users/:id/initial-password`
 
 Request:
 
@@ -688,9 +705,9 @@ Success `200`:
 }
 ```
 
-## 10. Staff Assignment Reference Data
+## 9. Staff Assignment Reference Data
 
-### 10.1 GET `/api/v1/staff/assignees`
+### 1. GET `/api/v1/staff/assignees`
 
 Roles: IT Staff/Admin.
 
@@ -706,7 +723,7 @@ Success `200`:
 
 Inactive users are excluded.
 
-## 11. Session / Password-Change Authorization Gate
+## 10. Session / Password-Change Authorization Gate
 
 Protected request order:
 
@@ -720,20 +737,3 @@ Protected request order:
 8. Execute mutation/query.
 
 This order prevents client-controlled identity from bypassing authentication and keeps safe-error behavior consistent.
-
-## 12. Final Endpoint Inventory / Issue Mapping
-
-| Group | Endpoint | Implementation issue |
-|---|---|---|
-| Auth | `POST /auth/login` | Issue 2 |
-| Auth | `POST /auth/logout` | Issue 2 |
-| Auth | `GET /auth/me` | Issue 2 |
-| Auth | `POST /auth/change-password` | Issue 2 |
-| Requester | Lab 2 Ticket/Attachment endpoints using session identity | Issue 3 |
-| Requester | Public Comments / Problem Appears Resolved | Issue 3 |
-| Staff | Queue / assignee list | Issue 4 |
-| Staff | Operational detail / owner / priority / status | Issue 5 |
-| Staff | Public Comments / Internal Notes | Issue 5 |
-| Admin | User list/search/filter/create/edit | Issue 6 |
-| Admin | Set initial password | Issue 6 |
-| Cross-cutting | authorization/safe errors/regression | Issue 7 |
