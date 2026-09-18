@@ -1,17 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useEffect } from "react";
 import CreateTicket from "../../src/CreateTicket.js";
 import * as api from "../../src/api.js";
-import { RequesterProvider, useRequester } from "../../src/RequesterContext.js";
-
-const TEST_REQUESTER: api.Requester = {
-  id: 1,
-  name: "Somchai Jaidee",
-  email: "somchai@toktick.it",
-  isActive: true,
-};
 
 const CATEGORIES: api.Category[] = [
   { id: 1, name: "Account and Access" },
@@ -20,20 +11,8 @@ const CATEGORIES: api.Category[] = [
 
 const SYSTEMS: api.RelatedSystem[] = [{ id: 1, name: "CRM" }, { id: 2, name: "Payroll" }];
 
-function Harness() {
-  const { selectRequester } = useRequester();
-  useEffect(() => {
-    selectRequester(TEST_REQUESTER);
-  }, [selectRequester]);
-  return <CreateTicket />;
-}
-
 function renderForm() {
-  return render(
-    <RequesterProvider>
-      <Harness />
-    </RequesterProvider>
-  );
+  return render(<CreateTicket />);
 }
 
 describe("CreateTicket", () => {
@@ -101,7 +80,6 @@ describe("CreateTicket", () => {
     expect(screen.getByRole("button", { name: /Creating/ })).toBeDisabled();
     expect(api.createTicket).toHaveBeenCalledWith(
       expect.objectContaining({ summary: "Unit test ticket", requestedPriority: "High" }),
-      TEST_REQUESTER.id,
     );
 
     resolveCreate({
@@ -197,7 +175,7 @@ describe("CreateTicket", () => {
     await user.upload(screen.getByLabelText(/Attachments/i), file);
     await user.click(screen.getByRole("button", { name: /Create Ticket/i }));
 
-    expect(uploadSpy).toHaveBeenCalledWith(42, [file], TEST_REQUESTER.id);
+    expect(uploadSpy).toHaveBeenCalledWith(42, [file]);
     expect(await screen.findByText(/Ticket created successfully/i)).toBeInTheDocument();
   });
 });

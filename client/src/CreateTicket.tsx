@@ -10,7 +10,6 @@ import {
   Ticket,
   uploadAttachments,
 } from "./api.js";
-import { useRequester } from "./RequesterContext.js";
 
 // Lab 2 Issue 3 — S2: Create Ticket screen (ui-spec.md).
 // Zen Green theme, required-field asterisks, validation below inputs,
@@ -83,7 +82,6 @@ function validate(fields: FormFields): Partial<Record<keyof FormFields, string>>
 }
 
 export default function CreateTicket({ onOpenTicket, onGoToTickets }: CreateTicketProps) {
-  const { requester } = useRequester();
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [categories, setCategories] = useState<Category[]>([]);
   const [relatedSystems, setRelatedSystems] = useState<RelatedSystem[]>([]);
@@ -121,7 +119,6 @@ export default function CreateTicket({ onOpenTicket, onGoToTickets }: CreateTick
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!requester) return;
     const nextErrors = validate(fields);
     setErrors(nextErrors);
     const nextAttachmentErrors = validateAttachments(selectedFiles);
@@ -139,12 +136,11 @@ export default function CreateTicket({ onOpenTicket, onGoToTickets }: CreateTick
           summary: fields.summary.trim(),
           description: fields.description.trim(),
         },
-        requester.id,
       );
       setCreated(ticket);
       if (selectedFiles.length > 0) {
         try {
-          await uploadAttachments(ticket.id, selectedFiles, requester.id);
+          await uploadAttachments(ticket.id, selectedFiles);
         } catch (err) {
           setPostCreateWarning(
             `Ticket was created, but attachments could not be uploaded: ${

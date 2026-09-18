@@ -3,12 +3,12 @@ import ReactDOM from "react-dom/client";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./theme.css";
 import App from "./App.js";
-import { RequesterProvider } from "./RequesterContext.js";
+import { AuthProvider } from "./AuthContext.js";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <RequesterProvider>
+    <AuthProvider>
       <App />
-    </RequesterProvider>
+    </AuthProvider>
   </React.StrictMode>
 );

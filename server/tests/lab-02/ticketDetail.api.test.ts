@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { UserRole } from "@prisma/client";
 import request from "supertest";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
@@ -7,11 +8,24 @@ import {
   resetAttachmentStorageForTests,
   setAttachmentStorageForTests,
 } from "../../src/attachmentStorage.js";
+import {
+  cleanupTestUsers,
+  createSessionCookie,
+  createTestUser,
+  TEST_ORIGIN,
+} from "../lab-03/testAuth.js";
 
-const R1 = 1;
-const R2 = 2;
+let R1 = 0;
+let R2 = 0;
+let STAFF = 0;
+let ADMIN = 0;
 
 let createdTicketIds: number[] = [];
+let r1Cookie = "";
+let r2Cookie = "";
+let staffCookie = "";
+let adminCookie = "";
+let sessionIds: string[] = [];
 
 class MemoryStorage implements AttachmentStorage {
   readonly objects = new Map<string, Buffer>();
@@ -39,9 +53,36 @@ class MemoryStorage implements AttachmentStorage {
 
 let storage: MemoryStorage;
 
-beforeEach(() => {
+beforeAll(async () => {
+  const [r1, r2, staff, admin] = await Promise.all([
+    createTestUser({ mustChangePassword: false, name: "Detail Requester One" }),
+    createTestUser({ mustChangePassword: false, name: "Detail Requester Two" }),
+    createTestUser({ mustChangePassword: false, name: "Detail Staff", role: UserRole.IT_STAFF }),
+    createTestUser({ mustChangePassword: false, name: "Detail Admin", role: UserRole.ADMINISTRATOR }),
+  ]);
+  R1 = r1.id;
+  R2 = r2.id;
+  STAFF = staff.id;
+  ADMIN = admin.id;
+});
+afterAll(async () => {
+  await cleanupTestUsers([R1, R2, STAFF, ADMIN].filter(Boolean));
+});
+
+beforeEach(async () => {
   storage = new MemoryStorage();
   setAttachmentStorageForTests(storage);
+  const [r1, r2, staff, admin] = await Promise.all([
+    createSessionCookie(R1),
+    createSessionCookie(R2),
+    createSessionCookie(STAFF),
+    createSessionCookie(ADMIN),
+  ]);
+  r1Cookie = r1.cookie;
+  r2Cookie = r2.cookie;
+  staffCookie = staff.cookie;
+  adminCookie = admin.cookie;
+  sessionIds = [r1.sessionId, r2.sessionId, staff.sessionId, admin.sessionId];
 });
 
 afterEach(async () => {
@@ -53,15 +94,21 @@ afterEach(async () => {
       await prisma.attachment.deleteMany({ where: { ticketId: { in: ids } } });
       await prisma.ticket.deleteMany({ where: { id: { in: ids } } });
     }
+    if (sessionIds.length) {
+      await getPrisma().authSession.deleteMany({ where: { id: { in: sessionIds } } });
+      sessionIds = [];
+    }
   } finally {
     resetAttachmentStorageForTests();
   }
 });
 
 async function createTicket(requesterId: number) {
+  const cookie = requesterId === R1 ? r1Cookie : r2Cookie;
   const res = await request(app)
     .post("/api/v1/tickets")
-    .set("X-Dev-Requester-Id", String(requesterId))
+    .set("Origin", TEST_ORIGIN)
+    .set("Cookie", cookie)
     .send({
       categoryId: 1,
       relatedSystemId: 1,
@@ -80,7 +127,7 @@ describe("GET /api/v1/tickets/:id", () => {
 
     const res = await request(app)
       .get(`/api/v1/tickets/${ticket.id}`)
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("Cookie", r1Cookie);
 
     expect(res.status).toBe(200);
     expect(res.body.id).toBe(ticket.id);
@@ -95,7 +142,7 @@ describe("GET /api/v1/tickets/:id", () => {
 
     const res = await request(app)
       .get(`/api/v1/tickets/${ticket.id}`)
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("Cookie", r1Cookie);
 
     expect(res.status).toBe(404);
     expect(res.body.error.message).toMatch(/not found/i);
@@ -104,20 +151,82 @@ describe("GET /api/v1/tickets/:id", () => {
   it("returns 404 for an unknown ticket id", async () => {
     const res = await request(app)
       .get("/api/v1/tickets/2147483647")
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("Cookie", r1Cookie);
 
     expect(res.status).toBe(404);
   });
 });
 
 describe("Ticket attachments", () => {
+  it("AZ-12: IT Staff and Administrator can download an active attachment from any Ticket", async () => {
+    const ticket = await createTicket(R1);
+    const body = Buffer.from("shared staff attachment");
+    const upload = await request(app)
+      .post(`/api/v1/tickets/${ticket.id}/attachments`)
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie)
+      .attach("files", body, { filename: "staff-visible.pdf", contentType: "application/pdf" });
+    expect(upload.status).toBe(201);
+    const attachmentId = upload.body[0].id as number;
+
+    for (const cookie of [staffCookie, adminCookie]) {
+      const download = await request(app)
+        .get(`/api/v1/attachments/${attachmentId}/download`)
+        .set("Cookie", cookie);
+      expect(download.status).toBe(200);
+      expect(download.headers["content-type"]).toMatch(/application\/pdf/);
+      expect(Buffer.compare(download.body, body)).toBe(0);
+    }
+  });
+
+  it("AZ-13: IT Staff and Administrator cannot upload or soft-remove Requester attachments", async () => {
+    const ticket = await createTicket(R1);
+    const upload = await request(app)
+      .post(`/api/v1/tickets/${ticket.id}/attachments`)
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie)
+      .attach("files", Buffer.from("requester-owned attachment"), {
+        filename: "requester-owned.pdf",
+        contentType: "application/pdf",
+      });
+    expect(upload.status).toBe(201);
+    const attachmentId = upload.body[0].id as number;
+
+    for (const cookie of [staffCookie, adminCookie]) {
+      const forbiddenUpload = await request(app)
+        .post(`/api/v1/tickets/${ticket.id}/attachments`)
+        .set("Origin", TEST_ORIGIN)
+        .set("Cookie", cookie)
+        .attach("files", Buffer.from("must not persist"), {
+          filename: "forbidden.pdf",
+          contentType: "application/pdf",
+        });
+      expect(forbiddenUpload.status).toBe(403);
+      expect(forbiddenUpload.body.error.code).toBe("FORBIDDEN");
+
+      const forbiddenRemove = await request(app)
+        .delete(`/api/v1/attachments/${attachmentId}`)
+        .set("Origin", TEST_ORIGIN)
+        .set("Cookie", cookie)
+        .send({ reason: "Staff/Admin must not remove Requester attachments" });
+      expect(forbiddenRemove.status).toBe(403);
+      expect(forbiddenRemove.body.error.code).toBe("FORBIDDEN");
+    }
+
+    const persisted = await getPrisma().attachment.findUniqueOrThrow({ where: { id: attachmentId } });
+    expect(persisted.removedAt).toBeNull();
+    expect(await getPrisma().attachment.count({ where: { ticketId: ticket.id } })).toBe(1);
+    expect(storage.objects.size).toBe(1);
+  });
+
   it("A-10: uploads a valid file and returns it in ticket detail", async () => {
     const ticket = await createTicket(R1);
     const body = Buffer.from("sample screenshot bytes");
 
     const upload = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
-      .set("X-Dev-Requester-Id", String(R1))
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie)
       .attach("files", body, { filename: "screenshot.png", contentType: "image/png" });
 
     expect(upload.status).toBe(201);
@@ -131,7 +240,7 @@ describe("Ticket attachments", () => {
 
     const detail = await request(app)
       .get(`/api/v1/tickets/${ticket.id}`)
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("Cookie", r1Cookie);
     expect(detail.body.attachments).toHaveLength(1);
     expect(detail.body.attachments[0].fileName).toBe("screenshot.png");
     expect(storage.objects.size).toBe(1);
@@ -142,7 +251,8 @@ describe("Ticket attachments", () => {
 
     const badType = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
-      .set("X-Dev-Requester-Id", String(R1))
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie)
       .attach("files", Buffer.from("valid part"), { filename: "okay.pdf", contentType: "application/pdf" })
       .attach("files", Buffer.from("bad part"), { filename: "script.exe", contentType: "application/octet-stream" });
     expect(badType.status).toBe(400);
@@ -150,7 +260,8 @@ describe("Ticket attachments", () => {
 
     const tooLarge = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
-      .set("X-Dev-Requester-Id", String(R1))
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie)
       .attach("files", Buffer.alloc(5 * 1024 * 1024 + 1), {
         filename: "too-large.pdf",
         contentType: "application/pdf",
@@ -160,7 +271,7 @@ describe("Ticket attachments", () => {
 
     const detail = await request(app)
       .get(`/api/v1/tickets/${ticket.id}`)
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("Cookie", r1Cookie);
     expect(detail.body.attachments).toEqual([]);
     expect(storage.objects.size).toBe(0);
   });
@@ -169,7 +280,8 @@ describe("Ticket attachments", () => {
     const ticket = await createTicket(R1);
     const first = request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie);
     for (let i = 1; i <= 5; i++) {
       first.attach("files", Buffer.from(`file-${i}`), {
         filename: `file-${i}.pdf`,
@@ -180,14 +292,15 @@ describe("Ticket attachments", () => {
 
     const sixth = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
-      .set("X-Dev-Requester-Id", String(R1))
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie)
       .attach("files", Buffer.from("sixth"), { filename: "sixth.pdf", contentType: "application/pdf" });
     expect(sixth.status).toBe(400);
     expect(sixth.body.error.message).toMatch(/5 active/i);
 
     const detail = await request(app)
       .get(`/api/v1/tickets/${ticket.id}`)
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("Cookie", r1Cookie);
     expect(detail.body.attachments).toHaveLength(5);
   });
 
@@ -195,7 +308,8 @@ describe("Ticket attachments", () => {
     const ticket = await createTicket(R1);
     const initial = request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie);
     for (let i = 1; i <= 4; i++) {
       initial.attach("files", Buffer.from(`initial-${i}`), {
         filename: `initial-${i}.pdf`,
@@ -214,14 +328,16 @@ describe("Ticket attachments", () => {
     const [uploadA, uploadB] = await Promise.all([
       request(app)
         .post(`/api/v1/tickets/${ticket.id}/attachments`)
-        .set("X-Dev-Requester-Id", String(R1))
+        .set("Origin", TEST_ORIGIN)
+        .set("Cookie", r1Cookie)
         .attach("files", Buffer.from("concurrent-a"), {
           filename: "concurrent-a.pdf",
           contentType: "application/pdf",
         }),
       request(app)
         .post(`/api/v1/tickets/${ticket.id}/attachments`)
-        .set("X-Dev-Requester-Id", String(R1))
+        .set("Origin", TEST_ORIGIN)
+        .set("Cookie", r1Cookie)
         .attach("files", Buffer.from("concurrent-b"), {
           filename: "concurrent-b.pdf",
           contentType: "application/pdf",
@@ -232,7 +348,7 @@ describe("Ticket attachments", () => {
 
     const detail = await request(app)
       .get(`/api/v1/tickets/${ticket.id}`)
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("Cookie", r1Cookie);
     const active = detail.body.attachments.filter(
       (attachment: { removedAt: string | null }) => attachment.removedAt === null,
     );
@@ -251,7 +367,8 @@ describe("Ticket attachments", () => {
     const ticket = await createTicket(R1);
     const upload = request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie);
     for (let i = 1; i <= 6; i++) {
       upload.attach("files", Buffer.from(`file-${i}`), {
         filename: `batch-${i}.pdf`,
@@ -270,13 +387,14 @@ describe("Ticket attachments", () => {
     const body = Buffer.from("download me");
     const upload = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
-      .set("X-Dev-Requester-Id", String(R1))
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie)
       .attach("files", body, { filename: "report.pdf", contentType: "application/pdf" });
     const attachment = upload.body[0] as { id: number };
 
     const download = await request(app)
       .get(`/api/v1/attachments/${attachment.id}/download`)
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("Cookie", r1Cookie);
     expect(download.status).toBe(200);
     expect(download.headers["content-type"]).toMatch(/application\/pdf/);
     expect(download.headers["content-disposition"]).toMatch(/report\.pdf/);
@@ -284,7 +402,8 @@ describe("Ticket attachments", () => {
 
     const removed = await request(app)
       .delete(`/api/v1/attachments/${attachment.id}`)
-      .set("X-Dev-Requester-Id", String(R1))
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie)
       .send({ reason: "Duplicate evidence" });
     expect(removed.status).toBe(200);
     expect(removed.body.removedAt).toEqual(expect.any(String));
@@ -292,19 +411,20 @@ describe("Ticket attachments", () => {
 
     const blocked = await request(app)
       .get(`/api/v1/attachments/${attachment.id}/download`)
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("Cookie", r1Cookie);
     expect(blocked.status).toBe(409);
 
     const detail = await request(app)
       .get(`/api/v1/tickets/${ticket.id}`)
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("Cookie", r1Cookie);
     expect(detail.body.attachments[0].removedAt).not.toBeNull();
     expect(detail.body.attachments[0].removalReason).toBe("Duplicate evidence");
     expect(storage.objects.size).toBe(1);
 
     const removedAgain = await request(app)
       .delete(`/api/v1/attachments/${attachment.id}`)
-      .set("X-Dev-Requester-Id", String(R1))
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie)
       .send({ reason: "Second attempt" });
     expect(removedAgain.status).toBe(409);
     expect(removedAgain.body.error.message).toMatch(/already removed/i);
@@ -314,7 +434,8 @@ describe("Ticket attachments", () => {
     const ticket = await createTicket(R1);
     const upload = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
-      .set("X-Dev-Requester-Id", String(R1))
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie)
       .attach("files", Buffer.from("reason required"), {
         filename: "reason-required.pdf",
         contentType: "application/pdf",
@@ -323,21 +444,23 @@ describe("Ticket attachments", () => {
 
     const missing = await request(app)
       .delete(`/api/v1/attachments/${attachmentId}`)
-      .set("X-Dev-Requester-Id", String(R1))
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie)
       .send({});
     expect(missing.status).toBe(400);
     expect(missing.body.error.message).toMatch(/reason/i);
 
     const blank = await request(app)
       .delete(`/api/v1/attachments/${attachmentId}`)
-      .set("X-Dev-Requester-Id", String(R1))
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie)
       .send({ reason: "   " });
     expect(blank.status).toBe(400);
     expect(blank.body.error.message).toMatch(/reason/i);
 
     const detail = await request(app)
       .get(`/api/v1/tickets/${ticket.id}`)
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("Cookie", r1Cookie);
     expect(detail.body.attachments[0].removedAt).toBeNull();
     expect(detail.body.attachments[0].removalReason).toBeNull();
     expect(storage.objects.size).toBe(1);
@@ -347,7 +470,8 @@ describe("Ticket attachments", () => {
     const ticket = await createTicket(R1);
     const upload = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
-      .set("X-Dev-Requester-Id", String(R1))
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie)
       .attach("files", Buffer.from("remove race"), {
         filename: "remove-race.pdf",
         contentType: "application/pdf",
@@ -357,11 +481,13 @@ describe("Ticket attachments", () => {
     const [removeA, removeB] = await Promise.all([
       request(app)
         .delete(`/api/v1/attachments/${attachmentId}`)
-        .set("X-Dev-Requester-Id", String(R1))
+        .set("Origin", TEST_ORIGIN)
+        .set("Cookie", r1Cookie)
         .send({ reason: "Concurrent reason A" }),
       request(app)
         .delete(`/api/v1/attachments/${attachmentId}`)
-        .set("X-Dev-Requester-Id", String(R1))
+        .set("Origin", TEST_ORIGIN)
+        .set("Cookie", r1Cookie)
         .send({ reason: "Concurrent reason B" }),
     ]);
 
@@ -369,7 +495,7 @@ describe("Ticket attachments", () => {
 
     const detail = await request(app)
       .get(`/api/v1/tickets/${ticket.id}`)
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("Cookie", r1Cookie);
     expect(detail.body.attachments[0].removedAt).not.toBeNull();
     expect(["Concurrent reason A", "Concurrent reason B"]).toContain(
       detail.body.attachments[0].removalReason,
@@ -381,7 +507,8 @@ describe("Ticket attachments", () => {
     const ticket = await createTicket(R1);
     const upload = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
-      .set("X-Dev-Requester-Id", String(R1))
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie)
       .attach("files", Buffer.from("storage failure test"), {
         filename: "storage.pdf",
         contentType: "application/pdf",
@@ -398,29 +525,50 @@ describe("Ticket attachments", () => {
 
     const download = await request(app)
       .get(`/api/v1/attachments/${attachmentId}/download`)
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("Cookie", r1Cookie);
 
     expect(download.status).toBe(502);
     expect(download.body.error.message).toMatch(/storage/i);
   });
 
-  it("does not expose another requester's attachment", async () => {
+  it("AZ-11: direct attachment ids stay hidden from another Requester in active and removed states", async () => {
     const ticket = await createTicket(R2);
     const upload = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/attachments`)
-      .set("X-Dev-Requester-Id", String(R2))
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r2Cookie)
       .attach("files", Buffer.from("private"), { filename: "private.pdf", contentType: "application/pdf" });
     const id = upload.body[0].id as number;
 
     const download = await request(app)
       .get(`/api/v1/attachments/${id}/download`)
-      .set("X-Dev-Requester-Id", String(R1));
+      .set("Cookie", r1Cookie);
     expect(download.status).toBe(404);
 
     const remove = await request(app)
       .delete(`/api/v1/attachments/${id}`)
-      .set("X-Dev-Requester-Id", String(R1))
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie)
       .send({ reason: "Should not be accepted" });
     expect(remove.status).toBe(404);
+
+    const ownerRemove = await request(app)
+      .delete(`/api/v1/attachments/${id}`)
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r2Cookie)
+      .send({ reason: "Owner removed private attachment" });
+    expect(ownerRemove.status).toBe(200);
+
+    const removedDownload = await request(app)
+      .get(`/api/v1/attachments/${id}/download`)
+      .set("Cookie", r1Cookie);
+    expect(removedDownload.status).toBe(404);
+
+    const removedAgain = await request(app)
+      .delete(`/api/v1/attachments/${id}`)
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", r1Cookie)
+      .send({ reason: "Still must stay hidden" });
+    expect(removedAgain.status).toBe(404);
   });
 });

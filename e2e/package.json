@@ -4,8 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "playwright test",
-    "test:headed": "playwright test --headed"
+    "test": "playwright test --config playwright.lab3.config.ts",
+    "test:lab2": "playwright test --config playwright.config.ts",
+    "test:lab3": "playwright test --config playwright.lab3.config.ts",
+    "test:headed": "playwright test --config playwright.lab3.config.ts --headed"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0"
