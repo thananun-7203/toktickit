@@ -390,6 +390,8 @@ Required review focus:
 - GitHub Project caveat: CLI verification of the final Kanban column state is unavailable with the current token because it lacks `read:project`; no board status is fabricated or modified by this Issue.
 - Hosted CI Round 1 on `c57d0ea`: Client checks and production audit passed; Server migrations/seed/typecheck/Prisma/audit passed, but Server tests exposed a test-database-guard re-entry bug when CI had only `TEST_DATABASE_URL`, so E2E was skipped by dependency.
 - Response to CI Round 1: made the test guard safely re-entrant after `TOKTICKIT_TEST_MODE=1` without weakening the saved development-target collision check; added two guard regression tests. CI-equivalent local verification with blank `DATABASE_URL` and only `TEST_DATABASE_URL` now passes focused guard **6/6**, full Server **164/164 (21/21)**, Server build, and Prisma validate.
+- Hosted CI Round 2 on `51d6ea6`: Server and Client jobs were fully green, including production audits, but E2E failed two Requester overflow assertions at the 820 px tablet viewport on Linux headless Chromium. The shared cause was the Requester desktop header retaining three navigation buttons alongside brand/user controls until the old `<768px` breakpoint.
+- Response to CI Round 2: move authenticated compact navigation to `≤991.98px` without changing tablet content layouts or weakening the no-overflow checks. Focused Requester/visual Playwright **3/3**, full Lab 3 Playwright **12/12**, and Client **75/75 + build** pass after the change.
 - Reviewer feedback: Pending actual PR #48 review.
 - Response: Pending actual reviewer feedback.
 - Verdict: **Review/hosted-CI pending; not approved or merged.**

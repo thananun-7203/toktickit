@@ -1340,6 +1340,76 @@ textarea {
 }
 
 @media (max-width: 991.98px) {
+  .app-nav-links {
+    display: none;
+  }
+
+  .mobile-nav-wrap {
+    display: flex;
+    align-items: center;
+  }
+
+  .mobile-menu-toggle {
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #fff;
+    display: inline-grid;
+    place-items: center;
+    font-size: 1.35rem;
+    line-height: 1;
+  }
+
+  .mobile-menu-toggle:hover,
+  .mobile-menu-toggle:focus-visible,
+  .mobile-menu-toggle[aria-expanded="true"] {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .mobile-nav-panel {
+    position: absolute;
+    z-index: 40;
+    top: calc(100% - 2px);
+    left: 0;
+    width: min(300px, calc(100vw - 24px));
+    background: #fff;
+    color: var(--ink-900);
+    border: 1px solid var(--line);
+    border-radius: 0 0 14px 14px;
+    box-shadow: var(--shadow);
+    padding: 10px;
+  }
+
+  .mobile-nav-panel > button {
+    width: 100%;
+    min-height: 44px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--ink-900);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    font-weight: 650;
+    text-align: left;
+  }
+
+  .mobile-nav-panel > button:hover,
+  .mobile-nav-panel > button:focus-visible {
+    background: var(--zen-green-050);
+    color: var(--zen-green-800);
+  }
+
+  .mobile-nav-panel > button span {
+    width: 24px;
+    color: var(--zen-green-800);
+    font-weight: 800;
+    text-align: center;
+  }
+
   .detail-metadata-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
