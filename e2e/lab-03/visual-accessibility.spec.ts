@@ -78,7 +78,7 @@ async function installRequesterVisualApi(page: Page) {
 }
 
 async function openRequesterView(page: Page, viewportWidth: number, name: "Create Ticket" | "My Tickets") {
-  if (viewportWidth <= 767) {
+  if (viewportWidth <= 991) {
     await page.getByRole("button", { name: "Open navigation menu" }).click();
     await page.getByRole("menuitem", { name: new RegExp(name) }).click();
     return;

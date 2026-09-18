@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { requireE2eDatabaseUrl } from "../e2e-database.js";
+import { captureEvidence } from "./fullstack-fixtures.js";
 
 const API_URL = "http://127.0.0.1:3001";
 const E2E_DATABASE_URL = requireE2eDatabaseUrl();
@@ -166,6 +167,7 @@ test("E2E-REQ-01/02 authenticated Requester regression", async ({ page }) => {
   await page.getByLabel("Search").fill(unique);
   await expect(page.getByText("No results")).toBeVisible();
   await expect(page.getByText(unique)).toHaveCount(0);
+  await captureEvidence(page, "12-requester-isolation-no-results.png");
 
   const crossRequesterStatuses = await page.evaluate(async ({ apiUrl, ticketId, attachmentId }) => {
     const ticketResponse = await fetch(`${apiUrl}/api/v1/tickets/${ticketId}`, { credentials: "include" });

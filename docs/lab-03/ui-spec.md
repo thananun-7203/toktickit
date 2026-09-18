@@ -2,9 +2,9 @@
 
 Framework: React + TypeScript + Vite + Bootstrap 5. Lab 3 extends the existing Lab 2 Zen Green theme and responsive conventions. The application must look and behave like one product across Requester, IT Staff, and Administrator workflows.
 
-## 1. Global Design Rules
+## 1. Zen Green Theme Tokens
 
-### 1.1 Existing Zen Green Tokens
+### 1. Existing Zen Green Tokens
 
 Reuse the Lab 2 theme tokens already defined in `client/src/theme.css`:
 
@@ -18,7 +18,7 @@ Reuse the Lab 2 theme tokens already defined in `client/src/theme.css`:
 
 Lab 3 may add semantic classes for roles, status, IT Priority, warnings, and private notes, but should not replace the core visual system.
 
-### 1.2 Common Form Rules
+### 2. Common Form Rules
 
 - Every input has a visible `<label>`.
 - Required fields use a text/asterisk indicator; colour is not the only signal.
@@ -29,7 +29,7 @@ Lab 3 may add semantic classes for roles, status, IT Priority, warnings, and pri
 - API failure preserves entered values where safe.
 - Password controls include show/hide affordance if implemented accessibly; no password is displayed by default.
 
-### 1.3 Common Feedback States
+### 3. Common Feedback States
 
 Where meaningful each screen supports:
 
@@ -44,7 +44,7 @@ Where meaningful each screen supports:
 - Business conflict.
 - Safe API/server failure with retry guidance.
 
-### 1.4 Responsive Targets
+### 4. Responsive Targets
 
 - Desktop evidence target: 1280 px wide.
 - Tablet evidence target: approximately 820 px wide.
@@ -53,9 +53,11 @@ Where meaningful each screen supports:
 - Touch targets approximately ≥44 px on mobile.
 - Dense desktop tables convert to cards or simplified stacked rows on mobile when needed.
 
-## 2. Authenticated Application Shell
+## 2. Screens
 
-### 2.1 Header
+### Authenticated Application Shell
+
+#### 2.1 Header
 
 Common authenticated header:
 
@@ -69,7 +71,7 @@ Common authenticated header:
 
 The old Development Requester identity/menu and Switch Requester action are removed.
 
-### 2.2 Role Navigation
+#### 2.2 Role Navigation
 
 #### Requester
 
@@ -88,20 +90,20 @@ The old Development Requester identity/menu and Switch Requester action are remo
 - Optional operational Ticket navigation only if implementation exposes the explicitly permitted Admin Ticket operations from the authorization matrix; User Management remains the primary landing destination.
 - Check System may remain as utility.
 
-### 2.3 Mobile Navigation
+#### 2.3 Mobile Navigation
 
 - Brand remains visible.
 - Primary role navigation collapses to a hamburger/menu.
 - Current user/profile access remains reachable.
 - Role and Logout remain visible without requiring horizontal scrolling.
 
-## 3. S1 — Login
+### S1 — Login
 
-### Purpose
+#### Purpose
 
 Authenticate a real Lab 3 user with email/password and replace the Lab 2 requester selector entry screen.
 
-### Layout
+#### Layout
 
 Desktop/tablet:
 
@@ -117,7 +119,7 @@ Mobile:
 - Full-width card within page padding.
 - No fixed-width control that clips at 390 px.
 
-### States
+#### States
 
 | State | UI behavior |
 |---|---|
@@ -129,20 +131,20 @@ Mobile:
 | Rate limited | Alert explains too many attempts and asks user to wait. |
 | API failure | Safe connection/server alert; form values except password may remain, password field should be cleared after failed auth for safer UX. |
 
-### Successful Navigation
+#### Successful Navigation
 
 - `mustChangePassword=true` → S2 Change Password.
 - Requester → My Tickets.
 - IT Staff → Ticket Queue.
 - Administrator → User Management.
 
-## 4. S2 — Mandatory / Normal Change Password
+### S2 — Mandatory / Normal Change Password
 
-### Purpose
+#### Purpose
 
 Allow an authenticated user to replace an initial password before entering the normal application and support later profile password change.
 
-### Layout
+#### Layout
 
 - Centered Zen Green card.
 - Heading `Change Password`.
@@ -159,7 +161,7 @@ Allow an authenticated user to replace an initial password before entering the n
   - maximum 72 UTF-8 bytes (important for multibyte input such as Thai/emoji because Lab 3 uses bcrypt).
 - Primary `Continue` in mandatory mode or `Save Password` in profile mode.
 
-### States
+#### States
 
 - Default.
 - Validation: required, rule failure, confirmation mismatch, new = current.
@@ -168,13 +170,13 @@ Allow an authenticated user to replace an initial password before entering the n
 - Success.
 - Safe API failure preserving new-password fields only as appropriate; implementation may clear password fields after server failure for safety.
 
-### Mandatory Mode Restriction
+#### Mandatory Mode Restriction
 
 The normal navigation is not available while `mustChangePassword=true`. The user may only change password or Logout.
 
-## 5. Requester Screens — Lab 2 Regression
+### Requester Screens — Lab 2 Regression
 
-### 5.1 My Tickets
+#### 5.1 My Tickets
 
 Preserve Lab 2 behavior:
 
@@ -194,7 +196,7 @@ Changes for Lab 3:
 - identity comes from authenticated shell,
 - My Tickets no longer accepts/needs requester id from UI controls.
 
-### 5.2 Create Ticket
+#### 5.2 Create Ticket
 
 Preserve Lab 2 fields and validation:
 
@@ -211,7 +213,7 @@ Changes:
 - no requester field.
 - success continues to show generated Ticket Number and links to Ticket Detail/My Tickets.
 
-### 5.3 Requester Ticket Detail
+#### 5.3 Requester Ticket Detail
 
 Preserve:
 
@@ -228,9 +230,9 @@ Add:
 - Public Comments panel.
 - `Problem Appears Resolved` action/indicator.
 
-## 6. S4 — Requester Public Comments and Resolution Indication
+### S4 — Requester Public Comments and Resolution Indication
 
-### Public Comments Panel
+#### Public Comments Panel
 
 - Section title `Public Comments`.
 - Helper text: comments are shared with support staff.
@@ -253,7 +255,7 @@ States:
 - Success adds comment without full-page reset.
 - Safe failure preserves content for retry.
 
-### Problem Appears Resolved
+#### Problem Appears Resolved
 
 If not yet indicated **and** current status is `New`, `Open`, `In Progress`, `Waiting for Requester`, or `Reopened`:
 
@@ -268,13 +270,13 @@ If already indicated:
 - Formal status remains shown independently.
 - If staff later moves the Ticket to `Reopened`, the indication is cleared and the Requester-facing action becomes available again for a future fresh indication.
 
-## 7. S5 — IT Staff Ticket Queue
+### S5 — IT Staff Ticket Queue
 
-### Page Goal
+#### Page Goal
 
 Help staff locate, prioritize, and open work without an unreadable mega-grid.
 
-### Header / Toolbar
+#### Header / Toolbar
 
 - Heading `Ticket Queue`.
 - Optional compact count summary: total results / unassigned count if easily derived, not a dashboard.
@@ -289,7 +291,7 @@ Help staff locate, prioritize, and open work without an unreadable mega-grid.
 - Sort.
 - Clear filters.
 
-### Desktop Table
+#### Desktop Table
 
 Recommended columns:
 
@@ -305,12 +307,12 @@ Recommended columns:
 
 Requester name may appear as secondary text under Summary or Ticket Number to avoid adding a very wide column.
 
-### Tablet
+#### Tablet
 
 - Keep a table if it remains readable without horizontal page overflow.
 - May hide less critical text or stack Requester/Category under Summary.
 
-### Mobile
+#### Mobile
 
 Use queue cards:
 
@@ -322,7 +324,7 @@ Use queue cards:
 - Updated date.
 - full-width `Open Ticket` action.
 
-### Queue States
+#### Queue States
 
 - Loading skeleton/spinner.
 - Empty queue: no tickets exist.
@@ -331,9 +333,9 @@ Use queue cards:
 - Failure: retry action.
 - Invalid filter/query should be prevented client-side where possible and safely displayed if returned by API.
 
-## 8. S6 — IT Staff Ticket Detail
+### S6 — IT Staff Ticket Detail
 
-### Page Structure
+#### Page Structure
 
 Use clear sections so read-only Requester data cannot be confused with staff-editable operational fields.
 
@@ -346,7 +348,7 @@ Use clear sections so read-only Requester data cannot be confused with staff-edi
    - Internal Notes.
    - Attachments.
 
-### Read-Only Requester Data
+#### Read-Only Requester Data
 
 - Requester name/email.
 - Category.
@@ -356,7 +358,7 @@ Use clear sections so read-only Requester data cannot be confused with staff-edi
 - Summary.
 - Description.
 
-### Operational Controls
+#### Operational Controls
 
 #### Ticket Owner
 
@@ -385,7 +387,7 @@ Use clear sections so read-only Requester data cannot be confused with staff-edi
 - If set, show a distinct informational banner/timestamp.
 - Do not automatically change status or preselect Resolved.
 
-### Public Comments vs Internal Notes
+#### Public Comments vs Internal Notes
 
 These must be visually difficult to confuse.
 
@@ -404,27 +406,27 @@ These must be visually difficult to confuse.
 - Plain text only.
 - Load/post through the dedicated `/api/v1/staff/tickets/:id/internal-notes` endpoints.
 
-### Attachments
+#### Attachments
 
 - Preserve Lab 2 active/removed distinction.
 - Staff/Admin operational detail can view attachment metadata and download active attachments.
 - Staff/Admin cannot upload attachments or soft-remove attachments in Lab 3; those mutation controls are Requester-only and must not appear in staff/admin UI.
 - Removed attachment metadata remains visible for continuity, but removed files cannot be downloaded.
 
-## 9. S7 — Administrator User Management
+### S7 — Administrator User Management
 
-### Page Goal
+#### Page Goal
 
 One intentionally simple screen for the minimum account-management capability.
 
-### Desktop Layout
+#### Desktop Layout
 
 Recommended two-pane or list + drawer pattern:
 
 - Main list panel left/center.
 - Create/Edit form as right-side panel/drawer/modal.
 
-### User List
+#### User List
 
 Required columns:
 
@@ -442,7 +444,7 @@ Toolbar:
 
 Pagination is not required.
 
-### Create User Mode
+#### Create User Mode
 
 Fields:
 
@@ -464,7 +466,7 @@ States:
 - success,
 - safe failure.
 
-### Edit User Mode
+#### Edit User Mode
 
 Editable:
 
@@ -484,18 +486,18 @@ Safety feedback:
 - deactivating or changing an assigned IT Staff/Administrator to Requester is blocked while that user owns Tickets; show a clear `Reassign owned tickets before changing this account` conflict message and keep the form/user state unchanged.
 - no Delete action anywhere in Lab 3.
 
-### Mobile User Management
+#### Mobile User Management
 
 - User list becomes cards or compact rows.
 - Search/filter/Create remain visible and usable.
 - Edit form opens as full-width panel/modal below header.
 - No side-by-side layout that forces horizontal scrolling.
 
-## 10. Role / Priority / Status Badges
+### Role / Priority / Status Badges
 
 All badges include text; colour alone is never the signal.
 
-### Role
+#### Role
 
 - Requester: neutral/green-soft.
 - IT Staff: blue/green-compatible semantic style.
@@ -503,7 +505,7 @@ All badges include text; colour alone is never the signal.
 
 Exact colours may use Bootstrap semantic tokens but must retain accessible contrast and Zen Green harmony.
 
-### Requested Priority / IT Priority
+#### Requested Priority / IT Priority
 
 Reuse Lab 2 priority styles:
 
@@ -514,7 +516,7 @@ Reuse Lab 2 priority styles:
 
 Labels must identify context where both appear (`Requested`, `IT`).
 
-### Status
+#### Status
 
 Use a consistent labelled mapping across Queue and Detail. Suggested semantic grouping:
 
@@ -527,21 +529,21 @@ Use a consistent labelled mapping across Queue and Detail. Suggested semantic gr
 - Reopened — purple/blue.
 - Cancelled — danger/gray.
 
-## 11. Forbidden / Not Found Behavior
+### Forbidden / Not Found Behavior
 
-### Client Route Guard
+#### Client Route Guard
 
 - Not authenticated → Login.
 - Must change password → Change Password.
 - Authenticated wrong role → Forbidden panel or safe allowed landing page.
 
-### Forbidden Panel
+#### Forbidden Panel
 
 - Heading `Access not permitted`.
 - Short explanation based on role, without protected resource details.
 - Button back to role landing page.
 
-### Requester Resource Not Found
+#### Requester Resource Not Found
 
 For cross-owner Ticket ids use same UI as unknown id:
 
@@ -549,7 +551,9 @@ For cross-owner Ticket ids use same UI as unknown id:
 - Back to My Tickets.
 - Do not say `This ticket belongs to another requester`.
 
-## 12. Accessibility Checklist
+## 3. Responsive & Accessibility Conventions
+
+### Accessibility Checklist
 
 - [ ] All controls have accessible names/labels.
 - [ ] Form errors linked to controls (`aria-describedby` or equivalent).
@@ -562,11 +566,11 @@ For cross-owner Ticket ids use same UI as unknown id:
 - [ ] Table headers use semantic markup where tables are used.
 - [ ] Empty/failure states remain understandable to screen readers.
 
-## 13. Visual Evidence Plan
+### Visual Evidence Plan
 
 Final evidence should capture readable screenshots (not extreme zoom) for:
 
-### Authentication
+#### Authentication
 
 - Login default.
 - invalid credentials.
@@ -577,7 +581,7 @@ Final evidence should capture readable screenshots (not extreme zoom) for:
 - authenticated user/role display.
 - logout/direct-access blocked.
 
-### Staff Queue
+#### Staff Queue
 
 - realistic desktop queue.
 - filters/search/sort/pagination.
@@ -585,7 +589,7 @@ Final evidence should capture readable screenshots (not extreme zoom) for:
 - no-results and failure.
 - tablet and mobile.
 
-### Staff Ticket Detail
+#### Staff Ticket Detail
 
 - owner/claim-reassign.
 - IT Priority.
@@ -596,7 +600,7 @@ Final evidence should capture readable screenshots (not extreme zoom) for:
 - Requester-resolution indication.
 - validation/failure/forbidden evidence where meaningful.
 
-### Admin
+#### Admin
 
 - user list.
 - search/filter.
@@ -609,7 +613,7 @@ Final evidence should capture readable screenshots (not extreme zoom) for:
 - forbidden non-Admin.
 - desktop/tablet/mobile.
 
-## 14. Screen-to-Issue Mapping
+### Screen-to-Issue Mapping
 
 | Screen / UI area | Primary implementation issue |
 |---|---|

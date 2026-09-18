@@ -1,0 +1,146 @@
+﻿{
+    "sourceDatabase":  "toktickit_issue8_test",
+    "evidenceDatabase":  "toktickit_issue8_evidence",
+    "users":  [
+                  {
+                      "id":  1,
+                      "name":  "Somchai Jaidee",
+                      "email":  "somchai@toktick.it",
+                      "role":  "REQUESTER",
+                      "isActive":  true
+                  },
+                  {
+                      "id":  2,
+                      "name":  "Somsri Rakdee",
+                      "email":  "somsri@toktick.it",
+                      "role":  "REQUESTER",
+                      "isActive":  true
+                  },
+                  {
+                      "id":  3,
+                      "name":  "Anan Kongthong",
+                      "email":  "anan@toktick.it",
+                      "role":  "REQUESTER",
+                      "isActive":  true
+                  },
+                  {
+                      "id":  4,
+                      "name":  "Preecha Sombat",
+                      "email":  "preecha@toktick.it",
+                      "role":  "REQUESTER",
+                      "isActive":  true
+                  },
+                  {
+                      "id":  5,
+                      "name":  "Noppadol Sitthirit",
+                      "email":  "noppadol@toktick.it",
+                      "role":  "REQUESTER",
+                      "isActive":  false
+                  },
+                  {
+                      "id":  6,
+                      "name":  "Narin Support",
+                      "email":  "narin.staff@toktick.it",
+                      "role":  "IT_STAFF",
+                      "isActive":  true
+                  },
+                  {
+                      "id":  7,
+                      "name":  "Malee Support",
+                      "email":  "malee.staff@toktick.it",
+                      "role":  "IT_STAFF",
+                      "isActive":  true
+                  },
+                  {
+                      "id":  8,
+                      "name":  "Krit Support",
+                      "email":  "krit.staff@toktick.it",
+                      "role":  "IT_STAFF",
+                      "isActive":  true
+                  },
+                  {
+                      "id":  9,
+                      "name":  "Inactive Support",
+                      "email":  "inactive.staff@toktick.it",
+                      "role":  "IT_STAFF",
+                      "isActive":  false
+                  },
+                  {
+                      "id":  10,
+                      "name":  "Admin One",
+                      "email":  "admin.one@toktick.it",
+                      "role":  "ADMINISTRATOR",
+                      "isActive":  true
+                  },
+                  {
+                      "id":  11,
+                      "name":  "Admin Two",
+                      "email":  "admin.two@toktick.it",
+                      "role":  "ADMINISTRATOR",
+                      "isActive":  true
+                  }
+              ],
+    "tickets":  [
+                    {
+                        "id":  1,
+                        "ticketNumber":  "TKT-2025-90001",
+                        "summary":  "Monthly report export is unavailable",
+                        "requestedPriority":  "High",
+                        "itPriority":  "High",
+                        "status":  "Open",
+                        "requester":  "Somchai Jaidee",
+                        "requesterEmail":  "somchai@toktick.it",
+                        "owner":  "Narin Support",
+                        "category":  "Software",
+                        "relatedSystem":  "Report Portal"
+                    },
+                    {
+                        "id":  2,
+                        "ticketNumber":  "TKT-2025-90002",
+                        "summary":  "CRM page shows an unexpected validation message",
+                        "requestedPriority":  "Medium",
+                        "itPriority":  "Medium",
+                        "status":  "Waiting for Requester",
+                        "requester":  "Somsri Rakdee",
+                        "requesterEmail":  "somsri@toktick.it",
+                        "owner":  "Malee Support",
+                        "category":  "Software",
+                        "relatedSystem":  "CRM"
+                    },
+                    {
+                        "id":  3,
+                        "ticketNumber":  "TKT-2025-90003",
+                        "summary":  "Report filter resets after navigation",
+                        "requestedPriority":  "Low",
+                        "itPriority":  "Low",
+                        "status":  "Resolved",
+                        "requester":  "Anan Kongthong",
+                        "requesterEmail":  "anan@toktick.it",
+                        "owner":  null,
+                        "category":  "Software",
+                        "relatedSystem":  "Report Portal"
+                    }
+                ],
+    "publicComments":  [
+                           {
+                               "ticketNumber":  "TKT-2025-90001",
+                               "author":  "Narin Support",
+                               "authorRole":  "IT_STAFF",
+                               "content":  "Support is investigating this issue and will share updates here."
+                           },
+                           {
+                               "ticketNumber":  "TKT-2025-90002",
+                               "author":  "Somsri Rakdee",
+                               "authorRole":  "REQUESTER",
+                               "content":  "The issue still occurs after signing in again."
+                           }
+                       ],
+    "internalNotes":  [
+                          {
+                              "ticketNumber":  "TKT-2025-90001",
+                              "author":  "Narin Support",
+                              "authorRole":  "IT_STAFF",
+                              "content":  "Reproduced in the local support environment; continue diagnosis in the reporting service."
+                          }
+                      ]
+}

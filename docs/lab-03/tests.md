@@ -2,7 +2,9 @@
 
 This test plan is created before the main Lab 3 implementation. Final status remains `Planned` until the corresponding automated/manual evidence actually runs on the implementation branch or final integrated branch.
 
-## 1. Test Strategy
+> The sentence above preserves the original planning context. The later sections in this same file record the actual Pass/final regression evidence gathered as Lab 3 progressed.
+
+### Test Strategy
 
 Tools:
 
@@ -21,7 +23,7 @@ Test levels:
 5. E2E flows proving real browser behavior across auth → role workflow → logout.
 6. Responsive/visual checks at desktop/tablet/mobile widths.
 
-## 2. Planned Test File Structure
+### Planned Test File Structure
 
 Server:
 
@@ -67,7 +69,7 @@ e2e/lab-03/
 
 The final implementation may consolidate closely related tests, but `tests.md` must be updated truthfully with actual file paths before final release evidence.
 
-## 3. Server Unit Tests
+## 1. Unit Tests (Vitest - server)
 
 | ID | Target | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
@@ -84,7 +86,9 @@ The final implementation may consolidate closely related tests, but `tests.md` m
 | U-11 | Queue spec | `staff-queue.unit.test.ts` | valid queue query parsing/defaults | deterministic parsed query | **Pass** |
 | U-12 | Queue spec | same | invalid page/pageSize/sort/status/priority | field errors | **Pass** |
 
-## 4. Authentication API / Integration Tests
+## 2. API Tests (Supertest - server)
+
+### Authentication API / Integration Tests
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
@@ -105,7 +109,7 @@ The final implementation may consolidate closely related tests, but `tests.md` m
 | AUTH-15 | AC-03 | `auth.api.test.ts` | active session user is later deactivated | subsequent protected request denied/session invalidated | **Pass** |
 | AUTH-16 | AC-06 | `authorization.api.test.ts` | wrong, missing, or `null` Origin on another state-changing request, including legacy Requester Ticket/Attachment mutations | each rejected `403` before mutation; matching Origin allowed on the authenticated logout control case | **Pass** |
 
-## 5. Direct Authorization Matrix Tests
+### Direct Authorization Matrix Tests
 
 These tests intentionally call APIs directly rather than relying on hidden frontend controls.
 
@@ -126,7 +130,7 @@ These tests intentionally call APIs directly rather than relying on hidden front
 | AZ-13 | AC-20 | same | IT Staff/Admin attempts Requester attachment upload or soft-remove | `403`; no attachment mutation | **Pass** |
 | AZ-14 | AC-06 | same | unauthenticated request to `/api/categories`, `/api/v1/categories`, or `/api/v1/related-systems` | `401`; legacy alias and v1 reference data remain authenticated-only | **Pass** |
 
-## 6. Requester Regression API Tests
+### Requester Regression API Tests
 
 Existing Lab 2 tests should remain meaningful, adapted from Development Requester header identity to authenticated session identity.
 
@@ -146,7 +150,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | REQ-12 | AC-09 | adapted `ticketDetail.api.test.ts` | concurrent removal | one success, one conflict | **Pass** |
 | REQ-13 | AC-15 | `requester-regression.api.test.ts` | new Ticket creation | IT Priority initially equals Requested Priority | **Pass** |
 
-## 7. Public Comments / Requester Resolution API Tests
+### Public Comments / Requester Resolution API Tests
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
@@ -164,7 +168,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | COM-12 | AC-11 | `comments-notes.api.test.ts` | Requester marks own Ticket in `New`, `Open`, `In Progress`, `Waiting for Requester`, or `Reopened` | allowed; timestamp set without status change | **Pass** |
 | COM-13 | AC-11 | same | Requester attempts indication in `Resolved`, `Closed`, or `Cancelled` | `409 RESOLUTION_INDICATION_NOT_ALLOWED`; timestamp/status unchanged | **Pass** |
 
-## 8. IT Staff Queue API Tests
+### IT Staff Queue API Tests
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
@@ -181,7 +185,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | Q-11 | AC-12 | same | invalid page/pageSize/filter/sort | `400` fields; no server crash | **Pass** |
 | Q-12 | AC-13 | same | item fields | owner/status/requested+IT priority/updated context present | **Pass** |
 
-## 9. IT Staff Ticket Detail / Operations API Tests
+### IT Staff Ticket Detail / Operations API Tests
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
@@ -199,7 +203,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | ST-13 | AC-20/11 | same | detail after indication then transition to Reopened | indication visible before reopen, cleared after reopen | **Pass** |
 | ST-14 | AC-20 | same | historical null IT Priority | safe `null`/Not recorded, no crash | **Pass** |
 
-## 10. Internal Notes API Tests
+### Internal Notes API Tests
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
@@ -212,7 +216,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | NOTE-07 | AC-19 | same | 2,000/2,001 char boundary | accepted/rejected respectively | **Pass** |
 | NOTE-08 | AC-18 | same | page/pageSize pagination, duplicate/unsafe pagination query | deterministic chronological page + metadata; invalid input `400` | **Pass — review regression** |
 
-## 11. Administrator API Tests
+### Administrator API Tests
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
@@ -239,7 +243,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | ADM-21 | AC-32 | same | concurrently assign an unassigned Ticket to eligible user X and demote X to `REQUESTER` | at most one state-changing operation succeeds; final DB state is either assigned+eligible-role or unassigned+Requester, never Ticket owned by Requester | **Pass** |
 | ADM-22 | AC-32 | same | concurrently reassign a Ticket to eligible user X while Admin deactivates or demotes X | one side conflicts as required; final non-null owner always remains active IT Staff/Admin | **Pass** |
 
-## 12. Migration / Seed / Regression Tests
+### Migration / Seed / Regression Tests
 
 | ID | AC | Planned file / method | Scenario | Expected | Final |
 |---|---|---|---|---|---|
@@ -258,9 +262,9 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | REG-01 | AC-08/09 | existing Lab 2 server suite adapted/retained + Lab 3 Requester regression tests | full Requester regression under authenticated session identity | green | **Pass — included in final 162/162 server tests** |
 | REG-02 | AC-08/09 | existing Lab 2 client suite adapted/retained + Lab 3 Requester UI tests | Requester UI regression under authenticated shell | green | **Pass — included in final 75/75 client tests** |
 
-## 13. Client UI Tests
+## 3. UI Tests (Vitest - client)
 
-### 13.1 Login
+### 1. Login
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
@@ -272,7 +276,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | UI-AUTH-06 | AC-02 | same | `429` | rate-limit feedback | **Pass** |
 | UI-AUTH-07 | AC-29 | same | `500` | safe failure; email preserved, password cleared/prevented exposure | Planned |
 
-### 13.2 Change Password
+### 2. Change Password
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
@@ -282,7 +286,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | UI-PWD-04 | AC-04 | same | server validation/failure | safe feedback | **Pass** |
 | UI-PWD-05 | AC-05 | same | mandatory-mode Logout API failure | remain authenticated/in password-change gate; show retryable logout failure | **Pass** |
 
-### 13.3 Authenticated Shell
+### 3. Authenticated Shell
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
@@ -293,7 +297,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | UI-SHELL-05 | AC-04 | `Login.test.tsx` + `ChangePassword.test.tsx` | must-change account | Change Password gate | **Pass** |
 | UI-SHELL-06 | AC-05/29 | `AuthenticatedShell.test.tsx` | Logout API rejects / revoke not confirmed | authenticated UI remains; explicit retryable failure; no false Login state | **Pass** |
 
-### 13.4 Requester Ticket Detail Extensions
+### 4. Requester Ticket Detail Extensions
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
@@ -303,7 +307,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | UI-REQ-04 | AC-11 | same | appears-resolved confirmation | explains not formal close | **Pass** |
 | UI-REQ-05 | AC-11 | same | indicated state | timestamp badge; status independent | **Pass** |
 
-### 13.5 Staff Queue
+### 5. Staff Queue
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
@@ -316,7 +320,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | UI-Q-07 | AC-29 | same | no results | clear-filter CTA | **Pass** |
 | UI-Q-08 | AC-29 | same | failure/forbidden | safe states | **Pass** |
 
-### 13.6 Staff Ticket Detail
+### 6. Staff Ticket Detail
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
@@ -330,7 +334,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | UI-ST-08 | AC-20 | same | Requester resolution indication | visible without auto status mutation | **Pass** |
 | UI-ST-09 | AC-29 | same | conflict/failure | safe feedback + refresh/retry path | **Pass** |
 
-### 13.7 Administrator User Management
+### 7. Administrator User Management
 
 | ID | AC | Planned file | Scenario | Expected | Final |
 |---|---|---|---|---|---|
@@ -345,7 +349,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | UI-ADM-09 | AC-29 | same | loading/empty/failure | meaningful states | **Pass** |
 | UI-ADM-10 | AC-31 | same | assigned owner deactivation/demotion conflict | clear `reassign tickets first` feedback; edited user state is not falsely shown as saved | **Pass** |
 
-## 14. End-to-End Tests
+## 4. E2E Tests (Playwright)
 
 | ID | AC | Planned file | Browser flow | Expected | Final |
 |---|---|---|---|---|---|
@@ -358,7 +362,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | E2E-ADMIN-01 | AC-21–26 | `user-administration.spec.ts` | login Admin → search → create user → edit → initial password reset → new user forced change | Admin flow works | **Pass** |
 | E2E-ADMIN-02 | AC-24–26/31 | same | self-deactivate + last-admin protection + assigned-owner deactivate/demote + non-Admin direct access | safe blocks visible/API enforced; owner invariant preserved | **Pass** |
 
-## 15. Responsive / Accessibility / Visual Tests
+## 5. Visual Checks (Playwright / manual screenshots)
 
 | ID | AC | Evidence target | Check | Final |
 |---|---|---|---|---|
@@ -371,7 +375,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | V-07 | AC-30 | badges | role/status/priority meaning not colour-only | **Pass** |
 | V-08 | AC-30 | communication | Public vs Internal distinction includes explicit text | **Pass** |
 
-## 16. Acceptance Criteria → Planned Test Traceability
+## 6. AC -> Test Traceability
 
 | AC | Planned test IDs |
 |---|---|
@@ -408,7 +412,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | AC-31 | ADM-18/19, UI-ADM-10, E2E-ADMIN-02 |
 | AC-32 | ADM-20–ADM-22 |
 
-## 17. Issue → Test Focus
+## 7. FR / Issue -> Test Traceability
 
 | Issue | Required test focus before PR approval |
 |---|---|
@@ -421,9 +425,9 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | #39 Issue 7 | full AZ/security, migration/regression, all E2E, visual/accessibility/build. |
 | #40 Issue 8 | final main-ready rerun + evidence/status update only. |
 
-## 18. Baseline and Final Regression Recording
+## 8. Final Issue 8 Regression
 
-### Lab 2 baseline before Lab 3 implementation
+#### Lab 2 baseline before Lab 3 implementation
 
 Verified Sprint 3 starting baseline:
 
@@ -441,7 +445,7 @@ Verified Sprint 3 starting baseline:
 
 This is the comparison point for Issues 2–8. Any later regression claim must distinguish failures introduced by Lab 3 changes from test-environment failures.
 
-### Issue 2 verification — User migration, authentication, and authorization foundation
+#### Issue 2 verification — User migration, authentication, and authorization foundation
 
 Issue #34 was verified against a **disposable PostgreSQL 16 container** named `toktickit-lab3-issue2-pg` exposed on local port `5434`; final verification did not reset or delete the existing development database.
 
@@ -596,7 +600,7 @@ The same transaction-wrapped migration also passed the normal preservation rehea
 - Production dependency audit (`npm audit --omit=dev`): **0 vulnerabilities reported** after using `bcrypt` 6 and current compatible Express transitive patches. Development-tool audit findings are not claimed resolved by Issue 2 and do not alter this production-dependency result.
 - Hosted CI: **not claimed green here**; use the actual PR check result after the Issue 2 PR exists.
 
-### Issue 3 verification — Authenticated Requester & Lab 2 regression
+#### Issue 3 verification — Authenticated Requester & Lab 2 regression
 
 Issue #35 was verified with the existing development PostgreSQL database left untouched. DB-backed server tests used the disposable PostgreSQL 16 container `toktickit-lab3-issue3-test` on local port `5435` and the isolated database `toktickit_test_issue3`. The final browser run used a separately created fresh database `toktickit_e2e_issue3_20260915d` in the same disposable container plus an isolated SeaweedFS Compose project named `toktickit-lab3-issue3-e2e`.
 
@@ -624,7 +628,7 @@ Final Issue 3 evidence:
 - **PR #43 final review/merge:** `Tanaboonnnnn` approved exact head `01db49d972d981e62778ab9343ea4bc3aeb5be70`; PR #43 was merged into `lab3-staging` as `5261c3c59ae6131e5e607bdcbcc35fe6aff40c69`, and Issue #35 is closed.
 - **Hosted CI:** GitHub reported no hosted checks for the approved/merged head, so this evidence does not claim hosted CI was green.
 
-### Issue 4 verification — IT Staff Ticket Queue
+#### Issue 4 verification — IT Staff Ticket Queue
 
 Issue #36 was implemented on `feature/4-it-staff-ticket-queue` from the post-Issue-3 `lab3-staging` baseline. Initial pre-review DB-backed verification used a disposable PostgreSQL 16 container named `toktickit-issue4-test` on local port `5435`. PR #44 Round 1 fix verification was rerun from a fresh migration + seed in disposable container `toktickit-pr44-r1-clean` on local port `5436` with database `toktickit_pr44_r1_clean_test`; the normal development PostgreSQL database on port `5432` was not reset or replaced.
 
@@ -672,7 +676,7 @@ $env:E2E_DATABASE_URL='postgresql://toktickit:toktickit@127.0.0.1:5436/toktickit
 npx playwright test lab-03/staff-queue-responsive.spec.ts --config playwright.lab3.config.ts
 ```
 
-### Issue 5 verification — IT Staff Ticket Detail & Operations
+#### Issue 5 verification — IT Staff Ticket Detail & Operations
 
 Issue #37 implementation continues on `feature/5-it-staff-ticket-detail` from the merged PR #44 `lab3-staging` baseline. The normal development database was not reset or replaced. DB-backed verification used isolated disposable PostgreSQL only.
 
@@ -696,7 +700,7 @@ Current Issue 5 / PR #45 evidence after reviewer follow-up fixes:
 - **Initial PR #45 peer review:** `Peepipat-Suesoongnuen` submitted **Approved** on exact head `22672275a96f49303ffe01cc44a0771ce2991172`. The reviewer identified two non-blocking follow-ups: bcrypt/seed tests were timing-marginal under load, and Internal Notes were read with an unbounded `findMany`. Both are addressed in the follow-up working tree described above; re-review is requested after commit/push.
 - **Hosted CI:** no hosted CI result is claimed unless GitHub reports an actual check for the current PR head.
 
-### Issue 6 verification — Administrator User Management
+#### Issue 6 verification — Administrator User Management
 
 Issue #38 implementation is on `feature/6-administrator-user-management` from merge commit `35b5ad77f9072e554ef3c4943e5936e331055306` (PR #45 merged into `lab3-staging`). The normal development database was not reset, migrated, or replaced. DB-backed verification used a fresh disposable PostgreSQL 16 container on local port `5438`.
 
@@ -725,7 +729,7 @@ Current Issue 6 evidence after the approved Administrator UI mockup and implemen
 - **Administrator routed-browser smoke:** `user-administration.spec.ts` passes a browser workflow covering Sign In UI → User Management → search/role filter → create → edit → set initial password → assigned-owner deactivation conflict. The test uses routed/mock API responses and is supporting UI interaction evidence only; it does **not** claim full-stack `E2E-ADMIN-01` or `E2E-ADMIN-02` Pass. Those rows remain Planned until run against the real isolated backend/database stack.
 - **Manual local verification:** the student manually verified the Administrator login/User Management flow in the local development app after implementation and reported no remaining Issue #38 UI problems before commit/push/PR preparation.
 
-### Issue 7 final integrated verification — Security, Regression, E2E & Visual QA
+#### Issue 7 final integrated verification — Security, Regression, E2E & Visual QA
 
 Issue #39 verification used isolated disposable infrastructure only. PostgreSQL `toktickit_issue7_e2e` ran on local port `5440`, with an isolated SeaweedFS master/volume/filer stack and filer exposed on `18889`. The normal development PostgreSQL/SeaweedFS services were not reset, migrated, or deleted.
 
@@ -745,11 +749,33 @@ Issue #39 verification used isolated disposable infrastructure only. PostgreSQL 
 - **PR #47 Round 1 E2E database-isolation fix:** reviewer `Tanaboonnnnn` requested removal of the stale `toktickit_e2e_issue3` runtime fallback. Lab 3 Playwright now requires an explicit `E2E_DATABASE_URL` through shared `requireE2eDatabaseUrl()` validation; missing configuration fails with exit code `1` before web-server startup. The fix covers `playwright.lab3.config.ts`, the shared full-stack fixture helper, and the Requester regression entry point. Re-review verification migrated/seeded a fresh disposable `toktickit_pr47_r1_e2e` database on port `5441`, used an isolated SeaweedFS filer on `18890`, and passed the complete Lab 3 Playwright suite **12/12**.
 - **Hosted CI:** not claimed green unless GitHub reports an actual check for the PR head.
 
-### Final Lab 3 regression template
+#### Issue 8 release-candidate verification — Final Evidence & Release Readiness
+
+Issue #40 reran the integrated release candidate from merged `lab3-staging` head `580f2b27b974b3425772eba51fe58e7649b7f457` plus the evidence/CI-only Issue #40 working-tree changes. Verification again used disposable infrastructure only; the normal development PostgreSQL/SeaweedFS services were not reset, migrated, or deleted.
+
+- **Isolated infrastructure:** PostgreSQL container `toktickit-issue8-final-pg` exposed local port `5442` with separate databases `toktickit_issue8_test` and `toktickit_issue8_e2e`; isolated SeaweedFS filer was exposed on `18891`.
+- **Schema/seed:** all five migrations applied successfully to both databases, both seeds completed successfully, and Prisma migration status reported the E2E database **up to date**.
+- **Initial full Server regression before hosted-CI correction:** **162/162 passed (21/21 files)** against `toktickit_issue8_test`.
+- **Server build / Prisma:** TypeScript build **Pass**; `prisma validate` **Pass**.
+- **Full Client regression:** **75/75 passed (11/11 files)**.
+- **Client production build:** **Pass**.
+- **Full Lab 3 Playwright:** **12/12 passed** against the real backend + `toktickit_issue8_e2e` + isolated SeaweedFS stack. `E2E-AUTH-01/02`, `E2E-REQ-01/02`, `E2E-STAFF-01/02`, `E2E-ADMIN-01/02`, and `V-01`–`V-08` remain green on the release candidate.
+- **Final visual evidence:** the existing nine representative screenshots were regenerated where their routed fixtures ran, and four real boundary/failure screenshots were added: invalid Login, auth-bootstrap Retry state, cross-Requester isolation/no-results, and Administrator assigned-owner conflict. `artifacts/lab-03/screenshots/` now contains **13** final evidence images.
+- **Dependency audit caveat:** the Issue #40 `npm audit --omit=dev` attempt could not reach `registry.npmjs.org` (`ENOTFOUND`), so **no Issue #40 audit result is claimed**. The last completed Issue #39 audit remained `0 vulnerabilities`, but it is retained only as historical evidence rather than relabeled as a new Issue #40 result.
+- **CI workflow readiness:** `.github/workflows/ci.yml` was updated for Lab 3 safety contracts: `lab3-staging`/manual triggers, explicit `TEST_DATABASE_URL` with a test-marked DB, a dedicated E2E-marked database, server/client builds, Prisma validation, and the current Lab 3 Playwright suite. Hosted CI outcomes for PR #48 are recorded in the rounds below.
+- **PR #48 hosted CI Round 1:** Client tests/build/production audit passed. Server migrations, seed, typecheck, Prisma validate, and production audit also passed, but the Server test step failed because the test-database guard was not re-entrant when CI supplied only `TEST_DATABASE_URL`: `run-tests.ts` correctly selected the test database, then the later Prisma lazy-init guard call misread that already-selected `DATABASE_URL` as the development target and rejected it as identical.
+- **Hosted-CI guard correction:** `assertSafeTestDatabaseEnvironment()` now ignores the already-selected `DATABASE_URL` as a development candidate only after `TOKTICKIT_TEST_MODE=1`, while a real saved `TOKTICKIT_DEVELOPMENT_DATABASE_URL` still participates in the collision check. `configureTestDatabaseEnvironment()` also avoids capturing the test URL as a development URL during re-entry. Two regression tests cover CI-only `TEST_DATABASE_URL` re-entry and continued rejection of a saved development target that matches the test DB.
+- **Post-fix CI-equivalent Server verification:** with `DATABASE_URL` explicitly blank and only `TEST_DATABASE_URL` supplied, focused guard tests **6/6** and the full Server suite **164/164 (21/21 files)** passed; Server build and Prisma validate also passed.
+- **PR #48 hosted CI Round 2:** Server and Client jobs both passed completely, including production dependency audits, Server **164/164**, Client **75/75**, builds, Prisma validation, migrations, and seed. The E2E job then exposed a Linux-headless responsive defect at **820 px**: Requester pages kept the three-button desktop navigation plus brand/user menu in one row, making the document horizontally overflow. The failure was reproducible in both the full-stack Requester flow and `V-02/V-06/V-07`; the other 10 Playwright tests passed.
+- **Responsive correction after Round 2:** authenticated navigation now switches to the compact menu at `max-width: 991.98px`, while tablet page/table/detail layouts remain unchanged. Playwright navigation helpers use the same breakpoint. No overflow tolerance was added; the existing strict `scrollWidth <= viewport` assertions remain. Focused Requester/visual Playwright passed **3/3**, the full Lab 3 Playwright suite passed **12/12**, and Client regression/build passed **75/75 (11/11) + build** after the correction.
+- **PR #48 hosted CI Round 3 on `a2134f2`: PASS (historical).** GitHub Actions run `35329863392` completed successfully with all three jobs green: Server, Client, and E2E. Server included migrations/seed/typecheck/Prisma validation/production dependency audit/**164/164** tests/build; Client included typecheck/**75/75** tests/build/production dependency audit; E2E provisioned its dedicated PostgreSQL/SeaweedFS stack, applied migrations/seed, and passed the full Lab 3 Playwright suite.
+- **PR #48 reviewed-head CI on `b72334c`: PASS.** GitHub Actions run `35339970766` completed successfully on exact reviewed head `b72334c03acb4ddee0af47e80c75c3f19dce1607`; Server, Client, and E2E were all green. This is the CI run used for the Issue #40 review evidence synchronization requested by `Tanaboonnnnn`.
+
+#### Final Lab 3 regression template
 
 | Check | Final result |
 |---|---|
-| Server unit/API/integration | **Pass — 162/162 (21/21 files)** |
+| Server unit/API/integration | **Pass — 164/164 (21/21 files) after hosted-CI guard correction** |
 | Client Vitest | **Pass — 75/75 (11/11 files)** |
 | Migration from Lab 2-shaped DB | **Pass — Issue #39 isolated preservation rerun; 2 Users / 2 Tickets / 2 Attachments; 0 orphans** |
 | Seed idempotency | **Pass — `MIG-07`–`MIG-10` in final server regression** |
@@ -760,5 +786,6 @@ Issue #39 verification used isolated disposable infrastructure only. PostgreSQL 
 | Requester regression E2E | **Pass — `E2E-REQ-01/02`** |
 | Staff workflow E2E | **Pass — `E2E-STAFF-01/02` full-stack** |
 | User administration E2E | **Pass — `E2E-ADMIN-01/02` full-stack** |
-| Desktop/tablet/mobile visual QA | **Pass — `V-01`–`V-08`; 9 Lab 3 screenshots** |
-| Hosted CI | Not available locally; do not claim until GitHub reports a PR check |
+| Desktop/tablet/mobile visual QA | **Pass — `V-01`–`V-08`; 13 Lab 3 screenshots including failure/boundary states** |
+| Issue #40 dependency audit | **Not claimed — npm registry DNS/network unavailable (`ENOTFOUND`)** |
+| Hosted CI | **Pass — PR #48 run `35339970766` on reviewed head `b72334c`: Server / Client / E2E all green** |
