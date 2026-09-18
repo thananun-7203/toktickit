@@ -17,7 +17,8 @@
 | [thananun-7203/toktickit#45](https://github.com/thananun-7203/toktickit/pull/45) | `feature/5-it-staff-ticket-detail` | Approved by `Peepipat-Suesoongnuen` and `Tanaboonnnnn`; follow-up review items were addressed; merged on 2026-09-17 |
 | [thananun-7203/toktickit#46](https://github.com/thananun-7203/toktickit/pull/46) | `feature/6-administrator-user-management` | Approved by `Tanaboonnnnn`; non-blocking follow-up notes were preserved for Issue 7; merged on 2026-09-17 |
 | [thananun-7203/toktickit#47](https://github.com/thananun-7203/toktickit/pull/47) | `feature/7-security-regression-e2e-visual-qa` | Changes Requested for the stale E2E database fallback, revised, re-reviewed and approved by `Tanaboonnnnn`; merged on 2026-09-18 |
-| [thananun-7203/toktickit#48](https://github.com/thananun-7203/toktickit/pull/48) | `feature/8-final-evidence-release-readiness` | Changes Requested by `Tanaboonnnnn` on reviewed head `b72334c` for final CI-evidence synchronization only; Server/Client/E2E CI is green and the requested docs sync is addressed for re-review |
+| [thananun-7203/toktickit#48](https://github.com/thananun-7203/toktickit/pull/48) | `feature/8-final-evidence-release-readiness` | Changes Requested on `b72334c` for CI-evidence synchronization, fixed; re-reviewed and **Approved** on exact head `00098b44`; merged into `lab3-staging` as `6759cb6` on 2026-09-18 |
+| [thananun-7203/toktickit#49](https://github.com/thananun-7203/toktickit/pull/49) | `lab3-staging` → `main` | Final release PR; first review on `6759cb6` returned **Changes Requested** for Final Evidence/traceability synchronization only; no production blocker reported; fix + exact-head CI + re-review pending |
 
 ### Project / Kanban Workflow
 
@@ -30,13 +31,13 @@ Workflow columns used for Lab 3:
 Backlog → Specified → Started → PR Review → Fixing → Done
 ```
 
-At Sprint 3 initialization:
+At Sprint 3 initialization (historical state):
 
 - Issues #33–#40 were created before implementation.
 - Issue #33 was moved to `Started` when Sprint 3 contract work began.
 - Issues #34–#40 remain planned/backlog until their turn.
 
-Final evidence must show all required Lab 3 Issues in `Done` before release submission.
+Current GitHub Issue state: **#33–#40 are closed**. The final Project-board column state is not fabricated because the current CLI token still lacks `read:project`; if the submission requires the Project column itself, it must be visually confirmed by the owner UI.
 
 ### Review Standard
 
@@ -382,7 +383,7 @@ Required review focus:
 
 ### Issue 8 — Final Evidence & Release Readiness
 
-- PR: [#48](https://github.com/thananun-7203/toktickit/pull/48), open against `lab3-staging` from `feature/8-final-evidence-release-readiness`.
+- PR: [#48](https://github.com/thananun-7203/toktickit/pull/48), **Approved and merged** into `lab3-staging` from `feature/8-final-evidence-release-readiness`.
 - Initial PR head: `c57d0eaa553754928b780d2d8d703e24d8890e9b`.
 - Requested reviewer: `Tanaboonnnnn`.
 - Local release-candidate evidence before PR: Server **162/162 (21/21)**, Client **75/75 (11/11)**, Lab 3 Playwright **12/12**, Server/Client builds **Pass**, Prisma validate **Pass**, E2E migration status **up to date**, `git diff --check` **Pass**, and **13** final Lab 3 screenshots including failure/boundary states.
@@ -396,7 +397,9 @@ Required review focus:
 - Reviewed-head CI: exact head `b72334c03acb4ddee0af47e80c75c3f19dce1607` passed GitHub Actions run `35339970766` with **Server / Client / E2E all green**.
 - Review on `b72334c`: `Tanaboonnnnn` returned **Changes Requested** with one evidence-only blocker: `evidence.md` still labeled the older `a2134f2` / run `35329863392` as the final/current verification. The reviewer explicitly reported no other substantive blocker and asked that `evidence.md`, `tests.md`, and `reviewer.md` be checked for stale final/current/exact-head references.
 - Response: synchronized the final/current CI evidence to reviewed head `b72334c03acb4ddee0af47e80c75c3f19dce1607` and run `35339970766`; retained `a2134f2` / `35329863392` only as clearly labeled historical Round 3 evidence.
-- Verdict: **Requested evidence synchronization addressed; re-review pending. Not approved or merged.**
+- Final re-review: `Tanaboonnnnn` approved exact head `00098b44cc573733dc78e8da041cdccfcc2fb291` after GitHub Actions run `35344287133` passed Server / Client / E2E.
+- Merge result: PR #48 merged into `lab3-staging` as `6759cb670785a5d72b66f235ff64396a94b808f3`; Issue #40 was then closed as completed.
+- Verdict: **Approved and merged. Issue #40 complete.**
 
 Required review focus:
 
@@ -413,14 +416,14 @@ The detailed per-Issue verification, review heads, merge evidence, and Issue 8 h
 
 ### Release PR - lab3-staging -> main
 
-Release PR: Pending.
+- Release PR: [#49](https://github.com/thananun-7203/toktickit/pull/49), open from `lab3-staging` to `main`.
+- Initial reviewed release head: `6759cb670785a5d72b66f235ff64396a94b808f3`.
+- Hosted pull-request CI: run `35346764487` — **Server / Client / E2E all Pass**.
+- First review by `Tanaboonnnnn`: **Changes Requested** for Final Evidence/traceability synchronization only. The reviewer explicitly reported no new production blocker in the integrated implementation.
+- Response in progress/completed locally: synchronized PR #48/Issue #40/PR #49 status across final docs, reconciled stale Planned rows, added direct `COM-10` and `UI-AUTH-07` coverage, and reran local isolated regression: Server **165/165 (21/21)**, Client **76/76 (11/11)**.
+- Before re-review, the exact new release head must complete hosted CI successfully.
 
-Release merge must not occur until:
-
-- all implementation Issues are reviewed and integrated,
-- final regression is green,
-- Issue 8 release-readiness review is approved,
-- the student explicitly authorizes the release merge.
+Release merge must still not occur until the release PR is approved and the student explicitly authorizes the merge into `main`.
 
 ## Pull Requests I reviewed for my partners
 

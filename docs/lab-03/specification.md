@@ -401,28 +401,30 @@ All implementation-specific migration steps, model fields, indexes, invariants, 
 
 Sprint 3 is product-complete only when all applicable items below are true:
 
-- [ ] `specification.md`, `tests.md`, `ui-spec.md`, and `api-spec.md` agree on roles, business rules, statuses, API behavior, UI states, and migration decisions for the Issue 1 contract; mark complete only after the contract review is approved.
+- [x] `specification.md`, `tests.md`, `ui-spec.md`, and `api-spec.md` agree on roles, business rules, statuses, API behavior, UI states, and migration decisions; the Issue 1 contract was approved and later final evidence was reconciled through PR #49 review.
 - [x] Every AC has at least one planned test/evidence mapping in `tests.md`.
 - [x] Lab 2 baseline is recorded with a clean isolated DB verification: server **49/49**, client **25/25**, builds and Prisma validation pass; earlier environment-only failures are distinguished from code regressions.
-- [ ] Lab 2 data migration is verified on a disposable Lab 2-shaped database without losing Tickets or Attachments.
-- [ ] Authentication/password/session implementation follows this contract and no plaintext password/secrets are committed.
-- [ ] Server-side authorization covers every protected endpoint; hidden UI is never the only control.
-- [ ] Development Requester selector/header identity is removed from the Lab 3 user flow.
-- [ ] Requester Lab 2 regression suite passes with authenticated identity.
-- [ ] IT Staff Queue and Ticket Detail operational workflows satisfy their ACs.
-- [ ] Public Comments and Internal Notes satisfy visibility, author/time, append-only, validation, and safe-rendering rules.
-- [ ] Administrator User Management satisfies list/search/create/edit/role/activation/initial-password and safety rules.
-- [ ] Server unit/API/integration/authorization/migration tests pass from the integrated Lab 3 branch.
-- [ ] Client UI tests pass.
-- [ ] Lab 3 Playwright E2E flows for authentication, staff workflow, and user administration pass on a controlled test database.
-- [ ] Server build, Client production build, Prisma validation/migrations, and hosted CI pass.
-- [ ] Desktop/tablet/mobile visual checklist passes without clipping, overlap, or page-level horizontal overflow.
-- [ ] `reviewer.md` contains actual PR/reviewer/comment/response/approval evidence, not predicted history.
-- [ ] `ai-use.md` contains the model used, 6–10 real selected prompts, and a truthful reflection.
-- [ ] Issues #33–#40 are in the expected Project workflow state and implementation Issues are peer-reviewed before integration.
-- [ ] Final `lab3-staging` regression is green before the release PR.
-- [ ] Release PR `lab3-staging → main` is approved/merged only after explicit student authorization.
+- [x] Lab 2 data migration is verified on disposable Lab 2-shaped databases without losing Tickets or Attachments.
+- [x] Authentication/password/session implementation follows this contract and no plaintext password/session secret is exposed in committed application evidence.
+- [x] Server-side authorization covers protected endpoints; hidden UI is not the only control.
+- [x] Development Requester selector/header identity is removed from the Lab 3 user flow.
+- [x] Requester Lab 2 regression suite passes with authenticated identity.
+- [x] IT Staff Queue and Ticket Detail operational workflows satisfy their ACs.
+- [x] Public Comments and Internal Notes satisfy visibility, author/time, append-only, validation, and safe-rendering rules.
+- [x] Administrator User Management satisfies list/search/create/edit/role/activation/initial-password and safety rules.
+- [x] Server unit/API/integration/authorization/migration tests pass from the integrated Lab 3 branch; current PR #49 reconciliation regression is **165/165 (21/21 files)** locally on the isolated test DB.
+- [x] Client UI tests pass; current PR #49 reconciliation regression is **76/76 (11/11 files)**.
+- [x] Lab 3 Playwright E2E flows for authentication, Requester, Staff workflow, and user administration pass on a controlled test database (**12/12** on the release candidate before the docs/test reconciliation; exact release-head CI reruns E2E).
+- [x] Server build, Client production build, Prisma validation/migrations, and hosted CI have passed on the reviewed release candidate; exact reconciliation-head CI is required before re-review.
+- [x] Desktop/tablet/mobile visual checklist passes without clipping, overlap, or page-level horizontal overflow (`V-01`–`V-08`).
+- [x] `reviewer.md` contains actual PR/reviewer/comment/response/approval evidence, not predicted history.
+- [x] `ai-use.md` contains the model used, 10 real selected prompts, assistance history, debugging evidence, and a truthful reflection.
+- [ ] GitHub Issues #33–#40 are closed and implementation PRs are peer-reviewed, but the final GitHub Project board column cannot be independently verified by CLI because the current token lacks `read:project`; no board state is fabricated.
+- [x] Final `lab3-staging` regression was green before release PR #49; the initial release pull-request run `35346764487` also passed Server / Client / E2E.
+- [x] Release PR #49 is open and remains unmerged while reviewer approval and explicit student merge authorization are pending.
 - [ ] Final submission evidence is taken from final `main` and organized as Answer Part 1–9.
+
+Current release status: PR #48 is approved/merged, Issue #40 is closed, and PR #49 is the active release PR. Its first review requested Final Evidence/traceability synchronization only and reported no new production blocker. The requested reconciliation is being verified on a new exact release head before re-review.
 
 ## 12. Data Changes (Prisma)
 

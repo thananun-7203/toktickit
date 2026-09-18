@@ -1,8 +1,6 @@
 # TokTickIT Lab 3 — Test Plan & Traceability
 
-This test plan is created before the main Lab 3 implementation. Final status remains `Planned` until the corresponding automated/manual evidence actually runs on the implementation branch or final integrated branch.
-
-> The sentence above preserves the original planning context. The later sections in this same file record the actual Pass/final regression evidence gathered as Lab 3 progressed.
+This test plan originated before the main Lab 3 implementation. The `Final` column now records the actual automated/manual evidence gathered through Issue #40 and the PR #49 release review; items remain `Planned` only when no matching evidence exists.
 
 ### Test Strategy
 
@@ -81,8 +79,8 @@ The final implementation may consolidate closely related tests, but `tests.md` m
 | U-06 | BR-06 | `auth.unit.test.ts` | new password equals current | rejected | **Pass via `auth.api.test.ts`** |
 | U-07 | BR-19 | `comments-notes.api.test.ts` | blank/whitespace Public Comment | rejected | **Pass** |
 | U-08 | BR-19 | `comments-notes.api.test.ts` | 2,000 chars accepted / 2,001 rejected for Public Comment | correct boundary | **Pass** |
-| U-09 | status matrix | `staff-ticket-detail.api.test.ts` or helper | each allowed transition | helper returns allowed | Planned |
-| U-10 | status matrix | same | disallowed/self transition | helper rejects | Planned |
+| U-09 | status matrix | `staff-ticket-operations.unit.test.ts` | each allowed transition | helper returns allowed | **Pass** |
+| U-10 | status matrix | `staff-ticket-operations.unit.test.ts` | disallowed/self transition | helper rejects | **Pass** |
 | U-11 | Queue spec | `staff-queue.unit.test.ts` | valid queue query parsing/defaults | deterministic parsed query | **Pass** |
 | U-12 | Queue spec | same | invalid page/pageSize/sort/status/priority | field errors | **Pass** |
 
@@ -163,8 +161,8 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | COM-07 | AC-19 | same | comment length boundary | 2,000 accepted; 2,001 rejected | **Pass** |
 | COM-08 | AC-11 | same | own Requester marks Problem Appears Resolved | timestamp set, Ticket status unchanged | **Pass** |
 | COM-09 | AC-11 | same | repeat appears-resolved action | idempotent; original indication retained | **Pass** |
-| COM-10 | AC-11 | `authorization.api.test.ts` | Requester calls staff status API | `403` | Planned |
-| COM-11 | AC-11 | `staff-ticket-detail.api.test.ts` | staff transitions indicated Ticket to `Reopened` | status becomes Reopened and indication is cleared atomically | Planned |
+| COM-10 | AC-11 | `staff-ticket-detail.api.test.ts` | Requester calls staff status API | `403`, no status mutation | **Pass** |
+| COM-11 | AC-11 | `staff-ticket-detail.api.test.ts` (`ST-13`) | staff transitions indicated Ticket to `Reopened` | status becomes Reopened and indication is cleared atomically | **Pass** |
 | COM-12 | AC-11 | `comments-notes.api.test.ts` | Requester marks own Ticket in `New`, `Open`, `In Progress`, `Waiting for Requester`, or `Reopened` | allowed; timestamp set without status change | **Pass** |
 | COM-13 | AC-11 | same | Requester attempts indication in `Resolved`, `Closed`, or `Cancelled` | `409 RESOLUTION_INDICATION_NOT_ALLOWED`; timestamp/status unchanged | **Pass** |
 
@@ -274,7 +272,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 | UI-AUTH-04 | AC-02 | same | `401` | generic error | **Pass** |
 | UI-AUTH-05 | AC-03 | same | inactive response | safe inactive feedback | **Pass** |
 | UI-AUTH-06 | AC-02 | same | `429` | rate-limit feedback | **Pass** |
-| UI-AUTH-07 | AC-29 | same | `500` | safe failure; email preserved, password cleared/prevented exposure | Planned |
+| UI-AUTH-07 | AC-29 | `Login.test.tsx` | Login POST `500` | safe failure; email preserved, password cleared/prevented exposure | **Pass** |
 
 ### 2. Change Password
 
@@ -292,7 +290,7 @@ Existing Lab 2 tests should remain meaningful, adapted from Development Requeste
 |---|---|---|---|---|---|
 | UI-SHELL-01 | AC-06 | `AuthenticatedShell.test.tsx` | Requester | only Requester nav + name/role/logout | **Pass** |
 | UI-SHELL-02 | AC-06 | same | IT Staff | Staff nav; no Admin Users | **Pass** |
-| UI-SHELL-03 | AC-06 | same | Admin | Admin Users + approved destinations | Planned |
+| UI-SHELL-03 | AC-06 | `AuthenticatedShell.test.tsx` | Admin | Admin Users + approved destinations | **Pass** |
 | UI-SHELL-04 | AC-05 | same | logout | auth state cleared/login rendered | **Pass** |
 | UI-SHELL-05 | AC-04 | `Login.test.tsx` + `ChangePassword.test.tsx` | must-change account | Change Password gate | **Pass** |
 | UI-SHELL-06 | AC-05/29 | `AuthenticatedShell.test.tsx` | Logout API rejects / revoke not confirmed | authenticated UI remains; explicit retryable failure; no false Login state | **Pass** |
@@ -726,7 +724,7 @@ Current Issue 6 evidence after the approved Administrator UI mockup and implemen
 - **Client production build:** **Pass**.
 - **Client production dependency audit:** `npm audit --omit=dev` reports **0 vulnerabilities**.
 - **Responsive V-05:** `user-management-responsive.spec.ts` passes at **1280 / 820 / 390 px**, including desktop/table/card adaptation, Create User modal behavior, mobile navigation, and no page-level horizontal overflow. `V-05` is **Pass**.
-- **Administrator routed-browser smoke:** `user-administration.spec.ts` passes a browser workflow covering Sign In UI → User Management → search/role filter → create → edit → set initial password → assigned-owner deactivation conflict. The test uses routed/mock API responses and is supporting UI interaction evidence only; it does **not** claim full-stack `E2E-ADMIN-01` or `E2E-ADMIN-02` Pass. Those rows remain Planned until run against the real isolated backend/database stack.
+- **Administrator routed-browser smoke:** at the Issue #38 stage, `user-administration.spec.ts` provided supporting routed/mock UI interaction evidence only and did **not** yet claim full-stack `E2E-ADMIN-01/02`. Those full-stack rows were subsequently executed against the isolated backend/database stack in Issue #39 and are **Pass** in the final E2E table above.
 - **Manual local verification:** the student manually verified the Administrator login/User Management flow in the local development app after implementation and reported no remaining Issue #38 UI problems before commit/push/PR preparation.
 
 #### Issue 7 final integrated verification — Security, Regression, E2E & Visual QA
@@ -770,13 +768,16 @@ Issue #40 reran the integrated release candidate from merged `lab3-staging` head
 - **Responsive correction after Round 2:** authenticated navigation now switches to the compact menu at `max-width: 991.98px`, while tablet page/table/detail layouts remain unchanged. Playwright navigation helpers use the same breakpoint. No overflow tolerance was added; the existing strict `scrollWidth <= viewport` assertions remain. Focused Requester/visual Playwright passed **3/3**, the full Lab 3 Playwright suite passed **12/12**, and Client regression/build passed **75/75 (11/11) + build** after the correction.
 - **PR #48 hosted CI Round 3 on `a2134f2`: PASS (historical).** GitHub Actions run `35329863392` completed successfully with all three jobs green: Server, Client, and E2E. Server included migrations/seed/typecheck/Prisma validation/production dependency audit/**164/164** tests/build; Client included typecheck/**75/75** tests/build/production dependency audit; E2E provisioned its dedicated PostgreSQL/SeaweedFS stack, applied migrations/seed, and passed the full Lab 3 Playwright suite.
 - **PR #48 reviewed-head CI on `b72334c`: PASS.** GitHub Actions run `35339970766` completed successfully on exact reviewed head `b72334c03acb4ddee0af47e80c75c3f19dce1607`; Server, Client, and E2E were all green. This is the CI run used for the Issue #40 review evidence synchronization requested by `Tanaboonnnnn`.
+- **PR #48 final re-review / merge:** `Tanaboonnnnn` approved exact head `00098b44cc573733dc78e8da041cdccfcc2fb291` after GitHub Actions run `35344287133` passed Server / Client / E2E. PR #48 merged into `lab3-staging` as `6759cb670785a5d72b66f235ff64396a94b808f3`, and Issue #40 was closed as completed.
+- **PR #49 initial release-head CI:** release PR `lab3-staging → main` opened on `6759cb670785a5d72b66f235ff64396a94b808f3`. GitHub Actions pull-request run `35346764487` passed Server / Client / E2E. The first release review returned **Changes Requested** for stale final-evidence/traceability wording only; the reviewer explicitly reported no new production blocker.
+- **PR #49 traceability reconciliation:** direct inspection found four rows already covered but still marked Planned (`U-09`, `U-10`, `COM-11`, `UI-SHELL-03`). Two genuinely missing direct cases were added: `COM-10` now proves a Requester receives `403` from the Staff status-transition endpoint with no mutation, and `UI-AUTH-07` now proves Login `500` feedback is safe while preserving email and clearing password. Focused verification passed Staff Detail **16/16** and Login UI **8/8**; full local release regression now passes Server **165/165 (21/21 files)** and Client **76/76 (11/11 files)** on the isolated Issue #40 test database.
 
 #### Final Lab 3 regression template
 
 | Check | Final result |
 |---|---|
-| Server unit/API/integration | **Pass — 164/164 (21/21 files) after hosted-CI guard correction** |
-| Client Vitest | **Pass — 75/75 (11/11 files)** |
+| Server unit/API/integration | **Pass — 165/165 (21/21 files) after PR #49 traceability reconciliation** |
+| Client Vitest | **Pass — 76/76 (11/11 files) after PR #49 traceability reconciliation** |
 | Migration from Lab 2-shaped DB | **Pass — Issue #39 isolated preservation rerun; 2 Users / 2 Tickets / 2 Attachments; 0 orphans** |
 | Seed idempotency | **Pass — `MIG-07`–`MIG-10` in final server regression** |
 | Server build | **Pass** |
@@ -786,6 +787,6 @@ Issue #40 reran the integrated release candidate from merged `lab3-staging` head
 | Requester regression E2E | **Pass — `E2E-REQ-01/02`** |
 | Staff workflow E2E | **Pass — `E2E-STAFF-01/02` full-stack** |
 | User administration E2E | **Pass — `E2E-ADMIN-01/02` full-stack** |
-| Desktop/tablet/mobile visual QA | **Pass — `V-01`–`V-08`; 13 Lab 3 screenshots including failure/boundary states** |
-| Issue #40 dependency audit | **Not claimed — npm registry DNS/network unavailable (`ENOTFOUND`)** |
-| Hosted CI | **Pass — PR #48 run `35339970766` on reviewed head `b72334c`: Server / Client / E2E all green** |
+| Desktop/tablet/mobile visual QA | **Pass — `V-01`–`V-08`; final evidence includes 12 real DB-backed submission screenshots plus automated visual artifacts** |
+| Production dependency audit | **Pass in hosted CI — PR #48 and PR #49 Server/Client audit steps succeeded** |
+| Hosted CI | **PR #49 initial reviewed release head `6759cb6`: Pass — run `35346764487`, Server / Client / E2E all green. The exact reconciliation head must also be green before re-review.** |

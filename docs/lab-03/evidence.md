@@ -1,6 +1,6 @@
 # TokTickIT Lab 3 — Final Evidence Index
 
-This index maps the final Sprint 3 repository evidence to the requested Answer Part 1–9 submission areas. It records only evidence that exists in the repository or was verified from GitHub. Final Issue #40 review and the later `lab3-staging → main` release PR are intentionally left open until those actions actually occur.
+This index maps the final Sprint 3 repository evidence to the requested Answer Part 1–9 submission areas. It records only evidence that exists in the repository or was verified from GitHub. Issue #40 / PR #48 are complete; PR #49 is the current `lab3-staging → main` release PR and remains unmerged while its review is being resolved.
 
 ## 1. Responsive / UI Evidence
 
@@ -225,12 +225,15 @@ The detailed Requester, Staff Queue, Staff Detail, Administrator, security, migr
 ### Release-candidate baseline
 
 - Integrated Lab 3 base before Issue #40 evidence-only work: `lab3-staging` merge commit `580f2b27b974b3425772eba51fe58e7649b7f457` (PR #47).
-- Issues #33–#39: closed; PRs #41–#47: approved and merged.
-- Issue #40: Final Evidence & Release Readiness, currently in progress on `feature/8-final-evidence-release-readiness`.
+- Issues #33–#40: **closed**; PRs #41–#48: **approved and merged**.
+- PR #48 final approved head: `00098b44cc573733dc78e8da041cdccfcc2fb291`; merge commit on `lab3-staging`: `6759cb670785a5d72b66f235ff64396a94b808f3`.
 - Issue #40 release-candidate verification after the hosted-CI guard correction: Server **164/164**, Client **75/75**, Lab 3 Playwright **12/12**, Server/Client builds Pass, Prisma validate Pass, E2E migration status up to date.
 - Issue #40 `npm audit --omit=dev` was not completed because the npm registry was unreachable (`ENOTFOUND`); no fresh audit result is claimed. The earlier completed Issue #39 audit remains historical evidence only.
 - Hosted PR #48 subsequently verified production dependency audits successfully in both Server and Client jobs. CI also exposed and drove fixes for a test-database-guard re-entry defect and an 820 px Requester header overflow; both corrections retain strict safety/overflow assertions and have focused/full local regression evidence before re-running hosted CI.
 - Hosted CI verification for the head reviewed by `Tanaboonnnnn`: GitHub Actions run `35339970766` passed **Server / Client / E2E** on exact reviewed head `b72334c03acb4ddee0af47e80c75c3f19dce1607`.
+- PR #48 final re-review then approved exact head `00098b44`; GitHub Actions run `35344287133` passed Server / Client / E2E before merge.
+- PR #49 opened from `lab3-staging` to `main`. Its initial release head `6759cb6` passed pull-request CI run `35346764487` (Server / Client / E2E), then received **Changes Requested** for stale final-evidence/traceability wording only; the reviewer reported no new implementation blocker.
+- PR #49 reconciliation added direct `COM-10` and `UI-AUTH-07` automated coverage and corrected stale Planned rows. Current local isolated regression after that reconciliation is Server **165/165 (21/21)** and Client **76/76 (11/11)**; exact new-head hosted CI is required before re-review.
 
 ### Part 1 - Git workflow, Issues, PRs, review, repository structure
 
@@ -238,8 +241,8 @@ Primary evidence:
 
 - `README.md` — current Lab 3 repository structure, local test/E2E setup, Git workflow, and `lab3-staging` release process.
 - `docs/lab-03/reviewer.md` — complete author-side PR review history and peer-review activity.
-- GitHub Issues: #33–#39 closed; #40 is the final readiness Issue.
-- Author PRs: #41–#47 approved and merged into `lab3-staging`.
+- GitHub Issues: **#33–#40 closed**.
+- Author PRs: **#41–#48 approved and merged into `lab3-staging`**; release PR #49 is open to `main`.
 - Peer-review evidence: reviews by `thananun-7203` on `Tanaboonnnnn/toktickit` PRs #59, #60, and #61 are recorded in `reviewer.md`.
 - `.github/workflows/ci.yml` — current server/client/Lab 3 E2E workflow used for Issue #40 hosted verification.
 
@@ -254,7 +257,8 @@ Author PR progression:
 | #37 IT Staff Ticket Detail & Operations | #45 | Approved + merged |
 | #38 Administrator User Management | #46 | Approved + merged |
 | #39 Security/Regression/E2E/Visual QA | #47 | Changes Requested → fixed → re-review Approved + merged |
-| #40 Final Evidence & Release Readiness | Issue #40 PR | Pending until opened/reviewed |
+| #40 Final Evidence & Release Readiness | #48 | Changes Requested → fixed → re-review Approved + merged; Issue #40 closed |
+| Final release | #49 | Initial review Changes Requested for evidence/traceability sync only; implementation blocker not found; re-review pending after exact-head CI |
 
 Kanban note: GitHub CLI verification of Project `Tok TickIT Individual Sprints` currently lacks the `read:project` token scope, so this file does not fabricate a final board-column state. The Project URL and initialization workflow remain recorded in `reviewer.md`; a final board screenshot/visual check can be supplied from the owner UI if required by the report.
 
@@ -277,10 +281,10 @@ It records:
 
 ### Final release gates
 
-Before `lab3-staging → main` merge:
+Current state before `lab3-staging → main` merge:
 
-1. Issue #40 PR must be reviewed and approved.
-2. Hosted CI for the Issue #40 head must report its actual result; do not infer green from local tests.
-3. `reviewer.md`, `tests.md`, this evidence index, and `ai-use.md` must be synchronized to the reviewed head.
-4. Issue #40 can then be closed and a separate release PR can be prepared from `lab3-staging` to `main`.
-5. The release PR must not be merged without explicit student authorization.
+1. **Complete:** PR #48 was reviewed, re-reviewed, approved, and merged.
+2. **Complete:** Issue #40 was closed after the approved merge.
+3. **Complete:** release PR #49 was opened from `lab3-staging` to `main` and its initial pull-request CI run `35346764487` passed Server / Client / E2E.
+4. **In review:** PR #49 requested final evidence/traceability reconciliation; the requested local fixes are applied and exact new-head hosted CI must pass before re-review.
+5. **Still required:** PR #49 must be approved, and the student must explicitly authorize the merge into `main`.

@@ -115,7 +115,9 @@ AI closed the remaining direct authorization matrix gaps, created full-stack Aut
 
 ### Issue 8 — Final Evidence / Release Readiness
 
-AI is being used to reconcile final documentation with the merged implementation, index the submission evidence, add missing failure/boundary screenshots, modernize the Lab 3 CI workflow so its database guards are respected, and rerun the release-candidate test/build/Prisma/E2E checks. The student still controls the final Issue #40 PR and the later `lab3-staging → main` release decision.
+AI reconciled final documentation with the merged implementation, indexed the submission evidence, added real DB-backed failure/boundary screenshots, modernized the Lab 3 CI workflow so its database guards are respected, and reran the release-candidate test/build/Prisma/E2E checks. PR #48 went through Changes Requested → evidence synchronization → re-review **Approved** on exact head `00098b44`, then merged into `lab3-staging` as `6759cb6`; Issue #40 was closed as completed.
+
+The subsequent release PR #49 (`lab3-staging → main`) passed its initial hosted Server / Client / E2E run `35346764487`, then received Changes Requested for stale Final Evidence/traceability wording only. AI inspected every remaining `Planned` Test ID rather than blindly changing statuses: four already had matching automated coverage (`U-09`, `U-10`, `COM-11`, `UI-SHELL-03`), while two genuine direct gaps were found and filled (`COM-10` Requester→Staff status endpoint `403` with no mutation, and `UI-AUTH-07` safe Login `500` handling). Focused tests passed, followed by current local isolated regression of Server **165/165 (21/21)** and Client **76/76 (11/11)**. The student still controls whether/when PR #49 may merge into `main`.
 
 ## Example of AI-assisted debugging
 

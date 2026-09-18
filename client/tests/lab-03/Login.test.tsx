@@ -94,6 +94,26 @@ describe("Lab 3 Login UI", () => {
     expect(screen.getByLabelText(/^Password$/i)).toHaveValue("");
   });
 
+  it("UI-AUTH-07: shows a safe server failure, preserves email, and clears password", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, "login").mockRejectedValue(
+      new api.ApiError("Database connection details must not be exposed", 500, "LOGIN_FAILED"),
+    );
+    renderApp();
+    await screen.findByRole("heading", { name: /Sign in to your account/i });
+
+    const email = screen.getByLabelText(/Email address/i);
+    const password = screen.getByLabelText(/^Password$/i);
+    await user.type(email, BASE_USER.email);
+    await user.type(password, "SensitivePassword1");
+    await user.click(screen.getByRole("button", { name: /^Sign In$/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Unable to connect to TokTickIT. Please try again.");
+    expect(screen.queryByText(/Database connection details/i)).not.toBeInTheDocument();
+    expect(email).toHaveValue(BASE_USER.email);
+    expect(password).toHaveValue("");
+  });
+
   it("shows safe inactive-account and rate-limit feedback", async () => {
     const user = userEvent.setup();
     const loginSpy = vi.spyOn(api, "login")

@@ -274,6 +274,19 @@ describe("Lab 3 IT Staff Ticket Detail and operations", () => {
     }
   });
 
+  it("COM-10: Requester cannot call the Staff status-transition endpoint", async () => {
+    const ticket = await createTicket({ status: "Open" });
+    const res = await request(app)
+      .patch(`/api/v1/staff/tickets/${ticket.id}/status`)
+      .set("Origin", TEST_ORIGIN)
+      .set("Cookie", requesterCookie)
+      .send({ status: "In Progress" });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe("FORBIDDEN");
+    expect((await getPrisma().ticket.findUnique({ where: { id: ticket.id } }))?.status).toBe("Open");
+  });
+
   it("ST-12: unknown status returns 400", async () => {
     const ticket = await createTicket({ status: "Open" });
     const res = await request(app)
