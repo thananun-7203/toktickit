@@ -7,7 +7,7 @@ This index maps the final Sprint 3 repository evidence to the requested Answer P
 - Integrated Lab 3 base before Issue #40 evidence-only work: `lab3-staging` merge commit `580f2b27b974b3425772eba51fe58e7649b7f457` (PR #47).
 - Issues #33–#39: closed; PRs #41–#47: approved and merged.
 - Issue #40: Final Evidence & Release Readiness, currently in progress on `feature/8-final-evidence-release-readiness`.
-- Issue #40 local release-candidate verification: Server **162/162**, Client **75/75**, Lab 3 Playwright **12/12**, Server/Client builds Pass, Prisma validate Pass, E2E migration status up to date.
+- Issue #40 release-candidate verification after the hosted-CI guard correction: Server **164/164**, Client **75/75**, Lab 3 Playwright **12/12**, Server/Client builds Pass, Prisma validate Pass, E2E migration status up to date.
 - Issue #40 `npm audit --omit=dev` was not completed because the npm registry was unreachable (`ENOTFOUND`); no fresh audit result is claimed. The earlier completed Issue #39 audit remains historical evidence only.
 
 ## Part 1 — Git workflow, Issues, PRs, review, repository structure
@@ -59,7 +59,7 @@ Primary evidence:
 
 Issue #40 release-candidate evidence:
 
-- Server: **162/162 (21/21 files)**.
+- Server: **164/164 (21/21 files)** after adding two CI re-entry guard regressions.
 - Client: **75/75 (11/11 files)**.
 - Playwright: **12/12**, covering Auth/Requester/Staff/Admin and `V-01–V-08`.
 - Server and Client production builds: Pass.

@@ -18,7 +18,7 @@
 | Issue 5 | [#37](https://github.com/thananun-7203/toktickit/issues/37) | IT Staff Ticket Detail & Operations | [#45](https://github.com/thananun-7203/toktickit/pull/45) | **Approved and merged** |
 | Issue 6 | [#38](https://github.com/thananun-7203/toktickit/issues/38) | Administrator User Management | [#46](https://github.com/thananun-7203/toktickit/pull/46) | **Approved and merged** |
 | Issue 7 | [#39](https://github.com/thananun-7203/toktickit/issues/39) | Security, Regression, E2E & Visual QA | [#47](https://github.com/thananun-7203/toktickit/pull/47) | **Approved and merged** |
-| Issue 8 | [#40](https://github.com/thananun-7203/toktickit/issues/40) | Final Evidence & Release Readiness | Pending | Pending |
+| Issue 8 | [#40](https://github.com/thananun-7203/toktickit/issues/40) | Final Evidence & Release Readiness | [#48](https://github.com/thananun-7203/toktickit/pull/48) | **Review pending** |
 | Release | — | `lab3-staging → main` | Pending | Pending |
 
 ## 2. Project / Kanban Workflow
@@ -382,10 +382,17 @@ Required review focus:
 
 ## 11. Issue 8 — Final Evidence & Release Readiness
 
-- PR: Pending.
-- Reviewer feedback: Pending.
-- Response: Pending.
-- Verdict: Pending.
+- PR: [#48](https://github.com/thananun-7203/toktickit/pull/48), open against `lab3-staging` from `feature/8-final-evidence-release-readiness`.
+- Initial PR head: `c57d0eaa553754928b780d2d8d703e24d8890e9b`.
+- Requested reviewer: `Tanaboonnnnn`.
+- Local release-candidate evidence before PR: Server **162/162 (21/21)**, Client **75/75 (11/11)**, Lab 3 Playwright **12/12**, Server/Client builds **Pass**, Prisma validate **Pass**, E2E migration status **up to date**, `git diff --check` **Pass**, and **13** final Lab 3 screenshots including failure/boundary states.
+- Dependency-audit caveat: the local Issue #40 `npm audit --omit=dev` attempt could not reach `registry.npmjs.org` (`ENOTFOUND`), so no fresh local audit result is claimed. PR #48 CI now runs production dependency audits in the hosted environment.
+- GitHub Project caveat: CLI verification of the final Kanban column state is unavailable with the current token because it lacks `read:project`; no board status is fabricated or modified by this Issue.
+- Hosted CI Round 1 on `c57d0ea`: Client checks and production audit passed; Server migrations/seed/typecheck/Prisma/audit passed, but Server tests exposed a test-database-guard re-entry bug when CI had only `TEST_DATABASE_URL`, so E2E was skipped by dependency.
+- Response to CI Round 1: made the test guard safely re-entrant after `TOKTICKIT_TEST_MODE=1` without weakening the saved development-target collision check; added two guard regression tests. CI-equivalent local verification with blank `DATABASE_URL` and only `TEST_DATABASE_URL` now passes focused guard **6/6**, full Server **164/164 (21/21)**, Server build, and Prisma validate.
+- Reviewer feedback: Pending actual PR #48 review.
+- Response: Pending actual reviewer feedback.
+- Verdict: **Review/hosted-CI pending; not approved or merged.**
 
 Required review focus:
 

@@ -46,7 +46,9 @@ export function assertSafeTestDatabaseEnvironment(env: EnvLike = process.env): s
     );
   }
 
-  const developmentUrl = env.TOKTICKIT_DEVELOPMENT_DATABASE_URL?.trim() || env.DATABASE_URL?.trim();
+  const developmentUrl =
+    env.TOKTICKIT_DEVELOPMENT_DATABASE_URL?.trim() ||
+    (env.TOKTICKIT_TEST_MODE === "1" ? undefined : env.DATABASE_URL?.trim());
   if (developmentUrl) {
     const developmentTarget = canonicalTarget(developmentUrl, "DATABASE_URL");
     if (developmentTarget.key === testTarget.key) {
@@ -58,7 +60,7 @@ export function assertSafeTestDatabaseEnvironment(env: EnvLike = process.env): s
 }
 
 export function configureTestDatabaseEnvironment(env: EnvLike = process.env): string {
-  if (!env.TOKTICKIT_DEVELOPMENT_DATABASE_URL && env.DATABASE_URL) {
+  if (!env.TOKTICKIT_DEVELOPMENT_DATABASE_URL && env.TOKTICKIT_TEST_MODE !== "1" && env.DATABASE_URL) {
     env.TOKTICKIT_DEVELOPMENT_DATABASE_URL = env.DATABASE_URL;
   }
   const testUrl = assertSafeTestDatabaseEnvironment(env);

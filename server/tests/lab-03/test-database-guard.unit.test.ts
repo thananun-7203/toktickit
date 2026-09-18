@@ -36,4 +36,28 @@ describe("Lab 3 test database safety guard", () => {
     expect(env.TOKTICKIT_DEVELOPMENT_DATABASE_URL).toContain("/toktickit?");
     expect(env.TOKTICKIT_TEST_MODE).toBe("1");
   });
+
+  it("is re-entrant when CI provides only TEST_DATABASE_URL", () => {
+    const env: Record<string, string | undefined> = {
+      TEST_DATABASE_URL: "postgresql://user:pass@localhost:5432/toktickit_ci_test?schema=public",
+    };
+
+    const first = configureTestDatabaseEnvironment(env);
+    const second = configureTestDatabaseEnvironment(env);
+
+    expect(first).toBe(env.TEST_DATABASE_URL);
+    expect(second).toBe(env.TEST_DATABASE_URL);
+    expect(env.DATABASE_URL).toBe(env.TEST_DATABASE_URL);
+    expect(env.TOKTICKIT_DEVELOPMENT_DATABASE_URL).toBeUndefined();
+    expect(env.TOKTICKIT_TEST_MODE).toBe("1");
+  });
+
+  it("still rejects a saved development target that matches the test database", () => {
+    expect(() => configureTestDatabaseEnvironment({
+      TOKTICKIT_TEST_MODE: "1",
+      TOKTICKIT_DEVELOPMENT_DATABASE_URL: "postgresql://dev:one@localhost:5432/toktickit_test?schema=public",
+      DATABASE_URL: "postgresql://tester:two@localhost:5432/toktickit_test?schema=public",
+      TEST_DATABASE_URL: "postgresql://tester:two@127.0.0.1:5432/toktickit_test?schema=public",
+    })).toThrow(/same database\/schema/i);
+  });
 });

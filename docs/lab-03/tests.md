@@ -751,7 +751,7 @@ Issue #40 reran the integrated release candidate from merged `lab3-staging` head
 
 - **Isolated infrastructure:** PostgreSQL container `toktickit-issue8-final-pg` exposed local port `5442` with separate databases `toktickit_issue8_test` and `toktickit_issue8_e2e`; isolated SeaweedFS filer was exposed on `18891`.
 - **Schema/seed:** all five migrations applied successfully to both databases, both seeds completed successfully, and Prisma migration status reported the E2E database **up to date**.
-- **Full Server regression:** **162/162 passed (21/21 files)** against `toktickit_issue8_test`.
+- **Initial full Server regression before hosted-CI correction:** **162/162 passed (21/21 files)** against `toktickit_issue8_test`.
 - **Server build / Prisma:** TypeScript build **Pass**; `prisma validate` **Pass**.
 - **Full Client regression:** **75/75 passed (11/11 files)**.
 - **Client production build:** **Pass**.
@@ -759,12 +759,15 @@ Issue #40 reran the integrated release candidate from merged `lab3-staging` head
 - **Final visual evidence:** the existing nine representative screenshots were regenerated where their routed fixtures ran, and four real boundary/failure screenshots were added: invalid Login, auth-bootstrap Retry state, cross-Requester isolation/no-results, and Administrator assigned-owner conflict. `artifacts/lab-03/screenshots/` now contains **13** final evidence images.
 - **Dependency audit caveat:** the Issue #40 `npm audit --omit=dev` attempt could not reach `registry.npmjs.org` (`ENOTFOUND`), so **no Issue #40 audit result is claimed**. The last completed Issue #39 audit remained `0 vulnerabilities`, but it is retained only as historical evidence rather than relabeled as a new Issue #40 result.
 - **CI workflow readiness:** `.github/workflows/ci.yml` was updated for Lab 3 safety contracts: `lab3-staging`/manual triggers, explicit `TEST_DATABASE_URL` with a test-marked DB, a dedicated E2E-marked database, server/client builds, Prisma validation, and the current Lab 3 Playwright suite. Hosted CI remains pending until GitHub executes the workflow on the Issue #40 PR head.
+- **PR #48 hosted CI Round 1:** Client tests/build/production audit passed. Server migrations, seed, typecheck, Prisma validate, and production audit also passed, but the Server test step failed because the test-database guard was not re-entrant when CI supplied only `TEST_DATABASE_URL`: `run-tests.ts` correctly selected the test database, then the later Prisma lazy-init guard call misread that already-selected `DATABASE_URL` as the development target and rejected it as identical.
+- **Hosted-CI guard correction:** `assertSafeTestDatabaseEnvironment()` now ignores the already-selected `DATABASE_URL` as a development candidate only after `TOKTICKIT_TEST_MODE=1`, while a real saved `TOKTICKIT_DEVELOPMENT_DATABASE_URL` still participates in the collision check. `configureTestDatabaseEnvironment()` also avoids capturing the test URL as a development URL during re-entry. Two regression tests cover CI-only `TEST_DATABASE_URL` re-entry and continued rejection of a saved development target that matches the test DB.
+- **Post-fix CI-equivalent Server verification:** with `DATABASE_URL` explicitly blank and only `TEST_DATABASE_URL` supplied, focused guard tests **6/6** and the full Server suite **164/164 (21/21 files)** passed; Server build and Prisma validate also passed.
 
 ### Final Lab 3 regression template
 
 | Check | Final result |
 |---|---|
-| Server unit/API/integration | **Pass — 162/162 (21/21 files)** |
+| Server unit/API/integration | **Pass — 164/164 (21/21 files) after hosted-CI guard correction** |
 | Client Vitest | **Pass — 75/75 (11/11 files)** |
 | Migration from Lab 2-shaped DB | **Pass — Issue #39 isolated preservation rerun; 2 Users / 2 Tickets / 2 Attachments; 0 orphans** |
 | Seed idempotency | **Pass — `MIG-07`–`MIG-10` in final server regression** |
