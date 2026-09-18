@@ -17,7 +17,7 @@
 | [thananun-7203/toktickit#45](https://github.com/thananun-7203/toktickit/pull/45) | `feature/5-it-staff-ticket-detail` | Approved by `Peepipat-Suesoongnuen` and `Tanaboonnnnn`; follow-up review items were addressed; merged on 2026-09-17 |
 | [thananun-7203/toktickit#46](https://github.com/thananun-7203/toktickit/pull/46) | `feature/6-administrator-user-management` | Approved by `Tanaboonnnnn`; non-blocking follow-up notes were preserved for Issue 7; merged on 2026-09-17 |
 | [thananun-7203/toktickit#47](https://github.com/thananun-7203/toktickit/pull/47) | `feature/7-security-regression-e2e-visual-qa` | Changes Requested for the stale E2E database fallback, revised, re-reviewed and approved by `Tanaboonnnnn`; merged on 2026-09-18 |
-| [thananun-7203/toktickit#48](https://github.com/thananun-7203/toktickit/pull/48) | `feature/8-final-evidence-release-readiness` | Hosted Server/Client/E2E CI is green; peer-review decision is pending |
+| [thananun-7203/toktickit#48](https://github.com/thananun-7203/toktickit/pull/48) | `feature/8-final-evidence-release-readiness` | Changes Requested by `Tanaboonnnnn` on reviewed head `b72334c` for final CI-evidence synchronization only; Server/Client/E2E CI is green and the requested docs sync is addressed for re-review |
 
 ### Project / Kanban Workflow
 
@@ -392,10 +392,11 @@ Required review focus:
 - Response to CI Round 1: made the test guard safely re-entrant after `TOKTICKIT_TEST_MODE=1` without weakening the saved development-target collision check; added two guard regression tests. CI-equivalent local verification with blank `DATABASE_URL` and only `TEST_DATABASE_URL` now passes focused guard **6/6**, full Server **164/164 (21/21)**, Server build, and Prisma validate.
 - Hosted CI Round 2 on `51d6ea6`: Server and Client jobs were fully green, including production audits, but E2E failed two Requester overflow assertions at the 820 px tablet viewport on Linux headless Chromium. The shared cause was the Requester desktop header retaining three navigation buttons alongside brand/user controls until the old `<768px` breakpoint.
 - Response to CI Round 2: move authenticated compact navigation to `≤991.98px` without changing tablet content layouts or weakening the no-overflow checks. Focused Requester/visual Playwright **3/3**, full Lab 3 Playwright **12/12**, and Client **75/75 + build** pass after the change.
-- Hosted CI Round 3 on exact head `a2134f23c9dc1ddde9ade97205e9f38b7648f3a3`: **PASS**. GitHub Actions run `35329863392` completed Server, Client, and E2E successfully; production dependency audit steps passed in both Server and Client jobs, and E2E completed the isolated Lab 3 stack and browser suite successfully.
-- Reviewer feedback: Pending actual PR #48 review.
-- Response: Pending actual reviewer feedback.
-- Verdict: **Hosted CI green; reviewer decision pending. Not approved or merged.**
+- Hosted CI Round 3 on exact head `a2134f23c9dc1ddde9ade97205e9f38b7648f3a3`: **PASS (historical)**. GitHub Actions run `35329863392` completed Server, Client, and E2E successfully; production dependency audit steps passed in both Server and Client jobs, and E2E completed the isolated Lab 3 stack and browser suite successfully.
+- Reviewed-head CI: exact head `b72334c03acb4ddee0af47e80c75c3f19dce1607` passed GitHub Actions run `35339970766` with **Server / Client / E2E all green**.
+- Review on `b72334c`: `Tanaboonnnnn` returned **Changes Requested** with one evidence-only blocker: `evidence.md` still labeled the older `a2134f2` / run `35329863392` as the final/current verification. The reviewer explicitly reported no other substantive blocker and asked that `evidence.md`, `tests.md`, and `reviewer.md` be checked for stale final/current/exact-head references.
+- Response: synchronized the final/current CI evidence to reviewed head `b72334c03acb4ddee0af47e80c75c3f19dce1607` and run `35339970766`; retained `a2134f2` / `35329863392` only as clearly labeled historical Round 3 evidence.
+- Verdict: **Requested evidence synchronization addressed; re-review pending. Not approved or merged.**
 
 Required review focus:
 
