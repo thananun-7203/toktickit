@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import {
   API_URL,
+  captureEvidence,
   createDedicatedE2eUsers,
   completeMandatoryPasswordChange,
   logoutFromUserMenu,
@@ -21,6 +22,7 @@ test("E2E-AUTH-01 invalid login, mandatory first change, logout, and direct acce
   await page.getByLabel(/^Password$/).fill("WrongPassword123");
   await page.getByRole("button", { name: "Sign In" }).click();
   await expect(page.getByRole("alert")).toContainText("Email or password is incorrect");
+  await captureEvidence(page, "10-login-invalid-credentials.png");
 
   await signIn(page, users.requesterOneEmail, users.initialPassword);
   const replacementPassword = `AuthE2E${Date.now()}9A`;
@@ -57,6 +59,7 @@ test("E2E-AUTH-02 inactive login is safe and bootstrap failure is distinct from 
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Unable to verify your session" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
+  await captureEvidence(page, "11-auth-bootstrap-error-retry.png");
   failBootstrap = false;
   await page.getByRole("button", { name: "Retry" }).click();
   await expect(page.getByRole("heading", { name: "Sign in to your account" })).toBeVisible();

@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, type Page } from "@playwright/test";
@@ -7,6 +8,8 @@ import { requireE2eDatabaseUrl } from "../e2e-database.js";
 
 export const API_URL = "http://127.0.0.1:3001";
 export const E2E_DATABASE_URL = requireE2eDatabaseUrl();
+const CAPTURE_EVIDENCE = process.env.CAPTURE_EVIDENCE === "1";
+const EVIDENCE_DIR = path.resolve("../artifacts/lab-03/screenshots");
 
 const serverDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "server");
 
@@ -19,6 +22,12 @@ export type E2eUsers = {
   inactiveEmail: string;
   initialPassword: string;
 };
+
+export async function captureEvidence(page: Page, name: string) {
+  if (!CAPTURE_EVIDENCE) return;
+  await mkdir(EVIDENCE_DIR, { recursive: true });
+  await page.screenshot({ path: path.join(EVIDENCE_DIR, name), fullPage: true });
+}
 
 export function fixtureInitialPassword(): string {
   if (process.env.E2E_REQUESTER_INITIAL_PASSWORD) return process.env.E2E_REQUESTER_INITIAL_PASSWORD;

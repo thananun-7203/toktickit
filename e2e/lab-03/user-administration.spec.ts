@@ -1,6 +1,7 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import {
   API_URL,
+  captureEvidence,
   completeMandatoryPasswordChange,
   createDedicatedE2eUsers,
   logoutFromUserMenu,
@@ -243,6 +244,7 @@ test("E2E-ADMIN-01/02 full-stack Administrator workflow and safety boundaries", 
   const confirm = page.getByRole("dialog", { name: "Deactivate User" });
   await confirm.getByRole("button", { name: "Deactivate User", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("Reassign this user's tickets");
+  await captureEvidence(page, "13-admin-assigned-owner-conflict.png");
   await page.getByRole("dialog", { name: "Edit User" }).getByRole("button", { name: "Cancel" }).click();
 
   const actorRow = page.getByRole("row").filter({ hasText: users.adminEmail });

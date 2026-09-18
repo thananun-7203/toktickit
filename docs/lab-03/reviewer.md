@@ -7,17 +7,17 @@
 
 > This is a living review record created before the main Lab 3 implementation. It must record only review activity that actually occurs. Do not pre-fill approvals or reviewer verdicts.
 
-## 1. Planned Lab 3 Issue / PR Flow
+## 1. Lab 3 Issue / PR Flow
 
 | Lab 3 Issue | GitHub Issue | Planned feature scope | PR | Reviewer / verdict |
 |---|---|---|---|---|
 | Issue 1 | [#33](https://github.com/thananun-7203/toktickit/issues/33) | Sprint 3 Engineering Contract & Test Plan | [#41](https://github.com/thananun-7203/toktickit/pull/41) | **Approved and merged** |
 | Issue 2 | [#34](https://github.com/thananun-7203/toktickit/issues/34) | User Migration, Authentication & Authorization Foundation | [#42](https://github.com/thananun-7203/toktickit/pull/42) | **Approved and merged** |
 | Issue 3 | [#35](https://github.com/thananun-7203/toktickit/issues/35) | Authenticated Requester & Lab 2 Regression | [#43](https://github.com/thananun-7203/toktickit/pull/43) | **Approved and merged** |
-| Issue 4 | [#36](https://github.com/thananun-7203/toktickit/issues/36) | IT Staff Ticket Queue | Pending | Pending |
-| Issue 5 | [#37](https://github.com/thananun-7203/toktickit/issues/37) | IT Staff Ticket Detail & Operations | Pending | Pending |
-| Issue 6 | [#38](https://github.com/thananun-7203/toktickit/issues/38) | Administrator User Management | Pending | Pending |
-| Issue 7 | [#39](https://github.com/thananun-7203/toktickit/issues/39) | Security, Regression, E2E & Visual QA | Pending | Pending |
+| Issue 4 | [#36](https://github.com/thananun-7203/toktickit/issues/36) | IT Staff Ticket Queue | [#44](https://github.com/thananun-7203/toktickit/pull/44) | **Approved and merged** |
+| Issue 5 | [#37](https://github.com/thananun-7203/toktickit/issues/37) | IT Staff Ticket Detail & Operations | [#45](https://github.com/thananun-7203/toktickit/pull/45) | **Approved and merged** |
+| Issue 6 | [#38](https://github.com/thananun-7203/toktickit/issues/38) | Administrator User Management | [#46](https://github.com/thananun-7203/toktickit/pull/46) | **Approved and merged** |
+| Issue 7 | [#39](https://github.com/thananun-7203/toktickit/issues/39) | Security, Regression, E2E & Visual QA | [#47](https://github.com/thananun-7203/toktickit/pull/47) | **Approved and merged** |
 | Issue 8 | [#40](https://github.com/thananun-7203/toktickit/issues/40) | Final Evidence & Release Readiness | Pending | Pending |
 | Release | — | `lab3-staging → main` | Pending | Pending |
 
@@ -272,7 +272,9 @@ Required review focus:
 - Reviewer feedback: move Queue filtering/sorting/pagination to the database layer instead of loading all matching Tickets into Node; reject duplicate query parameters; and lock explicit `owner=<id>` semantics to eligible active Staff/Admin users.
 - Response: implemented all three findings. Standard sorts now use transactional `count + findMany(orderBy/skip/take)`. `priority_desc` pages across deterministic High → Medium → Low → unrecorded/other database buckets without loading the full result set. Duplicate parameters return `400 VALIDATION_ERROR`. Explicit owner ids must exist, be active, and have role `IT_STAFF` or `ADMINISTRATOR`; the API contract now documents this rule.
 - Verification after Round 1 fixes: Server **115/115 (17/17)**, Client **54/54 (9/9)**, responsive Playwright `V-03` **1/1**, Server/Client builds **Pass**, Prisma validate **Pass**, production dependency audits **0 vulnerabilities**, and `git diff --check` **Pass**.
-- Verdict: **Round 1 fixes complete; re-review pending after fix commit/push. Not approved or merged.**
+- Re-review: `Tanaboonnnnn` **APPROVED** exact head `3f9a8654ad0460cb6c8f21413f790aef6ff68c63`; the reviewer confirmed the database-layer pagination/sorting, duplicate-query rejection, and eligible-owner semantics were fixed and found no new blocking defect.
+- Merge commit: `ea4147bd0f2a1f9775e43669db679ef7fcc8bb07`.
+- Verdict: **APPROVED and merged**; Issue #36 is closed.
 
 Pre-review implementation/evidence prepared:
 
@@ -320,7 +322,7 @@ Two non-blocking follow-ups were requested:
 
 ### Current verdict
 
-The initial review was **Approved** and both non-blocking reviewer suggestions have now been implemented. A re-review is requested on the follow-up commit before merge; PR #45 remains open and Issue #37 remains open.
+The initial review was **Approved**, both non-blocking reviewer suggestions were implemented, and the follow-up head `1356668fdc75aae1e97c5a1b52577d2214340bc2` was approved by `Tanaboonnnnn`. PR #45 was merged into `lab3-staging` as `35b5ad77f9072e554ef3c4943e5936e331055306`, and Issue #37 is closed. GitHub reported no hosted checks for the merged head, so no hosted-CI result is claimed for this PR.
 
 Required review focus:
 
@@ -355,12 +357,14 @@ Required review focus:
 
 ## 10. Issue 7 — Security, Regression, E2E & Visual QA
 
-- PR: [#47](https://github.com/thananun-7203/toktickit/pull/47), open against `lab3-staging`.
-- Requested reviewer: `Tanaboonnnnn`.
+- PR: [#47](https://github.com/thananun-7203/toktickit/pull/47), merged into `lab3-staging`.
+- Reviewer: `Tanaboonnnnn`.
 - Round 1 reviewed head: `3da919273d3ef122d27b52e3d109643b01e8f3ef`.
 - Reviewer feedback: **Changes requested** — `e2e/lab-03/fullstack-fixtures.ts` still had a runtime fallback to the old Issue #35/Issue 3 E2E database. If `E2E_DATABASE_URL` was missing, final-QA fixtures could therefore write into the wrong database instead of failing safely.
 - Response: removed the old database fallback from all current Lab 3 E2E entry points, added shared `requireE2eDatabaseUrl()` fail-fast validation, and updated the README example away from the Issue 3 database. A missing `E2E_DATABASE_URL` now exits before Playwright starts its web servers. Re-review verification used a fresh disposable PostgreSQL database `toktickit_pr47_r1_e2e` on port `5441` plus isolated SeaweedFS filer on `18890`; all **12/12** Lab 3 Playwright tests passed.
-- Verdict: **Changes requested addressed; re-review pending**.
+- Re-review: **APPROVED** on exact head `9097c27bdb45e8e1996db61a67abc30b72853119`; the reviewer confirmed the database-isolation blocker was fixed at its root cause and found no new substantive blocker.
+- Merge commit: `580f2b27b974b3425772eba51fe58e7649b7f457`.
+- Verdict: **APPROVED and merged**; Issue #39 is closed. GitHub reported no hosted checks for PR #47, so hosted CI is not retroactively claimed.
 - PR #46 accessibility follow-up status: implemented in Issue #39 with Administrator modal initial focus, Tab/Shift+Tab focus containment, Escape-close, and focus restoration; responsive visual evidence was regenerated after the fix.
 - PR #46 component-decomposition note: retained as non-blocking technical debt. Issue #39 did not materially expand `UserManagement.tsx` business scope, so no refactor was introduced solely for file-size cleanup during final QA.
 
@@ -409,4 +413,6 @@ Record actual Lab 3 peer-review activity here as it occurs.
 
 | Repository / PR | Review focus | Review result |
 |---|---|---|
-| Pending | Pending | Pending |
+| `Tanaboonnnnn/toktickit` [#59](https://github.com/Tanaboonnnnn/toktickit/pull/59) | Shared Staff Ticket Queue/Detail authorization, search/filter/sort/pagination, deterministic ordering, responsive behavior, Requester regression | **Approved** at `c3091c1`; later merged |
+| `Tanaboonnnnn/toktickit` [#60](https://github.com/Tanaboonnnnn/toktickit/pull/60) | Staff Ticket ownership/IT Priority/status workflow, concurrency, CSRF, UI permitted-next-action contract | **Changes requested** at `1a9159b` for owner-aware UI + diff hygiene; re-reviewed and **Approved** at `6f0ee1c`; later merged |
+| `Tanaboonnnnn/toktickit` [#61](https://github.com/Tanaboonnnnn/toktickit/pull/61) | Public Comment/Internal Note privacy, Unicode validation, Requester resolution indication, UI/E2E privacy evidence | **Approved** at `268fe19`; later merged; two non-blocking follow-ups noted |

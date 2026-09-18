@@ -1,6 +1,6 @@
 # TokTickIT Lab 3 — REST API Specification
 
-This document defines the planned Sprint 3 REST contract before implementation. It extends the existing Lab 2 `/api/v1` API and replaces `X-Dev-Requester-Id` ownership with authenticated session identity.
+This document records the final Sprint 3 REST contract after implementation and review. It extends the existing Lab 2 `/api/v1` API and replaces `X-Dev-Requester-Id` ownership with authenticated session identity.
 
 ## 1. Global Conventions
 
@@ -721,9 +721,9 @@ Protected request order:
 
 This order prevents client-controlled identity from bypassing authentication and keeps safe-error behavior consistent.
 
-## 12. Planned Endpoint Inventory / Issue Mapping
+## 12. Final Endpoint Inventory / Issue Mapping
 
-| Group | Endpoint | Planned implementation issue |
+| Group | Endpoint | Implementation issue |
 |---|---|---|
 | Auth | `POST /auth/login` | Issue 2 |
 | Auth | `POST /auth/logout` | Issue 2 |

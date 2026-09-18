@@ -745,6 +745,21 @@ Issue #39 verification used isolated disposable infrastructure only. PostgreSQL 
 - **PR #47 Round 1 E2E database-isolation fix:** reviewer `Tanaboonnnnn` requested removal of the stale `toktickit_e2e_issue3` runtime fallback. Lab 3 Playwright now requires an explicit `E2E_DATABASE_URL` through shared `requireE2eDatabaseUrl()` validation; missing configuration fails with exit code `1` before web-server startup. The fix covers `playwright.lab3.config.ts`, the shared full-stack fixture helper, and the Requester regression entry point. Re-review verification migrated/seeded a fresh disposable `toktickit_pr47_r1_e2e` database on port `5441`, used an isolated SeaweedFS filer on `18890`, and passed the complete Lab 3 Playwright suite **12/12**.
 - **Hosted CI:** not claimed green unless GitHub reports an actual check for the PR head.
 
+### Issue 8 release-candidate verification — Final Evidence & Release Readiness
+
+Issue #40 reran the integrated release candidate from merged `lab3-staging` head `580f2b27b974b3425772eba51fe58e7649b7f457` plus the evidence/CI-only Issue #40 working-tree changes. Verification again used disposable infrastructure only; the normal development PostgreSQL/SeaweedFS services were not reset, migrated, or deleted.
+
+- **Isolated infrastructure:** PostgreSQL container `toktickit-issue8-final-pg` exposed local port `5442` with separate databases `toktickit_issue8_test` and `toktickit_issue8_e2e`; isolated SeaweedFS filer was exposed on `18891`.
+- **Schema/seed:** all five migrations applied successfully to both databases, both seeds completed successfully, and Prisma migration status reported the E2E database **up to date**.
+- **Full Server regression:** **162/162 passed (21/21 files)** against `toktickit_issue8_test`.
+- **Server build / Prisma:** TypeScript build **Pass**; `prisma validate` **Pass**.
+- **Full Client regression:** **75/75 passed (11/11 files)**.
+- **Client production build:** **Pass**.
+- **Full Lab 3 Playwright:** **12/12 passed** against the real backend + `toktickit_issue8_e2e` + isolated SeaweedFS stack. `E2E-AUTH-01/02`, `E2E-REQ-01/02`, `E2E-STAFF-01/02`, `E2E-ADMIN-01/02`, and `V-01`–`V-08` remain green on the release candidate.
+- **Final visual evidence:** the existing nine representative screenshots were regenerated where their routed fixtures ran, and four real boundary/failure screenshots were added: invalid Login, auth-bootstrap Retry state, cross-Requester isolation/no-results, and Administrator assigned-owner conflict. `artifacts/lab-03/screenshots/` now contains **13** final evidence images.
+- **Dependency audit caveat:** the Issue #40 `npm audit --omit=dev` attempt could not reach `registry.npmjs.org` (`ENOTFOUND`), so **no Issue #40 audit result is claimed**. The last completed Issue #39 audit remained `0 vulnerabilities`, but it is retained only as historical evidence rather than relabeled as a new Issue #40 result.
+- **CI workflow readiness:** `.github/workflows/ci.yml` was updated for Lab 3 safety contracts: `lab3-staging`/manual triggers, explicit `TEST_DATABASE_URL` with a test-marked DB, a dedicated E2E-marked database, server/client builds, Prisma validation, and the current Lab 3 Playwright suite. Hosted CI remains pending until GitHub executes the workflow on the Issue #40 PR head.
+
 ### Final Lab 3 regression template
 
 | Check | Final result |
@@ -760,5 +775,6 @@ Issue #39 verification used isolated disposable infrastructure only. PostgreSQL 
 | Requester regression E2E | **Pass — `E2E-REQ-01/02`** |
 | Staff workflow E2E | **Pass — `E2E-STAFF-01/02` full-stack** |
 | User administration E2E | **Pass — `E2E-ADMIN-01/02` full-stack** |
-| Desktop/tablet/mobile visual QA | **Pass — `V-01`–`V-08`; 9 Lab 3 screenshots** |
-| Hosted CI | Not available locally; do not claim until GitHub reports a PR check |
+| Desktop/tablet/mobile visual QA | **Pass — `V-01`–`V-08`; 13 Lab 3 screenshots including failure/boundary states** |
+| Issue #40 dependency audit | **Not claimed — npm registry DNS/network unavailable (`ENOTFOUND`)** |
+| Hosted CI | Pending Issue #40 PR execution; do not claim until GitHub reports the checks |
