@@ -764,6 +764,7 @@ Issue #40 reran the integrated release candidate from merged `lab3-staging` head
 - **Post-fix CI-equivalent Server verification:** with `DATABASE_URL` explicitly blank and only `TEST_DATABASE_URL` supplied, focused guard tests **6/6** and the full Server suite **164/164 (21/21 files)** passed; Server build and Prisma validate also passed.
 - **PR #48 hosted CI Round 2:** Server and Client jobs both passed completely, including production dependency audits, Server **164/164**, Client **75/75**, builds, Prisma validation, migrations, and seed. The E2E job then exposed a Linux-headless responsive defect at **820 px**: Requester pages kept the three-button desktop navigation plus brand/user menu in one row, making the document horizontally overflow. The failure was reproducible in both the full-stack Requester flow and `V-02/V-06/V-07`; the other 10 Playwright tests passed.
 - **Responsive correction after Round 2:** authenticated navigation now switches to the compact menu at `max-width: 991.98px`, while tablet page/table/detail layouts remain unchanged. Playwright navigation helpers use the same breakpoint. No overflow tolerance was added; the existing strict `scrollWidth <= viewport` assertions remain. Focused Requester/visual Playwright passed **3/3**, the full Lab 3 Playwright suite passed **12/12**, and Client regression/build passed **75/75 (11/11) + build** after the correction.
+- **PR #48 hosted CI Round 3 on `a2134f2`: PASS.** GitHub Actions run `35329863392` completed successfully with all three jobs green: Server, Client, and E2E. Server included migrations/seed/typecheck/Prisma validation/production dependency audit/**164/164** tests/build; Client included typecheck/**75/75** tests/build/production dependency audit; E2E provisioned its dedicated PostgreSQL/SeaweedFS stack, applied migrations/seed, and passed the full Lab 3 Playwright suite.
 
 ### Final Lab 3 regression template
 
@@ -782,4 +783,4 @@ Issue #40 reran the integrated release candidate from merged `lab3-staging` head
 | User administration E2E | **Pass — `E2E-ADMIN-01/02` full-stack** |
 | Desktop/tablet/mobile visual QA | **Pass — `V-01`–`V-08`; 13 Lab 3 screenshots including failure/boundary states** |
 | Issue #40 dependency audit | **Not claimed — npm registry DNS/network unavailable (`ENOTFOUND`)** |
-| Hosted CI | Pending Issue #40 PR execution; do not claim until GitHub reports the checks |
+| Hosted CI | **Pass — PR #48 run `35329863392` on `a2134f2`: Server / Client / E2E all green** |

@@ -10,6 +10,7 @@ This index maps the final Sprint 3 repository evidence to the requested Answer P
 - Issue #40 release-candidate verification after the hosted-CI guard correction: Server **164/164**, Client **75/75**, Lab 3 Playwright **12/12**, Server/Client builds Pass, Prisma validate Pass, E2E migration status up to date.
 - Issue #40 `npm audit --omit=dev` was not completed because the npm registry was unreachable (`ENOTFOUND`); no fresh audit result is claimed. The earlier completed Issue #39 audit remains historical evidence only.
 - Hosted PR #48 subsequently verified production dependency audits successfully in both Server and Client jobs. CI also exposed and drove fixes for a test-database-guard re-entry defect and an 820 px Requester header overflow; both corrections retain strict safety/overflow assertions and have focused/full local regression evidence before re-running hosted CI.
+- Hosted CI final verification before review: GitHub Actions run `35329863392` passed **Server / Client / E2E** on exact head `a2134f23c9dc1ddde9ade97205e9f38b7648f3a3`.
 
 ## Part 1 — Git workflow, Issues, PRs, review, repository structure
 
