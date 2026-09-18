@@ -3,11 +3,10 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { requireE2eDatabaseUrl } from "../e2e-database.js";
 
 const API_URL = "http://127.0.0.1:3001";
-const E2E_DATABASE_URL =
-  process.env.E2E_DATABASE_URL ??
-  "postgresql://toktickit:toktickit@127.0.0.1:5435/toktickit_e2e_issue3?schema=public";
+const E2E_DATABASE_URL = requireE2eDatabaseUrl();
 const serverDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "server");
 let requesterOneEmail = "";
 let requesterTwoEmail = "";

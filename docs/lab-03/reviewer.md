@@ -357,9 +357,10 @@ Required review focus:
 
 - PR: [#47](https://github.com/thananun-7203/toktickit/pull/47), open against `lab3-staging`.
 - Requested reviewer: `Tanaboonnnnn`.
-- Reviewer feedback: Pending.
-- Response: Pending.
-- Verdict: Pending.
+- Round 1 reviewed head: `3da919273d3ef122d27b52e3d109643b01e8f3ef`.
+- Reviewer feedback: **Changes requested** — `e2e/lab-03/fullstack-fixtures.ts` still had a runtime fallback to the old Issue #35/Issue 3 E2E database. If `E2E_DATABASE_URL` was missing, final-QA fixtures could therefore write into the wrong database instead of failing safely.
+- Response: removed the old database fallback from all current Lab 3 E2E entry points, added shared `requireE2eDatabaseUrl()` fail-fast validation, and updated the README example away from the Issue 3 database. A missing `E2E_DATABASE_URL` now exits before Playwright starts its web servers. Re-review verification used a fresh disposable PostgreSQL database `toktickit_pr47_r1_e2e` on port `5441` plus isolated SeaweedFS filer on `18890`; all **12/12** Lab 3 Playwright tests passed.
+- Verdict: **Changes requested addressed; re-review pending**.
 - PR #46 accessibility follow-up status: implemented in Issue #39 with Administrator modal initial focus, Tab/Shift+Tab focus containment, Escape-close, and focus restoration; responsive visual evidence was regenerated after the fix.
 - PR #46 component-decomposition note: retained as non-blocking technical debt. Issue #39 did not materially expand `UserManagement.tsx` business scope, so no refactor was introduced solely for file-size cleanup during final QA.
 

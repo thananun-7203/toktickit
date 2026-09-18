@@ -1,8 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
+import { requireE2eDatabaseUrl } from "./e2e-database.js";
 
-const databaseUrl =
-  process.env.E2E_DATABASE_URL ??
-  "postgresql://toktickit:toktickit@127.0.0.1:5435/toktickit_e2e_issue3?schema=public";
+const databaseUrl = requireE2eDatabaseUrl();
 
 const clientOrigin = "http://127.0.0.1:5174";
 
