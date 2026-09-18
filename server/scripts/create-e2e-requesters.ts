@@ -40,17 +40,18 @@ async function main() {
   try {
     const passwordHash = await hashPassword(initialPassword);
     const fixtures = [
-      { name: "E2E Requester One", email: `e2e.requester.one.${suffix}@toktick.it` },
-      { name: "E2E Requester Two", email: `e2e.requester.two.${suffix}@toktick.it` },
+      { name: "E2E Requester One", email: `e2e.requester.one.${suffix}@toktick.it`, role: UserRole.REQUESTER, isActive: true, mustChangePassword: true },
+      { name: "E2E Requester Two", email: `e2e.requester.two.${suffix}@toktick.it`, role: UserRole.REQUESTER, isActive: true, mustChangePassword: true },
+      { name: "E2E Staff One", email: `e2e.staff.one.${suffix}@toktick.it`, role: UserRole.IT_STAFF, isActive: true, mustChangePassword: true },
+      { name: "E2E Staff Two", email: `e2e.staff.two.${suffix}@toktick.it`, role: UserRole.IT_STAFF, isActive: true, mustChangePassword: false },
+      { name: "E2E Administrator", email: `e2e.admin.${suffix}@toktick.it`, role: UserRole.ADMINISTRATOR, isActive: true, mustChangePassword: true },
+      { name: "E2E Inactive User", email: `e2e.inactive.${suffix}@toktick.it`, role: UserRole.REQUESTER, isActive: false, mustChangePassword: false },
     ];
 
     for (const fixture of fixtures) {
       await prisma.user.create({
         data: {
           ...fixture,
-          role: UserRole.REQUESTER,
-          isActive: true,
-          mustChangePassword: true,
           passwordHash,
         },
       });

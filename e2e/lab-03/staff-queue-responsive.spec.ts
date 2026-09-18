@@ -1,4 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
+import { mkdir } from "node:fs/promises";
+import path from "node:path";
+
+const CAPTURE_EVIDENCE = process.env.CAPTURE_EVIDENCE === "1";
+const EVIDENCE_DIR = path.resolve("../artifacts/lab-03/screenshots");
 
 const staffUser = {
   id: 200,
@@ -60,6 +65,12 @@ async function expectNoHorizontalOverflow(page: Page) {
   await expect.poll(async () => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
 }
 
+async function capture(page: Page, name: string) {
+  if (!CAPTURE_EVIDENCE) return;
+  await mkdir(EVIDENCE_DIR, { recursive: true });
+  await page.screenshot({ path: path.join(EVIDENCE_DIR, name), fullPage: true });
+}
+
 test("V-03 Staff Queue adapts at desktop, tablet, and mobile widths", async ({ page }) => {
   await mockQueueApis(page);
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -68,6 +79,7 @@ test("V-03 Staff Queue adapts at desktop, tablet, and mobile widths", async ({ p
   await expect(page.locator(".staff-queue-table-wrap")).toBeVisible();
   await expect(page.locator(".staff-queue-cards")).toBeHidden();
   await expectNoHorizontalOverflow(page);
+  await capture(page, "06-staff-ticket-queue-desktop.png");
 
   await page.setViewportSize({ width: 820, height: 900 });
   await expect(page.locator(".staff-queue-table-wrap")).toBeVisible();

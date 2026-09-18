@@ -334,10 +334,13 @@ Required review focus:
 
 ## 9. Issue 6 — Administrator User Management
 
-- PR: Pending.
-- Reviewer feedback: Pending.
-- Response: Pending.
-- Verdict: Pending.
+- PR: [#46](https://github.com/thananun-7203/toktickit/pull/46), merged into `lab3-staging`.
+- Reviewed head: `e1e6b06cf3506572c457610c93ec83dc0bab9c99`.
+- Reviewer: `Tanaboonnnnn` — **APPROVED** on the reviewed head.
+- Merge commit: `cd61fa1dc660d35218b4d2187abfef36b1cc412f`.
+- Reviewer feedback: no blocking correctness/spec findings. Two non-blocking follow-ups were recorded for later cleanup/final QA: (1) consider decomposing `UserManagement.tsx` into smaller Create/Edit/Initial-Password modal components if the Admin surface grows, and (2) strengthen modal accessibility with initial focus, focus trapping, and Escape-to-close behavior.
+- Response: accepted both notes as deferred non-blocking cleanup; no post-approval code change was required for Issue #38.
+- Verdict: **APPROVED and merged**.
 
 Required review focus:
 
@@ -352,10 +355,14 @@ Required review focus:
 
 ## 10. Issue 7 — Security, Regression, E2E & Visual QA
 
-- PR: Pending.
-- Reviewer feedback: Pending.
-- Response: Pending.
-- Verdict: Pending.
+- PR: [#47](https://github.com/thananun-7203/toktickit/pull/47), open against `lab3-staging`.
+- Requested reviewer: `Tanaboonnnnn`.
+- Round 1 reviewed head: `3da919273d3ef122d27b52e3d109643b01e8f3ef`.
+- Reviewer feedback: **Changes requested** — `e2e/lab-03/fullstack-fixtures.ts` still had a runtime fallback to the old Issue #35/Issue 3 E2E database. If `E2E_DATABASE_URL` was missing, final-QA fixtures could therefore write into the wrong database instead of failing safely.
+- Response: removed the old database fallback from all current Lab 3 E2E entry points, added shared `requireE2eDatabaseUrl()` fail-fast validation, and updated the README example away from the Issue 3 database. A missing `E2E_DATABASE_URL` now exits before Playwright starts its web servers. Re-review verification used a fresh disposable PostgreSQL database `toktickit_pr47_r1_e2e` on port `5441` plus isolated SeaweedFS filer on `18890`; all **12/12** Lab 3 Playwright tests passed.
+- Verdict: **Changes requested addressed; re-review pending**.
+- PR #46 accessibility follow-up status: implemented in Issue #39 with Administrator modal initial focus, Tab/Shift+Tab focus containment, Escape-close, and focus restoration; responsive visual evidence was regenerated after the fix.
+- PR #46 component-decomposition note: retained as non-blocking technical debt. Issue #39 did not materially expand `UserManagement.tsx` business scope, so no refactor was introduced solely for file-size cleanup during final QA.
 
 Required review focus:
 
@@ -365,7 +372,8 @@ Required review focus:
 - migration verification,
 - complete role E2E,
 - desktop/tablet/mobile visual checklist,
-- accessibility/focus/overflow,
+- accessibility/focus/overflow, including the deferred PR #46 Admin-modal initial-focus/focus-trap/Escape behavior,
+- keep the PR #46 `UserManagement.tsx` decomposition note in view if Issue #39 changes the Admin UI materially,
 - builds/Prisma/CI.
 
 ## 11. Issue 8 — Final Evidence & Release Readiness

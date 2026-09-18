@@ -91,6 +91,30 @@ describe("Lab 3 Administrator User Management", () => {
     expect(within(dialog).getByLabelText(/Initial Password/i)).toBeInTheDocument();
   });
 
+  it("V-06 review follow-up: modal manages initial focus, traps Tab, closes with Escape, and restores focus", async () => {
+    const user = userEvent.setup();
+    renderUsers();
+    await screen.findByRole("button", { name: `Edit ${STAFF.name}` });
+    const opener = screen.getByRole("button", { name: /Create User/i });
+    await user.click(opener);
+
+    const dialog = screen.getByRole("dialog", { name: "Create User" });
+    const nameInput = within(dialog).getByLabelText(/Name/i);
+    await waitFor(() => expect(nameInput).toHaveFocus());
+
+    const close = within(dialog).getByRole("button", { name: "Close Create User" });
+    const submit = within(dialog).getByRole("button", { name: "Create User" });
+    close.focus();
+    await user.tab({ shift: true });
+    expect(submit).toHaveFocus();
+    await user.tab();
+    expect(close).toHaveFocus();
+
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog", { name: "Create User" })).not.toBeInTheDocument();
+    expect(opener).toHaveFocus();
+  });
+
   it("UI-ADM-04: create validates input and shows duplicate-email feedback", async () => {
     const user = userEvent.setup();
     const create = vi.mocked(api.createAdminUser);

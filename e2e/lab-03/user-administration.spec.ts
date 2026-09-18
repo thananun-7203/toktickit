@@ -1,4 +1,12 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
+import {
+  API_URL,
+  completeMandatoryPasswordChange,
+  createDedicatedE2eUsers,
+  logoutFromUserMenu,
+  signIn,
+  signInAndCompleteMandatoryChange,
+} from "./fullstack-fixtures.js";
 
 const adminUser = {
   id: 500,
@@ -151,4 +159,134 @@ test("Administrator browser UI flow covers create, edit, initial password, and s
   await confirm.getByRole("button", { name: "Deactivate User", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("Reassign this user's tickets");
   await expect(page.getByRole("dialog", { name: "Edit User" })).toBeVisible();
+});
+
+test("E2E-ADMIN-01/02 full-stack Administrator workflow and safety boundaries", async ({ page }, testInfo) => {
+  const suffix = `admin-${Date.now()}-${testInfo.retry}-${testInfo.workerIndex}`;
+  const users = createDedicatedE2eUsers(suffix);
+  const adminPassword = `AdminFullStack${Date.now()}9A`;
+  const managedName = `E2E Managed ${suffix}`;
+  const updatedManagedName = `E2E Managed Updated ${suffix}`;
+  const managedEmail = `managed.${suffix}@toktick.it`;
+  const firstManagedPassword = "ManagedInitial123";
+  const resetManagedPassword = "ManagedReset456";
+
+  await signInAndCompleteMandatoryChange(
+    page,
+    users.adminEmail,
+    users.initialPassword,
+    adminPassword,
+    "User Management",
+  );
+
+  await page.getByLabel("Search").fill(users.staffOneEmail);
+  await page.getByRole("button", { name: "Search" }).click();
+  let staffRow = page.getByRole("row").filter({ hasText: users.staffOneEmail });
+  await expect(staffRow.getByLabel("Edit E2E Staff One")).toBeVisible();
+  await page.getByLabel("Role filter").selectOption("IT_STAFF");
+  staffRow = page.getByRole("row").filter({ hasText: users.staffOneEmail });
+  await expect(staffRow.getByLabel("Edit E2E Staff One")).toBeVisible();
+  await page.getByRole("button", { name: "Clear filters" }).click();
+
+  await page.getByRole("button", { name: /Create User/i }).click();
+  let dialog = page.getByRole("dialog", { name: "Create User" });
+  await dialog.getByLabel(/Name/i).fill(managedName);
+  await dialog.getByLabel(/Email/i).fill(managedEmail);
+  await dialog.getByLabel(/Role/i).selectOption("REQUESTER");
+  await dialog.getByLabel(/Initial Password/i).fill(firstManagedPassword);
+  await dialog.getByRole("button", { name: "Create User", exact: true }).click();
+  await expect(page.getByText(/User created successfully/i)).toBeVisible();
+
+  await page.getByRole("button", { name: `Edit ${managedName}` }).click();
+  dialog = page.getByRole("dialog", { name: "Edit User" });
+  await dialog.getByLabel(/Name/i).fill(updatedManagedName);
+  await dialog.getByLabel(/Role/i).selectOption("IT_STAFF");
+  await dialog.getByRole("button", { name: "Save Changes" }).click();
+  await expect(page.getByText(/User changes saved successfully/i)).toBeVisible();
+
+  await page.getByRole("button", { name: `Edit ${updatedManagedName}` }).click();
+  await page.getByRole("button", { name: "Set New Initial Password" }).click();
+  dialog = page.getByRole("dialog", { name: "Set Initial Password" });
+  await dialog.getByLabel(/New Initial Password/i).fill(resetManagedPassword);
+  await dialog.getByLabel(/Confirm Password/i).fill(resetManagedPassword);
+  await dialog.getByRole("button", { name: "Set Password" }).click();
+  await expect(page.getByText(/Existing sessions were ended/i)).toBeVisible();
+
+  const fixtureState = await page.evaluate(async ({ apiUrl, email, actorEmail }) => {
+    const usersResponse = await fetch(`${apiUrl}/api/v1/admin/users`, { credentials: "include" });
+    const usersBody = await usersResponse.json() as {
+      items: Array<{ id: number; email: string; role: string; isActive: boolean }>;
+    };
+    const actor = usersBody.items.find((item) => item.email === actorEmail);
+    const managed = usersBody.items.find((item) => item.email === email);
+    if (!actor || !managed) throw new Error("Unable to resolve Administrator E2E users");
+
+    const queueResponse = await fetch(`${apiUrl}/api/v1/staff/tickets?owner=unassigned`, { credentials: "include" });
+    const queueBody = await queueResponse.json() as { items: Array<{ id: number }> };
+    const ticket = queueBody.items[0];
+    if (!ticket) throw new Error("No unassigned Ticket available for assigned-owner safety E2E");
+
+    const assignResponse = await fetch(`${apiUrl}/api/v1/staff/tickets/${ticket.id}/owner`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "assign", ownerId: managed.id }),
+    });
+    if (!assignResponse.ok) throw new Error(`Unable to assign E2E safety Ticket: ${assignResponse.status}`);
+    return { actorId: actor.id, managedId: managed.id };
+  }, { apiUrl: API_URL, email: managedEmail, actorEmail: users.adminEmail });
+
+  await page.getByRole("button", { name: `Edit ${updatedManagedName}` }).click();
+  dialog = page.getByRole("dialog", { name: "Edit User" });
+  await dialog.getByLabel(/Status/i).selectOption("inactive");
+  await dialog.getByRole("button", { name: "Save Changes" }).click();
+  const confirm = page.getByRole("dialog", { name: "Deactivate User" });
+  await confirm.getByRole("button", { name: "Deactivate User", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("Reassign this user's tickets");
+  await page.getByRole("dialog", { name: "Edit User" }).getByRole("button", { name: "Cancel" }).click();
+
+  const actorRow = page.getByRole("row").filter({ hasText: users.adminEmail });
+  await actorRow.getByLabel("Edit E2E Administrator").click();
+  dialog = page.getByRole("dialog", { name: "Edit User" });
+  await dialog.getByLabel(/Status/i).selectOption("inactive");
+  await dialog.getByRole("button", { name: "Save Changes" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("You cannot deactivate your own Administrator account");
+  await dialog.getByLabel(/Status/i).selectOption("active");
+
+  const otherAdminResults = await page.evaluate(async ({ apiUrl, actorId }) => {
+    const listResponse = await fetch(`${apiUrl}/api/v1/admin/users`, { credentials: "include" });
+    const body = await listResponse.json() as {
+      items: Array<{ id: number; role: string; isActive: boolean }>;
+    };
+    const results: number[] = [];
+    for (const candidate of body.items) {
+      if (candidate.id === actorId || candidate.role !== "ADMINISTRATOR" || !candidate.isActive) continue;
+      const response = await fetch(`${apiUrl}/api/v1/admin/users/${candidate.id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: false }),
+      });
+      results.push(response.status);
+    }
+    return results;
+  }, { apiUrl: API_URL, actorId: fixtureState.actorId });
+  expect(otherAdminResults.every((status) => status === 200)).toBe(true);
+
+  await dialog.getByLabel(/Role/i).selectOption("REQUESTER");
+  await dialog.getByRole("button", { name: "Save Changes" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("At least one active Administrator is required");
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+
+  await logoutFromUserMenu(page, "E2E Administrator");
+  await signIn(page, managedEmail, resetManagedPassword);
+  await completeMandatoryPasswordChange(page, resetManagedPassword, `ManagedFinal${Date.now()}7C`, "Ticket Queue");
+
+  const forbiddenAdmin = await page.evaluate(async (apiUrl) => {
+    const response = await fetch(`${apiUrl}/api/v1/admin/users`, { credentials: "include" });
+    const body = await response.json();
+    return { status: response.status, body };
+  }, API_URL);
+  expect(forbiddenAdmin.status).toBe(403);
+  expect((forbiddenAdmin.body as { error?: { code?: string } }).error?.code).toBe("FORBIDDEN");
 });

@@ -103,7 +103,7 @@ describe("Lab 3 Administrator User Management", () => {
     await prisma.user.deleteMany({ where: { id: { in: userIds } } });
   });
 
-  it("ADM-01: lists only safe user fields and never returns password hashes", async () => {
+  it("ADM-01/AZ-05: Administrator can list safe user fields and never receives password hashes", async () => {
     const marker = crypto.randomUUID().slice(0, 8);
     const target = await fixtureUser({ name: `Safe List ${marker}` });
     const res = await request(app)
@@ -359,11 +359,14 @@ describe("Lab 3 Administrator User Management", () => {
     expect(blocked.body.error.code).toBe("PASSWORD_CHANGE_REQUIRED");
   });
 
-  it("ADM-17: Requester and IT Staff are forbidden from Administrator list/create/edit APIs", async () => {
+  it("ADM-17/AZ-03/AZ-04: Requester and IT Staff are forbidden from Administrator list/create/edit APIs", async () => {
     const target = await fixtureUser();
     for (const cookie of [requesterCookie, staffCookie]) {
-      expect((await request(app).get("/api/v1/admin/users").set("Cookie", cookie)).status).toBe(403);
-      expect((await request(app)
+      const list = await request(app).get("/api/v1/admin/users").set("Cookie", cookie);
+      expect(list.status).toBe(403);
+      expect(list.body.error.code).toBe("FORBIDDEN");
+
+      const create = await request(app)
         .post("/api/v1/admin/users")
         .set("Origin", TEST_ORIGIN)
         .set("Cookie", cookie)
@@ -373,17 +376,25 @@ describe("Lab 3 Administrator User Management", () => {
           role: "REQUESTER",
           isActive: true,
           initialPassword: "Forbidden123",
-        })).status).toBe(403);
-      expect((await request(app)
+        });
+      expect(create.status).toBe(403);
+      expect(create.body.error.code).toBe("FORBIDDEN");
+
+      const edit = await request(app)
         .patch(`/api/v1/admin/users/${target.id}`)
         .set("Origin", TEST_ORIGIN)
         .set("Cookie", cookie)
-        .send({ name: "Forbidden Edit" })).status).toBe(403);
-      expect((await request(app)
+        .send({ name: "Forbidden Edit" });
+      expect(edit.status).toBe(403);
+      expect(edit.body.error.code).toBe("FORBIDDEN");
+
+      const reset = await request(app)
         .post(`/api/v1/admin/users/${target.id}/initial-password`)
         .set("Origin", TEST_ORIGIN)
         .set("Cookie", cookie)
-        .send({ initialPassword: "ForbiddenReset123", confirmPassword: "ForbiddenReset123" })).status).toBe(403);
+        .send({ initialPassword: "ForbiddenReset123", confirmPassword: "ForbiddenReset123" });
+      expect(reset.status).toBe(403);
+      expect(reset.body.error.code).toBe("FORBIDDEN");
     }
   });
 

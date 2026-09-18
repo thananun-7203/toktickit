@@ -173,9 +173,11 @@ npm test
 Set `E2E_DATABASE_URL` to the fresh E2E database before running Playwright. Example PowerShell:
 
 ```powershell
-$env:E2E_DATABASE_URL="postgresql://toktickit:toktickit@127.0.0.1:5435/toktickit_e2e_issue3?schema=public"
+$env:E2E_DATABASE_URL="postgresql://toktickit:toktickit@127.0.0.1:5440/toktickit_issue7_e2e?schema=public"
 npm test
 ```
+
+Lab 3 Playwright intentionally has no database fallback. If `E2E_DATABASE_URL` is missing, the suite fails before starting its web servers so it cannot silently reuse an older or development database.
 
 ## Lab 2 Documentation
 

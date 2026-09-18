@@ -1,4 +1,11 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
+import {
+  API_URL,
+  createDedicatedE2eUsers,
+  logoutFromUserMenu,
+  signIn,
+  signInAndCompleteMandatoryChange,
+} from "./fullstack-fixtures.js";
 
 const staffUser = {
   id: 200,
@@ -220,4 +227,114 @@ test("Staff browser UI flow smoke covers the Ticket Detail operational workflow"
   await expect(page.getByText("old-log.pdf")).toBeVisible();
   await expect(page.getByText(/Removed · Duplicate/)).toBeVisible();
   await page.getByRole("button", { name: /Download/ }).click();
+});
+
+test("E2E-STAFF-01/02 full-stack Staff workflow and authorization boundaries", async ({ page }, testInfo) => {
+  const suffix = `staff-${Date.now()}-${testInfo.retry}-${testInfo.workerIndex}`;
+  const users = createDedicatedE2eUsers(suffix);
+  const requesterPassword = `RequesterStaffE2E${Date.now()}9A`;
+  const staffPassword = `StaffWorkflowE2E${Date.now()}8B`;
+  const summary = `Issue 39 Staff full-stack ${Date.now()}`;
+  const attachmentName = "issue39-staff-fullstack.pdf";
+
+  await signInAndCompleteMandatoryChange(
+    page,
+    users.requesterOneEmail,
+    users.initialPassword,
+    requesterPassword,
+    "My Tickets",
+  );
+  await page.getByRole("button", { name: "Create Ticket" }).first().click();
+  await page.getByLabel(/Category/).selectOption({ label: "Software" });
+  await page.getByLabel(/Related System/).selectOption({ label: "CRM" });
+  await page.getByLabel(/Requested Priority/).selectOption("High");
+  await page.getByLabel(/Summary/).fill(summary);
+  await page.getByLabel(/Description/).fill("Full-stack Staff E2E ticket created by an authenticated Requester.");
+  await page.getByLabel(/Attachments/i).setInputFiles({
+    name: attachmentName,
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4\nTokTickIT Issue 39 Staff full-stack E2E\n"),
+  });
+  await page.locator("form").getByRole("button", { name: /Create Ticket/ }).click();
+  await expect(page.getByText("Ticket created successfully")).toBeVisible();
+
+  const ticketId = await page.evaluate(async ({ apiUrl, uniqueSummary }) => {
+    const response = await fetch(`${apiUrl}/api/v1/tickets?search=${encodeURIComponent(uniqueSummary)}`, {
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error(`Unable to resolve requester ticket: ${response.status}`);
+    const body = await response.json() as { items: Array<{ id: number }> };
+    if (!body.items[0]) throw new Error("Requester ticket missing from list");
+    return body.items[0].id;
+  }, { apiUrl: API_URL, uniqueSummary: summary });
+
+  await logoutFromUserMenu(page, "E2E Requester One");
+  await signInAndCompleteMandatoryChange(
+    page,
+    users.staffOneEmail,
+    users.initialPassword,
+    staffPassword,
+    "Ticket Queue",
+  );
+
+  await page.getByLabel("Search").fill(summary);
+  await page.getByRole("button", { name: "Search" }).click();
+  const open = page.getByRole("button", { name: /^Open TKT-/ }).first();
+  await expect(open).toBeVisible();
+  await open.click();
+
+  await page.getByRole("button", { name: "Claim" }).click();
+  await expect(page.getByText("Ticket ownership updated.")).toBeVisible();
+
+  await page.getByLabel("Assign / Reassign").selectOption({ label: "E2E Staff Two (IT_STAFF)" });
+  await page.getByRole("button", { name: "Reassign" }).click();
+  await expect(page.getByText("Ticket reassigned successfully.")).toBeVisible();
+
+  await page.getByLabel("IT Priority").selectOption("Low");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("IT Priority saved.")).toBeVisible();
+
+  await page.getByLabel("Status").selectOption("Open");
+  await page.getByRole("button", { name: "Change" }).click();
+  await expect(page.getByText("Status changed to Open.")).toBeVisible();
+  await page.getByLabel("Status").selectOption("In Progress");
+  await page.getByRole("button", { name: "Change" }).click();
+  await expect(page.getByText("Status changed to In Progress.")).toBeVisible();
+
+  const publicText = `Full-stack public update ${Date.now()}`;
+  const privateText = `Full-stack private note ${Date.now()}`;
+  await page.getByLabel("Add a public comment").fill(publicText);
+  await page.getByRole("button", { name: "Add Comment" }).click();
+  await expect(page.getByText(publicText)).toBeVisible();
+  await page.getByLabel("Add an internal note").fill(privateText);
+  await page.getByRole("button", { name: "Add Note" }).click();
+  await expect(page.getByText(privateText)).toBeVisible();
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: /Download/ }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe(attachmentName);
+
+  const invalidTransition = await page.evaluate(async ({ apiUrl, id }) => {
+    const response = await fetch(`${apiUrl}/api/v1/staff/tickets/${id}/status`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "New" }),
+    });
+    return { status: response.status, body: await response.json() };
+  }, { apiUrl: API_URL, id: ticketId });
+  expect(invalidTransition.status).toBe(409);
+  expect((invalidTransition.body as { error?: { code?: string } }).error?.code).toBe("INVALID_STATUS_TRANSITION");
+
+  await logoutFromUserMenu(page, "E2E Staff One");
+  await signIn(page, users.requesterOneEmail, requesterPassword);
+  await expect(page.getByRole("heading", { name: "My Tickets" })).toBeVisible();
+  const forbiddenNotes = await page.evaluate(async ({ apiUrl, id }) => {
+    const response = await fetch(`${apiUrl}/api/v1/staff/tickets/${id}/internal-notes`, { credentials: "include" });
+    const body = await response.json();
+    return { status: response.status, body };
+  }, { apiUrl: API_URL, id: ticketId });
+  expect(forbiddenNotes.status).toBe(403);
+  expect(JSON.stringify(forbiddenNotes.body)).not.toContain(privateText);
 });
