@@ -12,7 +12,7 @@ Issue plan prepared before implementation:
 
 | Issue | Scope | Current review record |
 |---|---|---|
-| #50 | Sprint 4 Engineering Contract & Test Plan | PR #60 — `Tanaboonnnnn` requested changes at head `2dc5604`; revision in progress |
+| #50 | Sprint 4 Engineering Contract & Test Plan | PR #60 — Round 1 fixes pushed in `5a904b3`; re-review pending |
 | #51 | Actions Taken Data Model, Migration & Seed | Not started |
 | #52 | Actions Taken API & Authorization | Not started |
 | #53 | Actions Taken Ticket Detail UI | Not started |
@@ -42,7 +42,7 @@ lab4-staging -> main
 - Feature branch: `feature/1-sprint4-engineering-contract`
 - Base branch: `lab4-staging`
 - Baseline: Lab 3 release commit `6c9c2f7b47e7bedf777b6ccd5bd4eaafeb56d11a`
-- Current state: PR #60 received **Changes Requested** from `Tanaboonnnnn`; contract revision is being synchronized before re-review.
+- Current state: PR #60 received **Changes Requested** from `Tanaboonnnnn`; Round 1 contract fixes were pushed and are awaiting re-review.
 
 ### Contract Files Prepared in the Working Tree
 
@@ -129,7 +129,7 @@ The revision addresses the requested contract gaps across `specification.md`, `a
 - Dedicated tests were added for lost-response create retry, old-cycle Resolve rejection, and reassign-vs-complete race.
 - `Assumptions and Project Decisions` now explicitly distinguishes choices made by this project from handout-fixed requirements.
 
-Response/fix commit: **pending creation in this working-tree revision**.
+Response/fix commit: `5a904b3f2514ede8a34014fbec1eab06043dab30` (`docs(lab4): resolve issue 1 review blockers`).
 
 Re-review result: **pending**.
 
@@ -139,7 +139,7 @@ Populate only from actual PRs.
 
 | PR | Branch | Base | Reviewer verdict | Merge state |
 |---|---|---|---|---|
-| [#60](https://github.com/thananun-7203/toktickit/pull/60) | `feature/1-sprint4-engineering-contract` | `lab4-staging` | Changes Requested by `Tanaboonnnnn` at `2dc5604`; fixes in progress | Open |
+| [#60](https://github.com/thananun-7203/toktickit/pull/60) | `feature/1-sprint4-engineering-contract` | `lab4-staging` | Changes Requested by `Tanaboonnnnn` at `2dc5604`; fixes pushed in `5a904b3`, re-review pending | Open |
 
 ## 4. Review Standard
 
