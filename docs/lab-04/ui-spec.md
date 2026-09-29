@@ -135,7 +135,8 @@ Top summary area:
 Work lists:
 
 - `My Active Actions` — up to 5 Actions assigned to current user with Action status, Ticket Number, brief description, assignee context, updated time, and `Open Ticket` action.
-- `Recent / Urgent Tickets` — up to 5 active Tickets ordered by the contract's priority/recent rule.
+- `Recently Updated` — up to 5 active Tickets ordered by latest Ticket `updatedAt`.
+- `Urgent Tickets` — up to 5 active Tickets whose IT Priority is `High`, ordered by latest Ticket `updatedAt`.
 
 Each actionable value/list row goes to Ticket Queue or Ticket Detail. Dashboard does not contain full Ticket edit controls.
 
@@ -174,16 +175,17 @@ Section header:
 
 Every Action item displays:
 
-- Action Date/Time.
+- Action Date/Time, labelled/helper-texted as the time the work actually occurred.
 - Action Description.
 - Status.
 - Assignee.
 - Result or `Not recorded yet` while active.
-- `Performed by` or `Not completed yet` while active.
+- `Performed by` / `Completed at` or `Not completed yet` while active.
+- `Cancelled by` / `Cancelled at` for Cancelled rows.
 - Follow-Up Required Yes/No.
 - Follow-up Note when required.
 - Attachment Notes when present.
-- Created by / created timestamp in subdued audit metadata.
+- Created by / `Recorded at` server timestamp in subdued audit metadata so it is not confused with Action Date/Time.
 - Updated timestamp where useful.
 
 Stable order is newest Action Date/Time first, then id descending.
@@ -195,8 +197,9 @@ For `Planned` / `In Progress` Actions:
 - `View / Edit` action.
 - Assignee can be changed to an active eligible IT Staff/Administrator.
 - Lifecycle action buttons/select:
-  - Planned -> Start / Complete / Cancel.
-  - In Progress -> Complete / Cancel.
+  - Planned -> Start / Cancel for permitted Staff/Admin; **Complete only when current user is the Action assignee**.
+  - In Progress -> Cancel for permitted Staff/Admin; **Complete only when current user is the Action assignee**.
+- A non-assignee who needs to take over the work must first use the approved Reassign flow (subject to version/conflict checks), then complete as the new current assignee. The UI must not imply that merely clicking Complete makes an arbitrary Staff user the performer.
 - Completion opens edit/confirmation state requiring Result and valid Follow-up fields.
 - Cancel requires explicit confirmation because it is terminal.
 
@@ -207,7 +210,7 @@ For Completed/Cancelled:
 - Read-only presentation.
 - No Edit/Reassign/Status controls.
 - Completed shows automatic performer.
-- Cancelled clearly displays `Cancelled` text/icon, not just color.
+- Completed shows `Completed at`; Cancelled clearly displays `Cancelled`, `Cancelled by`, and `Cancelled at`, not just color.
 - No Delete action exists.
 
 ## 7. S4 — Action Create / Edit Mode
@@ -218,21 +221,26 @@ Implementation may use an accessible modal/dialog, inline panel, or dedicated ca
 
 | Field | Create | Edit active | Notes |
 |---|---:|---:|---|
-| Action Date/Time | Editable, required | Editable | Defaults to current date/time in UI; server remains authority on validity. |
+| Action Date/Time | Editable, required | Editable | **Business occurrence time** (`When did this work happen?`). Defaults to current date/time, may be backdated, must not exceed server-now + 5 minutes; stored UTC/displayed in browser locale. |
 | Action Description | Editable, required | Editable | Max 2,000 code points. |
 | Assignee | Editable, required | Editable | Active Staff/Admin options only; backend revalidates. |
 | Result | Optional | Editable | Required when completing. |
 | Follow-Up Required | Required Yes/No | Editable | Boolean. |
 | Follow-up Note | Conditional | Conditional | Required and shown when Yes; hidden/cleared when No. |
 | Attachment Notes | Optional | Editable | Text reference to existing file(s), not file upload. |
-| Performed by | Not editable | Not editable | Automatic on completion. |
+| Performed by | Not editable | Not editable | Automatic and equal to the current assignee who completes. |
 | Status | Planned initial | Via lifecycle control | Not an arbitrary free-edit field. |
+
+`Created/Recorded at`, `Updated at`, `Completed at`, and `Cancelled at` are server audit timestamps and are never user-editable.
 
 ### Validation / Conflict
 
 - Field errors render below fields.
+- Client may pre-check obviously invalid future Action Date/Time but server validation is authoritative; equivalent timezone offsets must display/round-trip as the same instant.
 - Inactive/ineligible assignee conflict leaves form open, preserves other entered values, refreshes assignee options where practical, and shows safe guidance.
 - `STALE_ACTION_TAKEN` keeps draft state and prompts user to refresh the current Action before retrying.
+- `STALE_TICKET_STATE` indicates that owner/priority/status/Actions changed after the Ticket snapshot loaded; refresh is required before another workflow-affecting mutation.
+- The create form generates one UUID `clientRequestId` for a logical submission and retains that same key while retrying an unknown/lost response. A new key is generated only after confirmed success or when the user intentionally starts a new Action form. This is not visible as an editable field.
 - API `500` preserves non-sensitive form fields and offers retry/cancel.
 - Busy state prevents duplicate submit.
 
@@ -252,7 +260,7 @@ Requester existing Ticket Detail remains read-only for operational work and keep
 Add an **Actions Taken** read-only section:
 
 - List all Actions for that owned Ticket in the same deterministic order.
-- Show Action Date/Time, Description, Result, Status, Assignee, Performed by, Follow-Up Required/Note, Attachment Notes, and appropriate creator/time metadata.
+- Show Action Date/Time, Description, Result, Status, Assignee, Performed by/Completed at or Cancelled by/Cancelled at, Follow-Up Required/Note, Attachment Notes, and appropriate creator/Recorded-at metadata.
 - No Add/Edit/Reassign/Start/Complete/Cancel controls.
 - No Internal Note content is mixed into this section.
 - Empty state: `No Actions Taken have been recorded for this Ticket yet.`
@@ -271,14 +279,16 @@ Cross-requester ownership remains backend enforced; the UI does not use a Reques
 
 When Staff selects `Resolved`:
 
-- If currently loaded Actions show no Completed Action or active Planned/In Progress Actions, UI may proactively explain the gate and disable/guide the action.
+- If the currently loaded **current workflow cycle** shows no Completed Action or still contains Planned/In Progress Actions, UI may proactively explain the gate and disable/guide the action. Completed Actions shown from older cycles remain historical and do not qualify the current resolution gate.
 - The request must still be validated by the backend because UI state may be stale.
-- `409 RESOLUTION_GATE_NOT_MET` shows concise guidance such as `Complete at least one Action and complete or cancel all active Actions before resolving this Ticket.`
-- `409 STALE_TICKET_STATE` tells the user the Ticket changed and offers Refresh.
+- `409 RESOLUTION_GATE_NOT_MET` shows concise guidance such as `Complete at least one Action in the current work cycle and complete or cancel all active current-cycle Actions before resolving this Ticket.`
+- `409 STALE_TICKET_STATE` tells the user the Ticket or related workflow work changed and offers Refresh.
 
 ### Requester Advisory Indication
 
 Preserve the existing informational banner/indicator for `Problem Appears Resolved`. It never renders as formal Resolved status and does not bypass the resolution gate.
+
+The Requester Ticket Detail keeps the current Ticket `version` as hidden concurrency state and submits it with the advisory mutation. If `409 STALE_TICKET_STATE` is returned because Staff/Action workflow changed meanwhile, the UI must refresh the Ticket rather than silently applying the indication to an older aggregate snapshot.
 
 ### Reopen
 
@@ -286,8 +296,9 @@ After a successful Reopened transition:
 
 - refreshed status shows Reopened.
 - Requester resolution indication is cleared.
+- previous `resolvedAt` is cleared and a new workflow cycle begins.
 - Add Action becomes available again.
-- Historical Completed/Cancelled Actions remain visible.
+- Historical Completed/Cancelled Actions remain visible as previous-cycle work, but they do not satisfy the new cycle's resolution gate.
 
 ## 10. Drill-Down Behavior
 
@@ -300,7 +311,8 @@ After a successful Reopened transition:
 | Staff My Active card | Ticket Queue with owner=mine context. |
 | Staff status/priority metric | Ticket Queue with matching existing filter. |
 | My Active Action row | Parent Staff Ticket Detail; Actions Taken section visible. |
-| Recent/Urgent Ticket row | Staff Ticket Detail. |
+| Recently Updated Ticket row | Staff Ticket Detail. |
+| Urgent Ticket row | Staff Ticket Detail or High-IT-Priority Queue context. |
 
 Navigation must preserve an understandable Back action (`Back to Dashboard`, `Back to Ticket Queue`, or existing role context) without creating browser-dead-end screens.
 
@@ -316,6 +328,9 @@ Navigation must preserve an understandable Back action (`Back to Dashboard`, `Ba
 | Action field validation | Inline errors, focus first invalid control. |
 | Inactive assignee | Keep draft; safe conflict message; refresh candidates. |
 | Stale Action version | Keep draft; refresh/retry guidance. |
+| Create response lost / retry | Reuse the same hidden `clientRequestId`; an idempotent `200` replay is treated as confirmed success rather than creating another card. |
+| Create idempotency key reused with different payload | Preserve form; explain conflict; generate a new key only when the user intentionally starts a distinct Action submission. |
+| Complete attempted by non-assignee | Explain that the Action must be reassigned before that user can complete it. |
 | Invalid Action transition | Safe conflict; refresh current Action. |
 | Resolution gate failure | Explain required work state; no false success status. |
 | Stale Ticket status | Safe conflict; refresh Ticket. |

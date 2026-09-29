@@ -12,7 +12,7 @@ Issue plan prepared before implementation:
 
 | Issue | Scope | Current review record |
 |---|---|---|
-| #50 | Sprint 4 Engineering Contract & Test Plan | PR #60 opened against `lab4-staging`; peer review pending |
+| #50 | Sprint 4 Engineering Contract & Test Plan | PR #60 — `Tanaboonnnnn` requested changes at head `2dc5604`; revision in progress |
 | #51 | Actions Taken Data Model, Migration & Seed | Not started |
 | #52 | Actions Taken API & Authorization | Not started |
 | #53 | Actions Taken Ticket Detail UI | Not started |
@@ -41,8 +41,8 @@ lab4-staging -> main
 - GitHub Issue: `#50 — [Lab 4] Issue_1: Sprint 4 Engineering Contract & Test Plan`
 - Feature branch: `feature/1-sprint4-engineering-contract`
 - Base branch: `lab4-staging`
-- Baseline: Lab 3 release commit `6c9c2f7`
-- Current state: contract committed and PR #60 opened against `lab4-staging`; peer review pending.
+- Baseline: Lab 3 release commit `6c9c2f7b47e7bedf777b6ccd5bd4eaafeb56d11a`
+- Current state: PR #60 received **Changes Requested** from `Tanaboonnnnn`; contract revision is being synchronized before re-review.
 
 ### Contract Files Prepared in the Working Tree
 
@@ -74,7 +74,7 @@ The Issue #50 work reviewed the released Lab 3 contract and implementation befor
 - Prisma schema validation: **Pass**.
 - Full Server API/integration and Playwright suites were **not rerun** during this reconnaissance because Docker/Test PostgreSQL was unavailable and no safe `TEST_DATABASE_URL` was configured. The development database was intentionally not used.
 
-The released Lab 3 documentation records the historical release results separately; they are not represented here as a fresh Issue #50 rerun.
+These observations were made while the working tree still matched exact baseline SHA `6c9c2f7b47e7bedf777b6ccd5bd4eaafeb56d11a`. `tests.md` records the actual baseline commands and observed Vitest timestamps. The released Lab 3 documentation records the historical full release results separately; they are not represented here as a fresh Issue #50 rerun. Post-review verification is recorded separately against the exact fix head rather than being mixed into this baseline block.
 
 ### Pull Request
 
@@ -87,24 +87,51 @@ The released Lab 3 documentation records the historical release results separate
 
 ### Reviewer
 
-**Not assigned/recorded for Lab 4 Issue #50 yet.** Add the actual reviewer identity only after review is requested or submitted.
+- Reviewer: `Tanaboonnnnn` (collaborator)
+- Review submitted: `2026-09-29T10:38:08Z`
+- Exact reviewed head: `2dc560453b0d581c4ee9003b4fc9277f52d0c1ff`
+- Verdict: **Changes Requested**
 
 ### Reviewer Feedback / Response Log
 
-No peer-review comments have been submitted yet.
+#### Round 1 — `Tanaboonnnnn` — Changes Requested
 
-When review occurs, record each round using this structure:
+Reviewed head: `2dc560453b0d581c4ee9003b4fc9277f52d0c1ff`
 
-```text
-Round N
-- Reviewer:
-- Reviewed head:
-- Verdict:
-- Blocking comments:
-- Non-blocking comments:
-- Response/fix commit:
-- Re-review result:
-```
+The reviewer found the overall contract detailed and well connected to the Lab 3 baseline, but requested contract-level changes before it becomes the source of truth for Issues #51–#59. Blocking/important points were:
+
+1. Clarify assignee/completion/`performedBy` semantics and cover reassign-vs-complete race.
+2. Add backend idempotency for Action create; UI busy state/version checks alone cannot prevent duplicate rows after a lost response and retry.
+3. Define Ticket aggregate concurrency beyond current-status checking because owner/priority/Action changes can make a snapshot stale without changing status.
+4. Prevent prior-cycle Completed Actions from satisfying a new Resolve after Reopen.
+5. Make `Recently Resolved` use actual resolution time rather than generic `updatedAt`.
+6. Split or rename the combined Staff `Recent / Urgent` list so its predicate/order matches its name.
+7. Define `actionDateTime` clearly as business time versus server audit time, including timezone/future boundaries.
+8. Record cancellation provenance rather than leaving Cancelled without actor/time.
+9. Synchronize this reviewer record with the real reviewer/head/verdict.
+10. Tie verification evidence to an exact SHA/command/timestamp and distinguish baseline reconnaissance from later implementation verification.
+11. Add explicit tests for lost-response create retry, Reopen->Resolve with only old-cycle work, and reassign-vs-complete race.
+12. Clearly label student/project decisions separately from handout-fixed requirements.
+
+#### Response to Round 1
+
+The revision addresses the requested contract gaps across `specification.md`, `api-spec.md`, `ui-spec.md`, `tests.md`, and this review record:
+
+- Completion is now **assignee-only**; `performedBy` is the authoritative current assignee who completes, with explicit reassign-vs-complete race behavior.
+- Action create now requires per-Ticket UUID `clientRequestId`; exact lost-response retry returns the existing row while conflicting key reuse returns `409 IDEMPOTENCY_KEY_REUSE`.
+- Ticket now has parent aggregate `version`; owner/IT Priority/status/Requester resolution indication/Action mutations increment it, and Resolve uses parent row lock/revalidation plus current child re-read.
+- Ticket now has `workflowCycle`; Reopen increments it and only current-cycle Completed work qualifies the next Resolve.
+- Ticket now has `resolvedAt`; Recently Resolved is ordered by real resolution time, survives Resolved->Closed, and is cleared on Reopen; legacy times are not fabricated.
+- Staff Dashboard now separates `Recently Updated` from High-IT-Priority `Urgent Tickets`.
+- `actionDateTime` is explicitly business occurrence time; server audit timestamps are separate; backdating/UTC normalization/future-skew rule and tests are defined.
+- Completion/cancellation provenance adds `completedAt`, `cancelledById`, and `cancelledAt`.
+- Baseline verification is explicitly tied to Lab 3 baseline SHA `6c9c2f7b47e7bedf777b6ccd5bd4eaafeb56d11a`, with commands/timestamps where observed; future review-fix verification will be reported against its exact head separately.
+- Dedicated tests were added for lost-response create retry, old-cycle Resolve rejection, and reassign-vs-complete race.
+- `Assumptions and Project Decisions` now explicitly distinguishes choices made by this project from handout-fixed requirements.
+
+Response/fix commit: **pending creation in this working-tree revision**.
+
+Re-review result: **pending**.
 
 ## 3. Pull Requests I Authored — Lab 4
 
@@ -112,7 +139,7 @@ Populate only from actual PRs.
 
 | PR | Branch | Base | Reviewer verdict | Merge state |
 |---|---|---|---|---|
-| [#60](https://github.com/thananun-7203/toktickit/pull/60) | `feature/1-sprint4-engineering-contract` | `lab4-staging` | Pending peer review | Open |
+| [#60](https://github.com/thananun-7203/toktickit/pull/60) | `feature/1-sprint4-engineering-contract` | `lab4-staging` | Changes Requested by `Tanaboonnnnn` at `2dc5604`; fixes in progress | Open |
 
 ## 4. Review Standard
 
