@@ -12,8 +12,8 @@ Issue plan prepared before implementation:
 
 | Issue | Scope | Current review record |
 |---|---|---|
-| #50 | Sprint 4 Engineering Contract & Test Plan | PR #60 — Round 1 fixes pushed in `5a904b3`; re-review pending |
-| #51 | Actions Taken Data Model, Migration & Seed | Not started |
+| #50 | Sprint 4 Engineering Contract & Test Plan | PR #60 approved and merged to `lab4-staging`; Issue #50 closed |
+| #51 | Actions Taken Data Model, Migration & Seed | Active on `feature/2-actions-data-foundation`; implementation commit `065da7c`; PR pending |
 | #52 | Actions Taken API & Authorization | Not started |
 | #53 | Actions Taken Ticket Detail UI | Not started |
 | #54 | Final Ticket Workflow & Resolution Rules | Not started |
@@ -42,7 +42,7 @@ lab4-staging -> main
 - Feature branch: `feature/1-sprint4-engineering-contract`
 - Base branch: `lab4-staging`
 - Baseline: Lab 3 release commit `6c9c2f7b47e7bedf777b6ccd5bd4eaafeb56d11a`
-- Current state: PR #60 received **Changes Requested** from `Tanaboonnnnn`; Round 1 contract fixes were pushed and are awaiting re-review.
+- Current state: PR #60 received review/fix/re-review, was **Approved**, and was merged into `lab4-staging` as merge commit `6a36d265aff8ef159b437bb85bee1de0f22aa99f`; Issue #50 is closed.
 
 ### Contract Files Prepared in the Working Tree
 
@@ -148,17 +148,58 @@ Re-review result: **Approved in Round 2 at head `9f623b974c32a7905094e1b8f1bb18f
 
 Cleanup commit: `39e15b5ed737d2cf0e834cdde23b1cb75f6335bf` (`docs(lab4): align assignee completion wording`).
 
-Re-review after cleanup: **pending**.
+Re-review after cleanup: **Approved** at final reviewed head `48dbae6744f0bfae008a102b5616e45ea1da8d75`; PR #60 was merged by `Tanaboonnnnn` at `2026-09-29T11:43:40Z`.
 
-## 3. Pull Requests I Authored — Lab 4
+## 3. Issue #51 — Actions Taken Data Model, Migration & Seed
+
+### Issue
+
+- GitHub Issue: `#51 — [Lab 4] Issue_2: Actions Taken Data Model, Migration & Seed`
+- Feature branch: `feature/2-actions-data-foundation`
+- Base branch: `lab4-staging`
+- Baseline: Issue #50 merge commit `6a36d265aff8ef159b437bb85bee1de0f22aa99f`
+- Implementation commit: `065da7ccab7f79db50d7c4f108e3e7dfe74958ce` (`feat(lab4): add actions data foundation`)
+- Current state: implementation and local verification complete; PR not opened yet.
+
+### Implemented Data Foundation
+
+- Added Prisma `ActionTakenStatus` and one-to-many `Ticket -> ActionTaken` model.
+- Added creator/assignee/performer/canceller relations plus completion/cancellation provenance.
+- Added per-Action `version`, per-Ticket `version`, `workflowCycle`, and nullable `resolvedAt`.
+- Added per-Ticket `clientRequestId` uniqueness for later idempotent Action creation.
+- Added migration-level checks for positive versions/cycles, text/follow-up consistency, and terminal lifecycle provenance.
+- Preserved legacy rows with default Ticket `version=1`, `workflowCycle=1`, `resolvedAt=NULL`, and zero synthetic Actions.
+- Extended create-only/idempotent seed coverage to all eight Ticket statuses, High/Medium/Low/null IT Priority, assigned/unassigned Tickets, zero/one/multiple Actions, all four Action statuses, prior/current workflow cycles, and zero/non-zero dashboard cases.
+
+### Migration / Seed Verification
+
+Verification was performed on a disposable PostgreSQL 16 database named `toktickit_lab4_test`, separate from the development database.
+
+- Prisma format/generate/validate: **Pass**.
+- Full migration deploy including Lab 4 migration: **Pass**.
+- Targeted Lab 4 migration + seed tests: **5/5 passing (2/2 files)**.
+- Full Server regression: **170/170 passing (23/23 files)**.
+- Server TypeScript build: **Pass**.
+- Client regression: **76/76 passing (11/11 files)**.
+- Client production build: **Pass**.
+- Development DB reset/destructive verification: **not used**.
+
+### Pull Request / Review
+
+- PR: **pending**.
+- Required reviewer when opened: `Tanaboonnnnn`.
+- Peer-review verdict: **pending**.
+
+## 4. Pull Requests I Authored — Lab 4
 
 Populate only from actual PRs.
 
 | PR | Branch | Base | Reviewer verdict | Merge state |
 |---|---|---|---|---|
-| [#60](https://github.com/thananun-7203/toktickit/pull/60) | `feature/1-sprint4-engineering-contract` | `lab4-staging` | Approved by `Tanaboonnnnn` at `9f623b9`; non-blocking wording cleanup applied, final re-review pending | Open |
+| [#60](https://github.com/thananun-7203/toktickit/pull/60) | `feature/1-sprint4-engineering-contract` | `lab4-staging` | Approved by `Tanaboonnnnn` at final reviewed head `48dbae6` | Merged (`6a36d26`) |
+| Pending Issue #51 PR | `feature/2-actions-data-foundation` | `lab4-staging` | Pending | Not opened |
 
-## 4. Review Standard
+## 5. Review Standard
 
 Each Lab 4 implementation PR should be reviewed against:
 
@@ -175,7 +216,7 @@ Each Lab 4 implementation PR should be reviewed against:
 
 Requested changes remain blocking until fixed or the reviewer explicitly marks them non-blocking.
 
-## 5. Kanban / Project Evidence
+## 6. Kanban / Project Evidence
 
 The existing workflow convention remains:
 
@@ -185,7 +226,7 @@ Backlog -> Specified -> Started -> PR Review -> Fixing -> Done
 
 Issue states/Project columns must be recorded from actual GitHub evidence. This file does not invent a current Project column when it has not been independently verified.
 
-## 6. Final Release Review
+## 7. Final Release Review
 
 To be completed only after Issues #50–#59 have real evidence:
 

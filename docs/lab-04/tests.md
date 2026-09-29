@@ -72,6 +72,26 @@ Observed on `feature/1-sprint4-engineering-contract` while the working tree stil
 
 The released Lab 3 evidence records Server **165/165**, Client **76/76**, and Playwright **12/12** before Lab 4. Those historical numbers are baseline evidence, not a claim that the full suites were rerun in Issue #50. Any post-review/final Lab 4 verification must be reported separately against the exact PR/release head SHA.
 
+### 3.1 Issue #51 — Actions Data Foundation Verification
+
+Implementation commit: `065da7ccab7f79db50d7c4f108e3e7dfe74958ce` (`feat(lab4): add actions data foundation`).
+
+Verification used a disposable PostgreSQL 16 container with database name `toktickit_lab4_test` on a separate test-only port. It was not the normal development database. The Lab 4 migration was applied through the complete migration chain before seeding/testing.
+
+| Check | Result |
+|---|---|
+| `npx prisma format` / `npx prisma generate` / `npx prisma validate` | **Pass** |
+| `npx prisma migrate deploy` on disposable PostgreSQL | **Pass — all 6 migrations applied**, including `20260929190000_lab4_actions_data_foundation` |
+| Lab 4 seed first run | **Pass** — 8 canonical Tickets, 7 canonical Actions Taken, existing Lab 3 comments/notes retained |
+| `migration-regression.test.ts` + `seed-regression.test.ts` | **Pass — 5/5 tests (2/2 files)**; Vitest start `2026-09-29 19:14:24 +07` |
+| Full Server regression | **Pass — 170/170 tests (23/23 files)**; Vitest start `2026-09-29 19:17:55 +07` |
+| Server TypeScript build | **Pass** |
+| Client full Vitest regression | **Pass — 76/76 tests (11/11 files)**; Vitest start `2026-09-29 19:19:11 +07` |
+| Client production build | **Pass** |
+| `git diff --check` / staged diff check before implementation commit | **Pass** |
+
+The migration regression creates isolated schemas inside the disposable test database, reconstructs a Lab 3-shaped schema/data fixture, applies the Lab 4 migration, verifies legacy row preservation/defaults/indexes/constraints, and separately injects a failure before `COMMIT` to prove complete rollback. The seed regression verifies first-run coverage, repeat-run idempotency, preservation of mutated Action/Ticket state, and zero/non-zero dashboard fixtures.
+
 ## 4. Unit Tests
 
 | Test ID | Requirement / AC | What it tests | Expected result | Planned file | Final |
@@ -172,15 +192,15 @@ The released Lab 3 evidence records Server **165/165**, Client **76/76**, and Pl
 
 | Test ID | AC | Scenario | Expected | Planned file | Final |
 |---|---|---|---|---|---|
-| MIG-01 | AC-19 | Apply Lab 4 migration to Lab 3-shaped fixture | prior User/Ticket/Attachment/Comment/Note counts/relations preserved | `migration-regression.test.ts` | Planned |
-| MIG-02 | AC-19 | Legacy active Ticket with zero Actions | remains usable; zero Action list; future Resolve gate applies | same | Planned |
-| MIG-03 | AC-19 | Legacy Resolved/Closed zero-Action Ticket | status preserved; no synthetic Action invented | same | Planned |
-| MIG-04 | AC-19 | Inject failure during Lab 4 migration transaction | full rollback/recovery leaves Lab 3 state intact | same/manual disposable DB evidence | Planned |
-| MIG-05 | AC-19 | Verify new FKs/indexes/Action+Ticket versions/workflowCycle/resolvedAt/idempotency uniqueness/provenance defaults | schema matches contract and Prisma validates | same | Planned |
-| SEED-01 | AC-20 | First Lab 4 seed | required users/Tickets/zero-one-many Actions/dashboard fixtures exist | `seed-regression.test.ts` | Planned |
-| SEED-02 | AC-20 | Seed rerun | no uncontrolled duplicates | same | Planned |
-| SEED-03 | AC-20 | Mutate seeded Action/Ticket then rerun seed | mutable Action status/assignee/result/follow-up/provenance and Ticket workflow cycle/version/resolution are not reset | same | Planned |
-| SEED-04 | AC-20 | Dashboard fixture coverage | both zero and non-zero metric cases available | same | Planned |
+| MIG-01 | AC-19 | Apply Lab 4 migration to Lab 3-shaped fixture | prior User/Ticket/Attachment/Comment/Note counts/relations preserved | `migration-regression.test.ts` | **Pass — `065da7c`** |
+| MIG-02 | AC-19 | Legacy active Ticket with zero Actions | remains usable; zero Action list; future Resolve gate applies | same | **Pass — `065da7c`** |
+| MIG-03 | AC-19 | Legacy Resolved/Closed zero-Action Ticket | status preserved; no synthetic Action invented | same | **Pass — `065da7c`** |
+| MIG-04 | AC-19 | Inject failure during Lab 4 migration transaction | full rollback/recovery leaves Lab 3 state intact | same/manual disposable DB evidence | **Pass — `065da7c`** |
+| MIG-05 | AC-19 | Verify new FKs/indexes/Action+Ticket versions/workflowCycle/resolvedAt/idempotency uniqueness/provenance defaults | schema matches contract and Prisma validates | same | **Pass — `065da7c`** |
+| SEED-01 | AC-20 | First Lab 4 seed | required users/Tickets/zero-one-many Actions/dashboard fixtures exist | `seed-regression.test.ts` | **Pass — `065da7c`** |
+| SEED-02 | AC-20 | Seed rerun | no uncontrolled duplicates | same | **Pass — `065da7c`** |
+| SEED-03 | AC-20 | Mutate seeded Action/Ticket then rerun seed | mutable Action status/assignee/result/follow-up/provenance and Ticket workflow cycle/version/resolution are not reset | same | **Pass — `065da7c`** |
+| SEED-04 | AC-20 | Dashboard fixture coverage | both zero and non-zero metric cases available | same | **Pass — `065da7c`** |
 
 ## 10. Authorization / Security Tests
 
