@@ -13,7 +13,7 @@ Issue plan prepared before implementation:
 | Issue | Scope | Current review record |
 |---|---|---|
 | #50 | Sprint 4 Engineering Contract & Test Plan | PR #60 approved and merged to `lab4-staging`; Issue #50 closed |
-| #51 | Actions Taken Data Model, Migration & Seed | Active on `feature/2-actions-data-foundation`; implementation commit `065da7c`; PR pending |
+| #51 | Actions Taken Data Model, Migration & Seed | PR #61 open against `lab4-staging`; review requested from `Tanaboonnnnn` |
 | #52 | Actions Taken API & Authorization | Not started |
 | #53 | Actions Taken Ticket Detail UI | Not started |
 | #54 | Final Ticket Workflow & Resolution Rules | Not started |
@@ -186,9 +186,13 @@ Verification was performed on a disposable PostgreSQL 16 database named `toktick
 
 ### Pull Request / Review
 
-- PR: **pending**.
-- Required reviewer when opened: `Tanaboonnnnn`.
+- PR: [#61 — `[Lab 4] Issue 2: Actions Taken Data Model, Migration & Seed`](https://github.com/thananun-7203/toktickit/pull/61)
+- Head: `feature/2-actions-data-foundation`
+- Base: `lab4-staging`
+- PR opened after implementation commit `065da7c` and evidence/docs commit `49904b8` were pushed.
+- Reviewer requested: `Tanaboonnnnn`.
 - Peer-review verdict: **pending**.
+- Issue #51 remains open through review and should close only after approved merge into `lab4-staging`.
 
 ## 4. Pull Requests I Authored — Lab 4
 
@@ -197,7 +201,7 @@ Populate only from actual PRs.
 | PR | Branch | Base | Reviewer verdict | Merge state |
 |---|---|---|---|---|
 | [#60](https://github.com/thananun-7203/toktickit/pull/60) | `feature/1-sprint4-engineering-contract` | `lab4-staging` | Approved by `Tanaboonnnnn` at final reviewed head `48dbae6` | Merged (`6a36d26`) |
-| Pending Issue #51 PR | `feature/2-actions-data-foundation` | `lab4-staging` | Pending | Not opened |
+| [#61](https://github.com/thananun-7203/toktickit/pull/61) | `feature/2-actions-data-foundation` | `lab4-staging` | Review requested from `Tanaboonnnnn` | Open |
 
 ## 5. Review Standard
 
