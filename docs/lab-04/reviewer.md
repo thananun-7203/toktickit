@@ -12,7 +12,7 @@ Issue plan prepared before implementation:
 
 | Issue | Scope | Current review record |
 |---|---|---|
-| #50 | Sprint 4 Engineering Contract & Test Plan | Active; feature branch created; PR not opened yet |
+| #50 | Sprint 4 Engineering Contract & Test Plan | PR #60 opened against `lab4-staging`; peer review pending |
 | #51 | Actions Taken Data Model, Migration & Seed | Not started |
 | #52 | Actions Taken API & Authorization | Not started |
 | #53 | Actions Taken Ticket Detail UI | Not started |
@@ -42,7 +42,7 @@ lab4-staging -> main
 - Feature branch: `feature/1-sprint4-engineering-contract`
 - Base branch: `lab4-staging`
 - Baseline: Lab 3 release commit `6c9c2f7`
-- Current state: contract drafting before commit/PR; student review requested before commit.
+- Current state: contract committed and PR #60 opened against `lab4-staging`; peer review pending.
 
 ### Contract Files Prepared in the Working Tree
 
@@ -78,7 +78,12 @@ The released Lab 3 documentation records the historical release results separate
 
 ### Pull Request
 
-**Not opened yet.** The student explicitly requested review of the working-tree contract before commit and PR creation.
+- PR: [#60 — `[Lab 4] Issue 1: Sprint 4 Engineering Contract & Test Plan`](https://github.com/thananun-7203/toktickit/pull/60)
+- Head: `feature/1-sprint4-engineering-contract`
+- Base: `lab4-staging`
+- Initial contract commit: `67015c7` (`docs(lab4): define sprint 4 engineering contract`)
+- PR opened after the student reviewed the working-tree draft and explicitly approved commit/PR creation.
+- Issue #50 is referenced without a closing keyword because the PR targets the staging branch; close Issue #50 only after approved merge according to the staged workflow.
 
 ### Reviewer
 
@@ -107,7 +112,7 @@ Populate only from actual PRs.
 
 | PR | Branch | Base | Reviewer verdict | Merge state |
 |---|---|---|---|---|
-| Pending | `feature/1-sprint4-engineering-contract` | `lab4-staging` | Not reviewed | Not opened |
+| [#60](https://github.com/thananun-7203/toktickit/pull/60) | `feature/1-sprint4-engineering-contract` | `lab4-staging` | Pending peer review | Open |
 
 ## 4. Review Standard
 
@@ -147,4 +152,3 @@ To be completed only after Issues #50–#59 have real evidence:
 - Required changes and response commits, if any.
 - Final approval and merge commit.
 - Final `main` regression/evidence synchronization.
-
