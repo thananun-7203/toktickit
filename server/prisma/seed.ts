@@ -1,4 +1,4 @@
-import { UserRole } from "@prisma/client";
+import { ActionTakenStatus, UserRole } from "@prisma/client";
 import { getPrisma } from "../src/prisma.js";
 
 // Lab 3 seed data. Stable natural keys + create-only upserts make reruns safe:
@@ -22,6 +22,36 @@ type SeedUser = {
   isActive: boolean;
   passwordHash: string;
 };
+
+type SeedAction = {
+  ticketId: number;
+  clientRequestId: string;
+  workflowCycle: number;
+  actionDateTime: Date;
+  description: string;
+  result?: string | null;
+  followUpRequired: boolean;
+  followUpNote?: string | null;
+  attachmentNotes?: string | null;
+  status: ActionTakenStatus;
+  createdById: number;
+  assigneeId: number;
+  performedById?: number | null;
+  completedAt?: Date | null;
+  cancelledById?: number | null;
+  cancelledAt?: Date | null;
+  version?: number;
+};
+
+const ACTION_REQUEST_IDS = {
+  reportRestartCompleted: "00000000-0000-4000-8000-000000000001",
+  reportFollowUpPlanned: "00000000-0000-4000-8000-000000000002",
+  crmValidationInProgress: "00000000-0000-4000-8000-000000000003",
+  workerLogCancelled: "00000000-0000-4000-8000-000000000004",
+  reopenedHistoricalCompleted: "00000000-0000-4000-8000-000000000005",
+  reopenedCurrentPlanned: "00000000-0000-4000-8000-000000000006",
+  closedPermissionCompleted: "00000000-0000-4000-8000-000000000007",
+} as const;
 
 // These are bcrypt cost-12 hashes of the documented local-only credentials in
 // README.md. The seed never writes or derives a plaintext password in the DB.
@@ -60,6 +90,21 @@ async function createUserIfMissing(user: SeedUser) {
   });
 }
 
+async function createActionIfMissing(action: SeedAction) {
+  const prisma = getPrisma();
+  const existing = await prisma.actionTaken.findUnique({
+    where: {
+      ticketId_clientRequestId: {
+        ticketId: action.ticketId,
+        clientRequestId: action.clientRequestId,
+      },
+    },
+  });
+  if (existing) return existing;
+
+  return prisma.actionTaken.create({ data: action });
+}
+
 async function main() {
   const prisma = getPrisma();
 
@@ -83,8 +128,11 @@ async function main() {
   const requester1 = userByEmail.get("somchai@toktick.it")!;
   const requester2 = userByEmail.get("somsri@toktick.it")!;
   const requester3 = userByEmail.get("anan@toktick.it")!;
+  const requester4 = userByEmail.get("preecha@toktick.it")!;
   const staff1 = userByEmail.get("narin.staff@toktick.it")!;
   const staff2 = userByEmail.get("malee.staff@toktick.it")!;
+  const staff3 = userByEmail.get("krit.staff@toktick.it")!;
+  const admin1 = userByEmail.get("admin.one@toktick.it")!;
 
   const ticket1 = await prisma.ticket.upsert({
     where: { ticketNumber: "TKT-2025-90001" },
@@ -120,7 +168,7 @@ async function main() {
     },
   });
 
-  await prisma.ticket.upsert({
+  const ticket3 = await prisma.ticket.upsert({
     where: { ticketNumber: "TKT-2025-90003" },
     update: {},
     create: {
@@ -137,6 +185,216 @@ async function main() {
       categoryId: category.id,
       relatedSystemId: reportPortal.id,
     },
+  });
+
+  const ticket4 = await prisma.ticket.upsert({
+    where: { ticketNumber: "TKT-2025-90004" },
+    update: {},
+    create: {
+      ticketNumber: "TKT-2025-90004",
+      summary: "New access request is waiting for triage",
+      description: "A newly submitted access request is ready for initial support triage.",
+      requestedPriority: "Medium",
+      itPriority: null,
+      status: "New",
+      requesterId: requester1.id,
+      ownerId: null,
+      categoryId: category.id,
+      relatedSystemId: crm.id,
+    },
+  });
+
+  const ticket5 = await prisma.ticket.upsert({
+    where: { ticketNumber: "TKT-2025-90005" },
+    update: {},
+    create: {
+      ticketNumber: "TKT-2025-90005",
+      summary: "Reporting worker intermittently stops processing",
+      description: "Support is actively diagnosing intermittent report worker failures.",
+      requestedPriority: "High",
+      itPriority: "High",
+      status: "In Progress",
+      requesterId: requester2.id,
+      ownerId: staff3.id,
+      categoryId: category.id,
+      relatedSystemId: reportPortal.id,
+    },
+  });
+
+  const ticket6 = await prisma.ticket.upsert({
+    where: { ticketNumber: "TKT-2025-90006" },
+    update: {},
+    create: {
+      ticketNumber: "TKT-2025-90006",
+      summary: "Closed CRM permission correction",
+      description: "The requested CRM permission was corrected, verified, resolved, and later closed.",
+      requestedPriority: "Low",
+      itPriority: "Low",
+      status: "Closed",
+      resolvedAt: new Date("2026-09-20T03:00:00.000Z"),
+      requesterId: requester4.id,
+      ownerId: staff1.id,
+      categoryId: category.id,
+      relatedSystemId: crm.id,
+    },
+  });
+
+  const ticket7 = await prisma.ticket.upsert({
+    where: { ticketNumber: "TKT-2025-90007" },
+    update: {},
+    create: {
+      ticketNumber: "TKT-2025-90007",
+      summary: "Report export issue reopened after recurrence",
+      description: "A previously resolved report-export problem has recurred and entered a new work cycle.",
+      requestedPriority: "High",
+      itPriority: "Medium",
+      status: "Reopened",
+      version: 3,
+      workflowCycle: 2,
+      requesterId: requester1.id,
+      ownerId: staff2.id,
+      categoryId: category.id,
+      relatedSystemId: reportPortal.id,
+    },
+  });
+
+  const ticket8 = await prisma.ticket.upsert({
+    where: { ticketNumber: "TKT-2025-90008" },
+    update: {},
+    create: {
+      ticketNumber: "TKT-2025-90008",
+      summary: "Cancelled duplicate software request",
+      description: "The requester confirmed this Ticket duplicated an existing request.",
+      requestedPriority: "Medium",
+      itPriority: null,
+      status: "Cancelled",
+      requesterId: requester4.id,
+      ownerId: null,
+      categoryId: category.id,
+      relatedSystemId: crm.id,
+    },
+  });
+
+  // Lab 4 canonical Actions Taken. Stable clientRequestId values are the
+  // natural keys, and create-only behavior prevents seed reruns from resetting
+  // mutable Action workflow state.
+  await createActionIfMissing({
+    ticketId: ticket1.id,
+    clientRequestId: ACTION_REQUEST_IDS.reportRestartCompleted,
+    workflowCycle: 1,
+    actionDateTime: new Date("2026-09-18T02:00:00.000Z"),
+    description: "Restarted the reporting worker after reproducing the export timeout.",
+    result: "Monthly report export completed successfully after the worker restart.",
+    followUpRequired: false,
+    followUpNote: null,
+    attachmentNotes: "Use the requester report-error screenshot for comparison.",
+    status: ActionTakenStatus.COMPLETED,
+    createdById: staff1.id,
+    // Deliberately different from Ticket Owner to prove Action assignment is
+    // independent while completion still records the current assignee.
+    assigneeId: staff2.id,
+    performedById: staff2.id,
+    completedAt: new Date("2026-09-18T02:20:00.000Z"),
+    version: 2,
+  });
+
+  await createActionIfMissing({
+    ticketId: ticket1.id,
+    clientRequestId: ACTION_REQUEST_IDS.reportFollowUpPlanned,
+    workflowCycle: 1,
+    actionDateTime: new Date("2026-09-18T03:00:00.000Z"),
+    description: "Confirm export stability after the next scheduled reporting run.",
+    result: null,
+    followUpRequired: true,
+    followUpNote: "Check the next scheduled export and record whether the timeout returns.",
+    attachmentNotes: null,
+    status: ActionTakenStatus.PLANNED,
+    createdById: staff1.id,
+    assigneeId: staff1.id,
+  });
+
+  await createActionIfMissing({
+    ticketId: ticket2.id,
+    clientRequestId: ACTION_REQUEST_IDS.crmValidationInProgress,
+    workflowCycle: 1,
+    actionDateTime: new Date("2026-09-19T01:30:00.000Z"),
+    description: "Compare the rejected CRM update with the current validation rules.",
+    result: null,
+    followUpRequired: false,
+    followUpNote: null,
+    attachmentNotes: null,
+    status: ActionTakenStatus.IN_PROGRESS,
+    createdById: staff2.id,
+    assigneeId: staff2.id,
+  });
+
+  await createActionIfMissing({
+    ticketId: ticket5.id,
+    clientRequestId: ACTION_REQUEST_IDS.workerLogCancelled,
+    workflowCycle: 1,
+    actionDateTime: new Date("2026-09-21T04:00:00.000Z"),
+    description: "Collect an additional verbose worker log after the next failure.",
+    result: null,
+    followUpRequired: false,
+    followUpNote: null,
+    attachmentNotes: null,
+    status: ActionTakenStatus.CANCELLED,
+    createdById: staff3.id,
+    assigneeId: staff3.id,
+    cancelledById: admin1.id,
+    cancelledAt: new Date("2026-09-21T04:15:00.000Z"),
+    version: 2,
+  });
+
+  await createActionIfMissing({
+    ticketId: ticket7.id,
+    clientRequestId: ACTION_REQUEST_IDS.reopenedHistoricalCompleted,
+    workflowCycle: 1,
+    actionDateTime: new Date("2026-09-10T02:00:00.000Z"),
+    description: "Applied the original report export recovery during the first workflow cycle.",
+    result: "Export recovered and the first cycle was resolved.",
+    followUpRequired: false,
+    followUpNote: null,
+    attachmentNotes: null,
+    status: ActionTakenStatus.COMPLETED,
+    createdById: staff1.id,
+    assigneeId: staff1.id,
+    performedById: staff1.id,
+    completedAt: new Date("2026-09-10T02:30:00.000Z"),
+    version: 2,
+  });
+
+  await createActionIfMissing({
+    ticketId: ticket7.id,
+    clientRequestId: ACTION_REQUEST_IDS.reopenedCurrentPlanned,
+    workflowCycle: 2,
+    actionDateTime: new Date("2026-09-22T06:00:00.000Z"),
+    description: "Investigate the recurrence using the current reopened workflow cycle.",
+    result: null,
+    followUpRequired: true,
+    followUpNote: "Compare the new failure signature with the first-cycle recovery evidence.",
+    attachmentNotes: null,
+    status: ActionTakenStatus.PLANNED,
+    createdById: staff2.id,
+    assigneeId: staff2.id,
+  });
+
+  await createActionIfMissing({
+    ticketId: ticket6.id,
+    clientRequestId: ACTION_REQUEST_IDS.closedPermissionCompleted,
+    workflowCycle: 1,
+    actionDateTime: new Date("2026-09-20T02:30:00.000Z"),
+    description: "Corrected the CRM permission and verified access before resolution.",
+    result: "Requester access was verified successfully before the Ticket was closed.",
+    followUpRequired: false,
+    followUpNote: null,
+    attachmentNotes: null,
+    status: ActionTakenStatus.COMPLETED,
+    createdById: staff1.id,
+    assigneeId: staff1.id,
+    performedById: staff1.id,
+    completedAt: new Date("2026-09-20T02:50:00.000Z"),
+    version: 2,
   });
 
   const publicContent = "Support is investigating this issue and will share updates here.";
@@ -163,13 +421,14 @@ async function main() {
     await prisma.internalNote.create({ data: { ticketId: ticket1.id, authorId: staff1.id, content: noteContent } });
   }
 
-  const [requesterActive, requesterInactive, staffActive, staffInactive, adminActive, tickets, comments, notes] = await Promise.all([
+  const [requesterActive, requesterInactive, staffActive, staffInactive, adminActive, tickets, actions, comments, notes] = await Promise.all([
     prisma.user.count({ where: { role: UserRole.REQUESTER, isActive: true } }),
     prisma.user.count({ where: { role: UserRole.REQUESTER, isActive: false } }),
     prisma.user.count({ where: { role: UserRole.IT_STAFF, isActive: true } }),
     prisma.user.count({ where: { role: UserRole.IT_STAFF, isActive: false } }),
     prisma.user.count({ where: { role: UserRole.ADMINISTRATOR, isActive: true } }),
     prisma.ticket.count(),
+    prisma.actionTaken.count(),
     prisma.publicComment.count(),
     prisma.internalNote.count(),
   ]);
@@ -177,7 +436,7 @@ async function main() {
   console.log(
     `Seed complete. Requesters ${requesterActive} active/${requesterInactive} inactive; ` +
       `Staff ${staffActive} active/${staffInactive} inactive; Admin ${adminActive} active; ` +
-      `Tickets ${tickets}; PublicComments ${comments}; InternalNotes ${notes}.`,
+      `Tickets ${tickets}; ActionsTaken ${actions}; PublicComments ${comments}; InternalNotes ${notes}.`,
   );
 }
 

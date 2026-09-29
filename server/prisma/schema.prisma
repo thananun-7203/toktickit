@@ -34,6 +34,13 @@ enum UserRole {
   ADMINISTRATOR
 }
 
+enum ActionTakenStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 model User {
   id                 Int             @id @default(autoincrement())
   name               String
@@ -49,6 +56,10 @@ model User {
   sessions           AuthSession[]
   publicComments     PublicComment[]
   internalNotes      InternalNote[]
+  createdActions     ActionTaken[]   @relation("ActionCreatedBy")
+  assignedActions    ActionTaken[]   @relation("ActionAssignee")
+  performedActions   ActionTaken[]   @relation("ActionPerformedBy")
+  cancelledActions   ActionTaken[]   @relation("ActionCancelledBy")
 
   @@index([role, isActive])
 }
@@ -82,6 +93,9 @@ model Ticket {
   itPriority               String?
   status                   String          @default("New")
   problemAppearsResolvedAt DateTime?
+  version                  Int             @default(1)
+  workflowCycle            Int             @default(1)
+  resolvedAt               DateTime?
   createdAt                DateTime        @default(now())
   updatedAt                DateTime        @updatedAt
   requesterId              Int
@@ -95,6 +109,7 @@ model Ticket {
   attachments              Attachment[]
   publicComments           PublicComment[]
   internalNotes            InternalNote[]
+  actionsTaken             ActionTaken[]
 
   @@index([requesterId])
   @@index([ownerId])
@@ -104,6 +119,43 @@ model Ticket {
   @@index([relatedSystemId])
   @@index([createdAt])
   @@index([updatedAt])
+}
+
+model ActionTaken {
+  id               Int               @id @default(autoincrement())
+  ticketId         Int
+  ticket           Ticket            @relation(fields: [ticketId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  clientRequestId  String            @db.Uuid
+  workflowCycle    Int
+  actionDateTime   DateTime
+  description      String
+  result           String?
+  followUpRequired Boolean
+  followUpNote     String?
+  attachmentNotes  String?
+  status           ActionTakenStatus @default(PLANNED)
+  createdById      Int
+  createdBy        User              @relation("ActionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  assigneeId       Int
+  assignee         User              @relation("ActionAssignee", fields: [assigneeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  performedById    Int?
+  performedBy      User?             @relation("ActionPerformedBy", fields: [performedById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  completedAt      DateTime?
+  cancelledById    Int?
+  cancelledBy      User?             @relation("ActionCancelledBy", fields: [cancelledById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  cancelledAt      DateTime?
+  version          Int               @default(1)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@unique([ticketId, clientRequestId])
+  @@index([ticketId, actionDateTime, id])
+  @@index([ticketId, workflowCycle, status])
+  @@index([assigneeId, status, updatedAt])
+  @@index([status])
+  @@index([createdById])
+  @@index([performedById])
+  @@index([cancelledById])
 }
 
 model Attachment {

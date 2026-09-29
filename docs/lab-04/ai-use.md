@@ -54,6 +54,12 @@ The final submission requires 6–10 selected key prompts. The following are rea
 
 **Use:** Authorized drafting of `docs/lab-04/*` while preserving a human review checkpoint before irreversible Git/PR workflow actions.
 
+### Prompt 8 — Implement Issue #51 data foundation
+
+> "โอเคงั้นลงมือทำ Issue #51 — Actions Taken Data Model, Migration & Seed ตามแผนที่วางไว้ได้เลย"
+
+**Use:** Authorized the coding agent to branch from the reviewed `lab4-staging` baseline, implement the approved Prisma model/migration/seed foundation, add migration/rollback/seed regression tests, and verify the change only against a disposable PostgreSQL test database before opening a PR.
+
 ## 3. How AI Was Used in Issue #50
 
 ### Specification Agent Work
@@ -89,6 +95,12 @@ The student retained control over:
 - preventing the AI from committing/opening a PR before manual review;
 - approving/rejecting the proposed Sprint 4 engineering decisions before they become a committed contract; and
 - later deciding whether peer-review requested changes should modify the contract.
+
+## 4.1 Issue #51 Implementation Use
+
+For Issue #51, the AI was used to translate the approved contract into the real Prisma/PostgreSQL increment, while keeping API/UI work out of scope. It inspected the existing migration/seed conventions, added the Action Taken relations and Ticket concurrency fields, wrote an additive transaction-wrapped migration, extended seed data without resetting mutable rows, and added tests that reconstruct a Lab 3-shaped schema before applying the Lab 4 migration.
+
+One generated test-harness detail required correction during verification: JavaScript replacement-string handling converted PostgreSQL `DO $$` delimiters unexpectedly in the forced-rollback test. The implementation migration itself had already applied successfully; the harness was changed to a replacement callback, then the targeted tests passed **5/5** and the full Server regression passed **170/170** on the disposable test database. This is retained as an example of why generated test code was executed and corrected rather than assumed correct.
 
 ## 5. My Reflection — Draft for Finalization
 
