@@ -18,7 +18,7 @@ Sprint 4 completes TokTickIT's core service-desk workflow by adding structured A
 
 ## 2. Stakeholder Request Interpretation
 
-TokTickIT already receives Tickets and supports authenticated Requester, IT Staff, and Administrator workflows. Sprint 4 adds a structured record of the actual work performed on a Ticket without replacing the Ticket Owner's coordinating responsibility. An Action Taken may be assigned to one eligible support user while another permitted support user may ultimately perform/complete it; the backend records the authenticated actor rather than trusting client-supplied identity.
+TokTickIT already receives Tickets and supports authenticated Requester, IT Staff, and Administrator workflows. Sprint 4 adds a structured record of the actual work performed on a Ticket without replacing the Ticket Owner's coordinating responsibility. An Action Taken may be assigned to an eligible support user who can be different from the Ticket Owner; only the Action's current assignee may complete it, and the backend records that authenticated assignee as `Performed by` rather than trusting client-supplied identity.
 
 Requesters continue to see only their own Tickets and may view all Actions Taken on those Tickets, but they cannot create, edit, assign, complete, or cancel Actions Taken. Their `Problem Appears Resolved` indication remains advisory. IT Staff/Administrators formally control workflow status and may resolve a Ticket only when the work-record gate defined below is satisfied.
 
