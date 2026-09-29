@@ -131,7 +131,7 @@ The revision addresses the requested contract gaps across `specification.md`, `a
 
 Response/fix commit: `5a904b3f2514ede8a34014fbec1eab06043dab30` (`docs(lab4): resolve issue 1 review blockers`).
 
-Re-review result: **pending**.
+Re-review result: **Approved in Round 2 at head `9f623b974c32a7905094e1b8f1bb18fbb99e3a8f`.**
 
 #### Round 2 — `Tanaboonnnnn` — Approved
 
@@ -146,7 +146,7 @@ Re-review result: **pending**.
 - Synchronized the Stakeholder Request Interpretation wording with the approved contract: an Action may be assigned to an eligible support user different from the Ticket Owner, but **only the current Action assignee may Complete**, and that authenticated assignee is recorded as `Performed by`.
 - No schema/API/UI/test behavior was changed by this cleanup; it removes factual drift in the explanatory paragraph only.
 
-Cleanup commit: **pending creation**.
+Cleanup commit: `39e15b5ed737d2cf0e834cdde23b1cb75f6335bf` (`docs(lab4): align assignee completion wording`).
 
 Re-review after cleanup: **pending**.
 
