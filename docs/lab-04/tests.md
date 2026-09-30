@@ -98,6 +98,7 @@ Implementation commits:
 
 - `6abc6c7f9f0e64fa0ba8367f1d77dfee0253e383` — `feat(lab4): implement actions taken api`
 - `98b527412b4f4ca3686493ea1560c26592c645c6` — `test(lab4): strengthen actions api coverage`
+- `1d62aa0a0be4dc8330d1beff6f516610fc17f2da` — `fix(lab4): harden action idempotency and ticket versions`
 
 Verification used a disposable PostgreSQL 16 container/database named `toktickit_lab4_issue52_test` on test-only port `5545`. The normal development PostgreSQL service on port `15432` was not reset or used as the test target. The disposable database was reset intentionally, all six existing migrations were applied, and the Lab 4 seed completed before API verification.
 
@@ -115,6 +116,25 @@ Verification used a disposable PostgreSQL 16 container/database named `toktickit
 
 The Issue #52 suite directly exercises backend-only authorization and workflow behavior rather than relying on hidden UI controls: Requester write rejection, owning/cross-Requester reads, Origin/password gates, server-owned creator/performer/canceller identity, active-assignee eligibility, idempotent lost-response retry, Action/Ticket stale versions, all approved Action transitions, completion/cancellation provenance, concurrent edit/reassign races, and Admin deactivate/demote conflicts with active assigned Actions.
 
+#### PR #62 Review-Fix Verification
+
+The first PR #62 review identified two blocking gaps: create-idempotency was comparing against mutable Action columns, and existing Owner/IT Priority/Ticket Status/Requester resolution-indication writes had not yet joined the approved `Ticket.version` aggregate protocol. The fix persists an immutable original-create fingerprint and extends `expectedVersion` + Ticket-version increment behavior across all four existing workflow-affecting Ticket mutation paths. No new visual UI was introduced; existing clients now pass the aggregate token already returned by Ticket Detail.
+
+Verification for review-fix commit `1d62aa0a0be4dc8330d1beff6f516610fc17f2da` used disposable PostgreSQL 16 database `toktickit_lab4_pr62_fix_test` on test-only port `5546`; the development DB was not used or reset.
+
+| Review-fix check | Result |
+|---|---|
+| Prisma migration reset/application | **Pass — 7 migrations**, including `20260930153000_lab4_action_create_fingerprint` |
+| Lab 4 seed | **Pass — 8 Tickets / 7 canonical Actions Taken** |
+| Targeted PR #62 review-fix suite | **Pass — 81/81 tests (7/7 files)**; Vitest start `2026-09-30 22:27:52 +07` |
+| Full Server regression | **Pass — 196/196 tests (26/26 files)**; Vitest start `2026-09-30 22:28:59 +07`, duration `36.99s` |
+| Server TypeScript build / Prisma validate | **Pass** |
+| Client regression | **Pass — 76/76 tests (11/11 files)**; Vitest start `2026-09-30 22:30:13 +07` |
+| Client production build | **Pass** |
+| `git diff --check` / staged checks before review-fix commit | **Pass** |
+
+Review-specific regression evidence includes: `create -> edit/reassign -> retry original POST` returns the existing Action without another parent-version increment; materially different original intent still returns `409 IDEMPOTENCY_KEY_REUSE`; Owner/IT Priority changes invalidate an old Action `expectedTicketVersion`; status/Requester-indication callers use the same Ticket token; concurrent Owner-vs-Action mutation has one aggregate-version winner and no `500`; Action assign/reassign-vs-user eligibility races preserve the active-assignee invariant; and the additive fingerprint migration preserves pre-existing Actions while validating persisted fingerprints.
+
 ## 4. Unit Tests
 
 | Test ID | Requirement / AC | What it tests | Expected result | Planned file | Final |
@@ -123,6 +143,7 @@ The Issue #52 suite directly exercises backend-only authorization and workflow b
 | AT-U-02 | BR-15 / AC-05 | Self/terminal/unsupported Action transitions | Rejected deterministically | `actions-taken.unit.test.ts` | **Pass — `98b5274`** |
 | AT-U-03 | BR-09–BR-13 / AC-03 | Project-chosen Action text/follow-up Unicode boundaries | 2,000 code points accepted, 2,001 rejected; follow-up conditional rule correct | `actions-taken.unit.test.ts` | **Pass — `98b5274`** |
 | AT-U-04 | BR-10 / AC-06 | Completed Result requirement | Blank Result rejected; valid result accepted | `actions-taken.unit.test.ts` | **Pass via AT-API-17 integration — `98b5274`** |
+| AT-U-05 | AC-28 | Immutable original-create fingerprint | same normalized create intent hashes identically; materially changed intent differs | `actions-taken.unit.test.ts` | **Pass — `1d62aa0`** |
 | WF-U-01 | Section 7 / AC-10 | Final Ticket transition matrix | Existing eight-status helper matches approved matrix | existing/extended Staff operations unit test | Planned |
 | WF-U-02 | BR-24–BR-30 / AC-11 | Resolution-gate decision helper if factored | Requires >=1 current-cycle Completed and zero current-cycle Planned/In Progress | `ticket-workflow.api.test.ts` or helper test | Planned |
 | DASH-U-01 | BR-35–BR-41 / AC-16/17 | Staff Dashboard list predicates/order | Recently Updated uses updated-desc; Urgent is High IT Priority + updated-desc | `staff-dashboard.api.test.ts` or helper test | Planned |
@@ -163,6 +184,9 @@ The Issue #52 suite directly exercises backend-only authorization and workflow b
 | AT-API-29 | AC-06 | **Reassign and Complete race on same active Action/version** | if reassign wins, former assignee cannot Complete; if Complete wins, row becomes terminal and reassign fails; performer always equals authoritative assignee at completion | same | **Pass — `98b5274`** |
 | AT-API-30 | AC-06 | Non-assignee directly attempts Complete without prior reassign | `409 ACTION_COMPLETION_REQUIRES_ASSIGNEE`; unchanged | same | **Pass — `98b5274`** |
 | AT-API-31 | AC-27 | Action Date/Time timezone/future boundary | equivalent offsets persist same UTC; backdated valid; >now+5m `400` | same | **Pass — `98b5274`** |
+| AT-API-27R | AC-28 | **Create -> edit/reassign mutable Action -> retry original POST with same key/original payload** | `200` same id/current row; no duplicate; no second parent-version increment; changed original intent still conflicts | same | **Pass — `1d62aa0`** |
+| AT-API-32 | AC-13 | Owner or IT Priority changes after Action client loaded parent version | workflow mutation increments Ticket version; later Action write using old token -> `409 STALE_TICKET_STATE` | same | **Pass — `1d62aa0`** |
+| AT-API-33 | AC-13 | Concurrent Owner mutation vs Action edit on same Ticket version | exactly one commits; stale loser `409`; parent version increments once; no `500` | same | **Pass — `1d62aa0`** |
 
 ## 6. Final Ticket Workflow API Tests
 
@@ -220,6 +244,7 @@ The Issue #52 suite directly exercises backend-only authorization and workflow b
 | MIG-03 | AC-19 | Legacy Resolved/Closed zero-Action Ticket | status preserved; no synthetic Action invented | same | **Pass — `065da7c`** |
 | MIG-04 | AC-19 | Inject failure during Lab 4 migration transaction | full rollback/recovery leaves Lab 3 state intact | same/manual disposable DB evidence | **Pass — `065da7c`** |
 | MIG-05 | AC-19 | Verify new FKs/indexes/Action+Ticket versions/workflowCycle/resolvedAt/idempotency uniqueness/provenance defaults | schema matches contract and Prisma validates | same | **Pass — `065da7c`** |
+| MIG-06 | AC-19/28 | Add immutable create-fingerprint storage after existing Lab 4 Actions | existing Action rows preserved with null legacy fingerprint; stored value accepts only 64-char lowercase SHA-256 hex | same | **Pass — `1d62aa0`** |
 | SEED-01 | AC-20 | First Lab 4 seed | required users/Tickets/zero-one-many Actions/dashboard fixtures exist | `seed-regression.test.ts` | **Pass — `065da7c`** |
 | SEED-02 | AC-20 | Seed rerun | no uncontrolled duplicates | same | **Pass — `065da7c`** |
 | SEED-03 | AC-20 | Mutate seeded Action/Ticket then rerun seed | mutable Action status/assignee/result/follow-up/provenance and Ticket workflow cycle/version/resolution are not reset | same | **Pass — `065da7c`** |
@@ -243,7 +268,7 @@ These tests intentionally bypass normal UI controls.
 | AZ4-10 | AC-21 | Existing Internal Note Requester direct access | still `403`, no note leak | Planned |
 | AZ4-11 | AC-26 | Direct Admin deactivate/demote bypass with active Action assignment | backend returns `409`; no invalid final relation | **Pass — `98b5274`** |
 | AZ4-12 | AC-06 | Non-assignee Staff directly calls Complete endpoint | `409 ACTION_COMPLETION_REQUIRES_ASSIGNEE`; no performer spoof | **Pass — `98b5274`** |
-| AZ4-13 | AC-13 | Stale `expectedTicketVersion` on owner/priority/status/problem-resolved mutation | `409 STALE_TICKET_STATE`; no partial mutation | Planned |
+| AZ4-13 | AC-13 | Stale `expectedTicketVersion` on owner/priority/status/problem-resolved mutation | `409 STALE_TICKET_STATE`; no partial mutation | **Pass — `1d62aa0`** |
 
 ## 11. Client Component / UI Tests
 

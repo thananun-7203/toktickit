@@ -178,6 +178,7 @@ Backend behavior:
 
 1. Authorize authenticated Staff/Admin and approved Origin.
 2. Resolve the idempotency key first within the Ticket scope. If `(ticketId, clientRequestId)` already exists and its `createdById` plus normalized logical create payload match this retry, return the existing row with `200` **without requiring the old `expectedTicketVersion` to still match**. `expectedTicketVersion` is not part of payload-equivalence comparison because the successful first create itself increments that version.
+   - Implementation note after PR #62 review: persist an opaque SHA-256 `createFingerprint` of the **original normalized logical create intent** (authenticated creator id, normalized Action Date/Time, Description, original assignee, Follow-Up Required/Note, Attachment Notes). Compare retries against this immutable fingerprint rather than the Action's current mutable columns, so `create -> later edit/reassign -> retry original POST` still returns the same Action with `200`. Legacy/pre-fingerprint rows may keep this internal value null because their original POST intent cannot be reconstructed safely.
 3. If the key exists but creator or materially normalized create data differ, reject with `409 IDEMPOTENCY_KEY_REUSE`.
 4. Only when the key is new, lock/revalidate the parent Ticket and require `Ticket.version == expectedTicketVersion`.
 5. Revalidate the target assignee as active/permitted using the existing owner-eligibility concurrency style or equivalent transaction-safe mechanism.
@@ -473,6 +474,13 @@ Sprint 4 strengthens the existing Lab 3 mutation payloads so stale aggregate sta
 - `POST /api/v1/tickets/:id/problem-appears-resolved` includes `expectedVersion` from the Requester Ticket Detail snapshot.
 
 Each successful mutation increments Ticket `version`. A mismatch returns `409 STALE_TICKET_STATE` with no partial mutation. Staff/Requester Ticket Detail responses therefore include current `version`; Staff detail also exposes `workflowCycle` where needed for operational diagnostics, while Requester UI need not display the numeric token.
+
+Implementation locking strategy after PR #62 review:
+
+- aggregate/Action mutations acquire the parent **Ticket first**, then the Action row when applicable, then any assignee User rows needed for eligibility revalidation;
+- existing Administrator account-eligibility mutation begins from the target User because that user is the resource being changed, then checks Ticket ownership/active Action assignment inside the same serializable transaction;
+- both directions run at Serializable isolation with retry/revalidation. A serialization/deadlock loser must retry the same logical operation and re-check current aggregate/user state; it must not silently turn a lost Claim/Assign/Reassign into a different operation;
+- regression coverage includes concurrent Owner-vs-Action mutation and Action assign/reassign-vs-user deactivate/demote, with the invariant that at most one conflicting write commits and no `500` or ineligible final assignee is produced.
 
 ## 11. Existing Administrator User Update — Sprint 4 Strengthening
 

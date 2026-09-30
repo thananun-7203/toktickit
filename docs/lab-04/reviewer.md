@@ -206,7 +206,8 @@ Verification was performed on a disposable PostgreSQL 16 database named `toktick
 - Baseline: Issue #51 merge commit `d3a06acbf257b25fa893d4ea1fc1a83ddca89b78`
 - Implementation commit: `6abc6c7f9f0e64fa0ba8367f1d77dfee0253e383` (`feat(lab4): implement actions taken api`)
 - Test follow-up: `98b527412b4f4ca3686493ea1560c26592c645c6` (`test(lab4): strengthen actions api coverage`)
-- Current state: implementation and local verification complete; PR not opened yet.
+- Review-fix commit: `1d62aa0a0be4dc8330d1beff6f516610fc17f2da` (`fix(lab4): harden action idempotency and ticket versions`)
+- Current state: PR #62 open; Round 1 Changes Requested were fixed and pushed; final re-review pending.
 
 ### Implemented Backend
 
@@ -217,6 +218,10 @@ Verification was performed on a disposable PostgreSQL 16 database named `toktick
 - Extended Administrator user eligibility mutation so active assigned Actions must be reassigned before deactivate/demote; serializable retries revalidate rather than leaving an invalid assignee relation after a race.
 - Exposed Staff Ticket Detail `version`, `workflowCycle`, and `resolvedAt` needed by the approved aggregate/API contract.
 - Preserved existing Lab 3 owner behavior under concurrent test load by retrying serialization conflicts and revalidating Claim semantics on retry.
+- PR #62 review fix persists immutable original-create intent as an internal SHA-256 fingerprint so a lost-response retry remains idempotent even after the Action has later been edited/reassigned.
+- Owner, IT Priority, Ticket Status, and Requester `problem appears resolved` mutations now require `expectedVersion`, increment `Ticket.version` on success, and return `409 STALE_TICKET_STATE` for stale aggregate writes as defined by the approved contract.
+- Existing clients were updated only to carry the Ticket version token through these mutation calls; no Issue #53 visual/Actions UI work was introduced.
+- Aggregate/Action operations use Ticket-first row locking where applicable; account-eligibility changes keep User-first locking under Serializable retry/revalidation. Concurrency tests verify Owner-vs-Action and Action-assignment-vs-account-state races fail safely rather than producing deadlock-derived `500`s or invalid final assignees.
 
 ### Verification
 
@@ -233,6 +238,16 @@ Verification used disposable PostgreSQL 16 database `toktickit_lab4_issue52_test
 - Client production build: **Pass**.
 - Development DB destructive verification: **not used**.
 
+Review-fix verification at `1d62aa0`:
+
+- Disposable PostgreSQL 16 `toktickit_lab4_pr62_fix_test` on test-only port `5546`: **Pass**; seven migrations applied including immutable create-fingerprint migration.
+- Targeted review-fix suite: **81/81 passing (7/7 files)**.
+- Full Server regression: **196/196 passing (26/26 files)**.
+- Server build / Prisma validate: **Pass**.
+- Client regression: **76/76 passing (11/11 files)**.
+- Client production build: **Pass**.
+- Development DB destructive verification: **not used**.
+
 ### Pull Request / Review
 
 - PR: [#62 — `[Lab 4] Issue 3: Actions Taken API & Authorization`](https://github.com/thananun-7203/toktickit/pull/62)
@@ -240,7 +255,14 @@ Verification used disposable PostgreSQL 16 database `toktickit_lab4_issue52_test
 - Base: `lab4-staging`
 - PR opened after implementation commit `6abc6c7`, strengthened test commit `98b5274`, and evidence/docs commit `6593135` were pushed.
 - Reviewer requested: `Tanaboonnnnn`.
-- Peer-review verdict: **pending**.
+- Round 1 reviewer: `Tanaboonnnnn`.
+- Round 1 reviewed head: `0290b66b5a1685e379593bc2cdca8001d379fb85`.
+- Round 1 submitted: `2026-09-30T08:59:42Z`.
+- Round 1 verdict: **Changes Requested**.
+- Blocking feedback: (1) create idempotency must compare immutable original create intent rather than mutable Action columns; (2) existing Owner/IT Priority and the rest of the approved workflow-affecting Ticket writes must participate in `Ticket.version` so Action writes cannot accept stale aggregate snapshots.
+- Additional review focus: document/verify lock ordering and concurrent race safety; synchronize this reviewer record with the actual PR state.
+- Response commit: `1d62aa0a0be4dc8330d1beff6f516610fc17f2da` addresses both blockers plus lock-order/race coverage.
+- Re-review verdict: **pending**.
 - Issue #52 remains open through review and should close only after approved merge into `lab4-staging`.
 
 ## 5. Pull Requests I Authored — Lab 4
@@ -251,7 +273,7 @@ Populate only from actual PRs.
 |---|---|---|---|---|
 | [#60](https://github.com/thananun-7203/toktickit/pull/60) | `feature/1-sprint4-engineering-contract` | `lab4-staging` | Approved by `Tanaboonnnnn` at final reviewed head `48dbae6` | Merged (`6a36d26`) |
 | [#61](https://github.com/thananun-7203/toktickit/pull/61) | `feature/2-actions-data-foundation` | `lab4-staging` | Approved by `Tanaboonnnnn` at `899b7f0` after source-of-truth clarification | Merged (`d3a06ac`) |
-| [#62](https://github.com/thananun-7203/toktickit/pull/62) | `feature/3-actions-api-authorization` | `lab4-staging` | Review requested from `Tanaboonnnnn` | Open |
+| [#62](https://github.com/thananun-7203/toktickit/pull/62) | `feature/3-actions-api-authorization` | `lab4-staging` | Changes Requested at `0290b66`; fixes pushed in `1d62aa0`, re-review pending | Open |
 
 ## 6. Review Standard
 
