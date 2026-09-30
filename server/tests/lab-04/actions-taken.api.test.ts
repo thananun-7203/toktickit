@@ -114,6 +114,10 @@ describe("Lab 4 Actions Taken API", () => {
 
   it("AT-API-01/02/08/09/10/AZ4-02: Staff/Admin create and visible roles read with stable ordering and Requester isolation", async () => {
     const t = await ticket();
+    const empty = await request(app).get(`/api/v1/tickets/${t.id}/actions-taken`).set("Cookie", requesterACookie);
+    expect(empty.status).toBe(200);
+    expect(empty.body).toEqual({ items: [] });
+
     const first = await createViaApi(t.id, staffACookie, createBody(1, {
       assigneeId: staffBId,
       actionDateTime: "2026-09-29T08:00:00.000Z",
@@ -283,6 +287,23 @@ describe("Lab 4 Actions Taken API", () => {
       .send({ expectedVersion: 2, expectedTicketVersion: 3, assigneeId: staffInactiveId });
     expect(ineligible.status).toBe(409);
     expect(ineligible.body.error.code).toBe("ACTION_ASSIGNEE_NOT_ELIGIBLE");
+
+    const raceTicket = await ticket();
+    const raceAction = await createViaApi(raceTicket.id, staffACookie, createBody(1));
+    expect(raceAction.status).toBe(201);
+    const [editA, editB] = await Promise.all([
+      request(app)
+        .patch(`/api/v1/staff/actions-taken/${raceAction.body.id}`)
+        .set("Cookie", staffACookie).set("Origin", TEST_ORIGIN)
+        .send({ expectedVersion: 1, expectedTicketVersion: 2, description: "Concurrent edit A" }),
+      request(app)
+        .patch(`/api/v1/staff/actions-taken/${raceAction.body.id}`)
+        .set("Cookie", staffACookie).set("Origin", TEST_ORIGIN)
+        .send({ expectedVersion: 1, expectedTicketVersion: 2, description: "Concurrent edit B" }),
+    ]);
+    expect([editA.status, editB.status].filter((status) => status === 200)).toHaveLength(1);
+    expect([editA.status, editB.status].filter((status) => status === 409)).toHaveLength(1);
+    expect((await getPrisma().actionTaken.findUniqueOrThrow({ where: { id: raceAction.body.id } })).version).toBe(2);
   });
 
   it("AT-API-14/15/16/17/19/22/30/AZ4-12: lifecycle transitions, stale retry, assignee-only completion, validation, and terminal immutability", async () => {
@@ -327,6 +348,15 @@ describe("Lab 4 Actions Taken API", () => {
       .send({ status: "Completed", expectedVersion: 2, expectedTicketVersion: 3, followUpRequired: false, followUpNote: null });
     expect(missingResult.status).toBe(400);
 
+    const invalidFollowUp = await request(app)
+      .patch(`/api/v1/staff/actions-taken/${created.body.id}/status`)
+      .set("Cookie", staffBCookie).set("Origin", TEST_ORIGIN)
+      .send({
+        status: "Completed", expectedVersion: 2, expectedTicketVersion: 3,
+        result: "Done", followUpRequired: true, followUpNote: "   ",
+      });
+    expect(invalidFollowUp.status).toBe(400);
+
     const completed = await request(app)
       .patch(`/api/v1/staff/actions-taken/${created.body.id}/status`)
       .set("Cookie", staffBCookie).set("Origin", TEST_ORIGIN)
@@ -356,6 +386,32 @@ describe("Lab 4 Actions Taken API", () => {
       .send({ expectedVersion: 3, expectedTicketVersion: 4, description: "Should not change" });
     expect(terminalEdit.status).toBe(409);
     expect(terminalEdit.body.error.code).toBe("ACTION_NOT_EDITABLE");
+
+    const directCompleteTicket = await ticket();
+    const directCompleteAction = await createViaApi(directCompleteTicket.id, staffACookie, createBody(1, { assigneeId: staffAId }));
+    const directComplete = await request(app)
+      .patch(`/api/v1/staff/actions-taken/${directCompleteAction.body.id}/status`)
+      .set("Cookie", staffACookie).set("Origin", TEST_ORIGIN)
+      .send({
+        status: "Completed", expectedVersion: 1, expectedTicketVersion: 2,
+        result: "Completed directly from Planned", followUpRequired: false, followUpNote: null,
+      });
+    expect(directComplete.status).toBe(200);
+    expect(directComplete.body.status).toBe("Completed");
+
+    const cancelFromProgressTicket = await ticket();
+    const cancelFromProgressAction = await createViaApi(cancelFromProgressTicket.id, staffACookie, createBody(1));
+    const progress = await request(app)
+      .patch(`/api/v1/staff/actions-taken/${cancelFromProgressAction.body.id}/status`)
+      .set("Cookie", staffACookie).set("Origin", TEST_ORIGIN)
+      .send({ status: "In Progress", expectedVersion: 1, expectedTicketVersion: 2 });
+    expect(progress.status).toBe(200);
+    const cancelFromProgress = await request(app)
+      .patch(`/api/v1/staff/actions-taken/${cancelFromProgressAction.body.id}/status`)
+      .set("Cookie", adminCookie).set("Origin", TEST_ORIGIN)
+      .send({ status: "Cancelled", expectedVersion: 2, expectedTicketVersion: 3 });
+    expect(cancelFromProgress.status).toBe(200);
+    expect(cancelFromProgress.body.status).toBe("Cancelled");
   });
 
   it("AT-API-18: cancellation records backend actor/time and leaves completion provenance null", async () => {
