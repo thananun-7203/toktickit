@@ -3,8 +3,8 @@
 ## 1. AI Tool Used
 
 - **Model:** GPT-5.6 Sol in ChatGPT.
-- **Primary role in Sprint 4 so far:** specification agent / repository reconnaissance assistant.
-- **Repository interaction:** ComGu Core was used to inspect the real `C:\toktickit` repository, create/push the Lab 4 feature branch, read source/tests/docs, and draft the Issue #50 Markdown files in the working tree.
+- **Primary role in Sprint 4 so far:** specification agent, repository reconnaissance assistant, and implementation/test assistant for the approved data/API increments.
+- **Repository interaction:** ComGu Core was used to inspect the real `C:\toktickit` repository, create/push Lab 4 feature branches, read source/tests/docs, implement Issues #51–#52, run isolated PostgreSQL verification, and maintain evidence records.
 
 This record includes only assistance that actually occurred. Later coding/debugging/review prompts must be appended from real Sprint 4 work rather than predicted in advance.
 
@@ -60,6 +60,12 @@ The final submission requires 6–10 selected key prompts. The following are rea
 
 **Use:** Authorized the coding agent to branch from the reviewed `lab4-staging` baseline, implement the approved Prisma model/migration/seed foundation, add migration/rollback/seed regression tests, and verify the change only against a disposable PostgreSQL test database before opening a PR.
 
+### Prompt 9 — Implement Issue #52 Actions API and authorization
+
+> "โอเคลงมือทำตามแผนได้เลย"
+
+**Use:** Authorized implementation of the previously reviewed Issue #52 plan: Actions Taken GET/create/edit/status endpoints, backend-only authorization, idempotency, optimistic concurrency, assignee eligibility races, targeted API/security tests, disposable-PostgreSQL verification, full regression, and PR preparation while keeping Issue #53 UI out of scope.
+
 ## 3. How AI Was Used in Issue #50
 
 ### Specification Agent Work
@@ -101,6 +107,14 @@ The student retained control over:
 For Issue #51, the AI was used to translate the approved contract into the real Prisma/PostgreSQL increment, while keeping API/UI work out of scope. It inspected the existing migration/seed conventions, added the Action Taken relations and Ticket concurrency fields, wrote an additive transaction-wrapped migration, extended seed data without resetting mutable rows, and added tests that reconstruct a Lab 3-shaped schema before applying the Lab 4 migration.
 
 One generated test-harness detail required correction during verification: JavaScript replacement-string handling converted PostgreSQL `DO $$` delimiters unexpectedly in the forced-rollback test. The implementation migration itself had already applied successfully; the harness was changed to a replacement callback, then the targeted tests passed **5/5** and the full Server regression passed **170/170** on the disposable test database. This is retained as an example of why generated test code was executed and corrected rather than assumed correct.
+
+## 4.2 Issue #52 Implementation Use
+
+For Issue #52, the AI mapped the approved API contract onto the existing Lab 3 authentication/Origin/RBAC and serializable-locking patterns rather than inventing a parallel security layer. It implemented Requester-owned read visibility, Staff/Admin write endpoints, server-authoritative creator/performer/canceller identity, per-Ticket create idempotency, Action/Ticket version conflicts, assignee eligibility locking, and the Admin invariant that a user with active assigned Actions cannot be deactivated or demoted until reassignment.
+
+Verification again changed the implementation process rather than merely confirming generated code. During a scope audit, the AI temporarily removed a serializable retry helper from the existing Staff owner flow because it looked unrelated to Actions Taken. The directly affected Lab 3 regression then produced `409` for a normal Claim that should remain `200` under concurrent database load. The helper was restored with explicit Claim revalidation, after which the affected five-file suite passed **56/56** and the final full Server suite passed **191/191**. This correction is recorded because it demonstrates that scope reduction must still preserve established concurrency behavior.
+
+The first peer review of PR #62 then found two implementation gaps against the already-approved contract. First, idempotency compared a retry with the Action's **current mutable fields**, which would incorrectly reject an original lost-response retry after a later edit/reassignment. Second, existing Owner/IT Priority mutations had not yet joined the parent `Ticket.version` protocol even though the contract also requires Status and Requester resolution-indication writes to participate. After human authorization to fix the review, the AI added immutable original-create fingerprint storage, extended the Ticket-version token across all four existing workflow-affecting mutation paths, updated existing clients to carry the token without changing visual UX, and added migration/concurrency regressions. The targeted review-fix suite passed **81/81**, full Server regression passed **196/196**, and Client regression remained **76/76** on disposable PostgreSQL-backed verification.
 
 ## 5. My Reflection — Draft for Finalization
 

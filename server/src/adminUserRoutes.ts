@@ -52,6 +52,27 @@ class UserMissingError extends Error {}
 class SelfDeactivationError extends Error {}
 class LastActiveAdminError extends Error {}
 class AssignedTicketsError extends Error {}
+class ActiveAssignedActionsError extends Error {}
+
+async function runSerializableAdminMutation<T>(
+  operation: (tx: Prisma.TransactionClient) => Promise<T>,
+): Promise<T> {
+  const prisma = getPrisma();
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await prisma.$transaction(operation, {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        maxWait: 5_000,
+        timeout: 10_000,
+      });
+    } catch (error) {
+      lastError = error;
+      if (!isPrismaSerializationConflict(error) || attempt === 2) throw error;
+    }
+  }
+  throw lastError;
+}
 
 function validationError(fields: Record<string, string>) {
   return { error: { code: "VALIDATION_ERROR", message: "Validation failed", fields } };
@@ -226,8 +247,7 @@ adminUserRouter.patch("/users/:id", requireApprovedOrigin, ...adminOnly, async (
 
   try {
     const actor = res.locals.authUser!;
-    const prisma = getPrisma();
-    const updated = await prisma.$transaction(async (tx) => {
+    const updated = await runSerializableAdminMutation(async (tx) => {
       // Keep the PostgreSQL advisory lock result out of Prisma's result set:
       // pg_advisory_xact_lock returns SQL `void`, which Prisma cannot decode.
       // The subquery still executes the lock while the outer query returns a
@@ -278,6 +298,14 @@ adminUserRouter.patch("/users/:id", requireApprovedOrigin, ...adminOnly, async (
       if (!remainsEligibleOwner) {
         const ownedTickets = await tx.ticket.count({ where: { ownerId: userId } });
         if (ownedTickets > 0) throw new AssignedTicketsError();
+
+        const activeAssignedActions = await tx.actionTaken.count({
+          where: {
+            assigneeId: userId,
+            status: { in: ["PLANNED", "IN_PROGRESS"] },
+          },
+        });
+        if (activeAssignedActions > 0) throw new ActiveAssignedActionsError();
       }
 
       const saved = await tx.user.update({
@@ -295,10 +323,6 @@ adminUserRouter.patch("/users/:id", requireApprovedOrigin, ...adminOnly, async (
         await tx.authSession.deleteMany({ where: { userId } });
       }
       return saved;
-    }, {
-      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-      maxWait: 5_000,
-      timeout: 10_000,
     });
     res.json(updated);
   } catch (error) {
@@ -317,6 +341,12 @@ adminUserRouter.patch("/users/:id", requireApprovedOrigin, ...adminOnly, async (
     if (error instanceof AssignedTicketsError) {
       res.status(409).json({
         error: { code: "ASSIGNED_TICKETS_REQUIRE_REASSIGNMENT", message: "Reassign owned Tickets before changing this user's eligibility" },
+      });
+      return;
+    }
+    if (error instanceof ActiveAssignedActionsError) {
+      res.status(409).json({
+        error: { code: "ACTIVE_ACTIONS_REQUIRE_REASSIGNMENT", message: "Reassign active Actions before changing this user's eligibility" },
       });
       return;
     }

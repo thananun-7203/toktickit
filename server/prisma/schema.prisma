@@ -122,31 +122,32 @@ model Ticket {
 }
 
 model ActionTaken {
-  id               Int               @id @default(autoincrement())
-  ticketId         Int
-  ticket           Ticket            @relation(fields: [ticketId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  clientRequestId  String            @db.Uuid
-  workflowCycle    Int
-  actionDateTime   DateTime
-  description      String
-  result           String?
-  followUpRequired Boolean
-  followUpNote     String?
-  attachmentNotes  String?
-  status           ActionTakenStatus @default(PLANNED)
-  createdById      Int
-  createdBy        User              @relation("ActionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  assigneeId       Int
-  assignee         User              @relation("ActionAssignee", fields: [assigneeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  performedById    Int?
-  performedBy      User?             @relation("ActionPerformedBy", fields: [performedById], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  completedAt      DateTime?
-  cancelledById    Int?
-  cancelledBy      User?             @relation("ActionCancelledBy", fields: [cancelledById], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  cancelledAt      DateTime?
-  version          Int               @default(1)
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  id                Int               @id @default(autoincrement())
+  ticketId          Int
+  ticket            Ticket            @relation(fields: [ticketId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  clientRequestId   String            @db.Uuid
+  createFingerprint String?           @db.Char(64)
+  workflowCycle     Int
+  actionDateTime    DateTime
+  description       String
+  result            String?
+  followUpRequired  Boolean
+  followUpNote      String?
+  attachmentNotes   String?
+  status            ActionTakenStatus @default(PLANNED)
+  createdById       Int
+  createdBy         User              @relation("ActionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  assigneeId        Int
+  assignee          User              @relation("ActionAssignee", fields: [assigneeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  performedById     Int?
+  performedBy       User?             @relation("ActionPerformedBy", fields: [performedById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  completedAt       DateTime?
+  cancelledById     Int?
+  cancelledBy       User?             @relation("ActionCancelledBy", fields: [cancelledById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  cancelledAt       DateTime?
+  version           Int               @default(1)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   @@unique([ticketId, clientRequestId])
   @@index([ticketId, actionDateTime, id])

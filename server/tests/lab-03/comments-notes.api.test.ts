@@ -382,7 +382,8 @@ describe("Lab 3 Problem Appears Resolved", () => {
       const res = await request(app)
         .post(`/api/v1/tickets/${ticket.id}/problem-appears-resolved`)
         .set("Origin", TEST_ORIGIN)
-        .set("Cookie", requesterACookie);
+        .set("Cookie", requesterACookie)
+        .send({ expectedVersion: ticket.version });
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({ ticketId: ticket.id, status });
       expect(res.body.problemAppearsResolvedAt).toEqual(expect.any(String));
@@ -393,21 +394,26 @@ describe("Lab 3 Problem Appears Resolved", () => {
     }
   });
 
-  it("COM-09: concurrent repeated indications are idempotent and return the same timestamp", async () => {
+  it("COM-09: concurrent repeated indications allow one aggregate-version winner and one stale conflict", async () => {
     const ticket = await createTicket("Open");
     const [first, second] = await Promise.all([
       request(app)
         .post(`/api/v1/tickets/${ticket.id}/problem-appears-resolved`)
         .set("Origin", TEST_ORIGIN)
-        .set("Cookie", requesterACookie),
+        .set("Cookie", requesterACookie)
+        .send({ expectedVersion: ticket.version }),
       request(app)
         .post(`/api/v1/tickets/${ticket.id}/problem-appears-resolved`)
         .set("Origin", TEST_ORIGIN)
-        .set("Cookie", requesterACookie),
+        .set("Cookie", requesterACookie)
+        .send({ expectedVersion: ticket.version }),
     ]);
-    expect(first.status).toBe(200);
-    expect(second.status).toBe(200);
-    expect(second.body.problemAppearsResolvedAt).toBe(first.body.problemAppearsResolvedAt);
+    expect([first.status, second.status].sort()).toEqual([200, 409]);
+    const loser = first.status === 409 ? first : second;
+    expect(loser.body.error.code).toBe("STALE_TICKET_STATE");
+    const persisted = await getPrisma().ticket.findUniqueOrThrow({ where: { id: ticket.id } });
+    expect(persisted.problemAppearsResolvedAt).not.toBeNull();
+    expect(persisted.version).toBe(ticket.version + 1);
   });
 
   it("security: Problem Appears Resolved rejects missing/null/wrong Origin with zero mutation", async () => {
@@ -448,7 +454,8 @@ describe("Lab 3 Problem Appears Resolved", () => {
       const res = await request(app)
         .post(`/api/v1/tickets/${ticket.id}/problem-appears-resolved`)
         .set("Origin", TEST_ORIGIN)
-        .set("Cookie", requesterACookie);
+        .set("Cookie", requesterACookie)
+        .send({ expectedVersion: ticket.version });
       expect(res.status).toBe(409);
       expect(res.body.error.code).toBe("RESOLUTION_INDICATION_NOT_ALLOWED");
 
@@ -463,7 +470,8 @@ describe("Lab 3 Problem Appears Resolved", () => {
     const res = await request(app)
       .post(`/api/v1/tickets/${ticket.id}/problem-appears-resolved`)
       .set("Origin", TEST_ORIGIN)
-      .set("Cookie", requesterBCookie);
+      .set("Cookie", requesterBCookie)
+      .send({ expectedVersion: ticket.version });
     expect(res.status).toBe(404);
     expect((await getPrisma().ticket.findUnique({ where: { id: ticket.id } }))?.problemAppearsResolvedAt).toBeNull();
   });

@@ -92,54 +92,101 @@ Verification used a disposable PostgreSQL 16 container with database name `tokti
 
 The migration regression creates isolated schemas inside the disposable test database, reconstructs a Lab 3-shaped schema/data fixture, applies the Lab 4 migration, verifies legacy row preservation/defaults/indexes/constraints, and separately injects a failure before `COMMIT` to prove complete rollback. The seed regression verifies first-run coverage, repeat-run idempotency, preservation of mutated Action/Ticket state, and zero/non-zero dashboard fixtures.
 
+### 3.2 Issue #52 — Actions Taken API & Authorization Verification
+
+Implementation commits:
+
+- `6abc6c7f9f0e64fa0ba8367f1d77dfee0253e383` — `feat(lab4): implement actions taken api`
+- `98b527412b4f4ca3686493ea1560c26592c645c6` — `test(lab4): strengthen actions api coverage`
+- `1d62aa0a0be4dc8330d1beff6f516610fc17f2da` — `fix(lab4): harden action idempotency and ticket versions`
+
+Verification used a disposable PostgreSQL 16 container/database named `toktickit_lab4_issue52_test` on test-only port `5545`. The normal development PostgreSQL service on port `15432` was not reset or used as the test target. The disposable database was reset intentionally, all six existing migrations were applied, and the Lab 4 seed completed before API verification.
+
+| Check | Result |
+|---|---|
+| Disposable DB migrate/reset + Lab 4 seed | **Pass** — six migrations applied; seed reported 8 Tickets / 7 canonical Actions Taken |
+| Issue #52 + directly affected Lab 3 targeted regression | **Pass — 56/56 tests (5/5 files)**; Vitest start `2026-09-30 15:24:32 +07` |
+| Issue #52-specific test files inside that run | **Pass — 21/21 tests** (`actions-taken.unit`, `actions-taken.api`, `authorization.api`) |
+| Full Server regression | **Pass — 191/191 tests (26/26 files)**; Vitest start `2026-09-30 15:25:09 +07`, duration `34.39s` |
+| Prisma validate | **Pass** |
+| Server TypeScript build | **Pass** |
+| Client full Vitest regression | **Pass — 76/76 tests (11/11 files)**; Vitest start `2026-09-30 15:09:29 +07` |
+| Client production build | **Pass** |
+| `git diff --check` / staged diff checks | **Pass** |
+
+The Issue #52 suite directly exercises backend-only authorization and workflow behavior rather than relying on hidden UI controls: Requester write rejection, owning/cross-Requester reads, Origin/password gates, server-owned creator/performer/canceller identity, active-assignee eligibility, idempotent lost-response retry, Action/Ticket stale versions, all approved Action transitions, completion/cancellation provenance, concurrent edit/reassign races, and Admin deactivate/demote conflicts with active assigned Actions.
+
+#### PR #62 Review-Fix Verification
+
+The first PR #62 review identified two blocking gaps: create-idempotency was comparing against mutable Action columns, and existing Owner/IT Priority/Ticket Status/Requester resolution-indication writes had not yet joined the approved `Ticket.version` aggregate protocol. The fix persists an immutable original-create fingerprint and extends `expectedVersion` + Ticket-version increment behavior across all four existing workflow-affecting Ticket mutation paths. No new visual UI was introduced; existing clients now pass the aggregate token already returned by Ticket Detail.
+
+Verification for review-fix commit `1d62aa0a0be4dc8330d1beff6f516610fc17f2da` used disposable PostgreSQL 16 database `toktickit_lab4_pr62_fix_test` on test-only port `5546`; the development DB was not used or reset.
+
+| Review-fix check | Result |
+|---|---|
+| Prisma migration reset/application | **Pass — 7 migrations**, including `20260930153000_lab4_action_create_fingerprint` |
+| Lab 4 seed | **Pass — 8 Tickets / 7 canonical Actions Taken** |
+| Targeted PR #62 review-fix suite | **Pass — 81/81 tests (7/7 files)**; Vitest start `2026-09-30 22:27:52 +07` |
+| Full Server regression | **Pass — 196/196 tests (26/26 files)**; Vitest start `2026-09-30 22:28:59 +07`, duration `36.99s` |
+| Server TypeScript build / Prisma validate | **Pass** |
+| Client regression | **Pass — 76/76 tests (11/11 files)**; Vitest start `2026-09-30 22:30:13 +07` |
+| Client production build | **Pass** |
+| `git diff --check` / staged checks before review-fix commit | **Pass** |
+
+Review-specific regression evidence includes: `create -> edit/reassign -> retry original POST` returns the existing Action without another parent-version increment; materially different original intent still returns `409 IDEMPOTENCY_KEY_REUSE`; Owner/IT Priority changes invalidate an old Action `expectedTicketVersion`; status/Requester-indication callers use the same Ticket token; concurrent Owner-vs-Action mutation has one aggregate-version winner and no `500`; Action assign/reassign-vs-user eligibility races preserve the active-assignee invariant; and the additive fingerprint migration preserves pre-existing Actions while validating persisted fingerprints.
+
 ## 4. Unit Tests
 
 | Test ID | Requirement / AC | What it tests | Expected result | Planned file | Final |
 |---|---|---|---|---|---|
-| AT-U-01 | BR-14–BR-17 / AC-05 | Every allowed Action status transition | Helper accepts only Planned->In Progress/Completed/Cancelled and In Progress->Completed/Cancelled | `actions-taken.unit.test.ts` | Planned |
-| AT-U-02 | BR-15 / AC-05 | Self/terminal/unsupported Action transitions | Rejected deterministically | `actions-taken.unit.test.ts` | Planned |
-| AT-U-03 | BR-09–BR-13 / AC-03 | Project-chosen Action text/follow-up Unicode boundaries | 2,000 code points accepted, 2,001 rejected; follow-up conditional rule correct | `actions-taken.unit.test.ts` | Planned |
-| AT-U-04 | BR-10 / AC-06 | Completed Result requirement | Blank Result rejected; valid result accepted | `actions-taken.unit.test.ts` | Planned |
+| AT-U-01 | BR-14–BR-17 / AC-05 | Every allowed Action status transition | Helper accepts only Planned->In Progress/Completed/Cancelled and In Progress->Completed/Cancelled | `actions-taken.unit.test.ts` | **Pass — `98b5274`** |
+| AT-U-02 | BR-15 / AC-05 | Self/terminal/unsupported Action transitions | Rejected deterministically | `actions-taken.unit.test.ts` | **Pass — `98b5274`** |
+| AT-U-03 | BR-09–BR-13 / AC-03 | Project-chosen Action text/follow-up Unicode boundaries | 2,000 code points accepted, 2,001 rejected; follow-up conditional rule correct | `actions-taken.unit.test.ts` | **Pass — `98b5274`** |
+| AT-U-04 | BR-10 / AC-06 | Completed Result requirement | Blank Result rejected; valid result accepted | `actions-taken.unit.test.ts` | **Pass via AT-API-17 integration — `98b5274`** |
+| AT-U-05 | AC-28 | Immutable original-create fingerprint | same normalized create intent hashes identically; materially changed intent differs | `actions-taken.unit.test.ts` | **Pass — `1d62aa0`** |
 | WF-U-01 | Section 7 / AC-10 | Final Ticket transition matrix | Existing eight-status helper matches approved matrix | existing/extended Staff operations unit test | Planned |
 | WF-U-02 | BR-24–BR-30 / AC-11 | Resolution-gate decision helper if factored | Requires >=1 current-cycle Completed and zero current-cycle Planned/In Progress | `ticket-workflow.api.test.ts` or helper test | Planned |
 | DASH-U-01 | BR-35–BR-41 / AC-16/17 | Staff Dashboard list predicates/order | Recently Updated uses updated-desc; Urgent is High IT Priority + updated-desc | `staff-dashboard.api.test.ts` or helper test | Planned |
-| TIME-U-01 | BR-08 / AC-27 | Action business-time parser/bounds | ISO offsets normalize to same UTC instant; backdate allowed; > server-now+5m rejected | `actions-taken.unit.test.ts` | Planned |
+| TIME-U-01 | BR-08 / AC-27 | Action business-time parser/bounds | ISO offsets normalize to same UTC instant; backdate allowed; > server-now+5m rejected | `actions-taken.unit.test.ts` | **Pass — `98b5274`** |
 
 ## 5. Actions Taken API / Integration Tests
 
 | Test ID | AC | Scenario | Expected | Planned file | Final |
 |---|---|---|---|---|---|
-| AT-API-01 | AC-01/28 | Staff creates valid Action on active Ticket | `201`; correct ticket/current workflow cycle; Planned; authenticated creator; approved assignee; Action version 1; parent version increments | `actions-taken.api.test.ts` | Planned |
-| AT-API-02 | AC-01 | Administrator creates valid Action | Allowed per matrix | same | Planned |
-| AT-API-03 | AC-01/18 | Requester calls Staff create endpoint | `403`; no row created | same / `authorization.api.test.ts` | Planned |
-| AT-API-04 | AC-02 | Assignee is inactive Staff | `409 ACTION_ASSIGNEE_NOT_ELIGIBLE`; no row | same | Planned |
-| AT-API-05 | AC-02 | Assignee is Requester/unknown | Rejected; no row | same | Planned |
-| AT-API-06 | AC-03 | Follow-up true without note / false with supplied note | true+blank -> `400`; false normalizes persisted note to null | same | Planned |
-| AT-API-07 | AC-03 | Description/result/follow-up/attachment-note boundaries | Correct 2,000/2,001 Unicode behavior | same | Planned |
-| AT-API-08 | AC-08 | Ticket contains zero/one/multiple Actions | GET returns stable date-time/id order and correct fields | same | Planned |
-| AT-API-09 | AC-08 | Owning Requester reads Actions | `200` all Actions for own Ticket | same | Planned |
-| AT-API-10 | AC-08 | Other Requester reads Actions by Ticket id | `404`; no content leak | same | Planned |
-| AT-API-11 | AC-04/13 | Active Action edit with correct Action + Ticket expected versions | `200`; values changed; both versions increment as contracted | same | Planned |
-| AT-API-12 | AC-04 | Two edits use same version | one may win; stale loser `409 STALE_ACTION_TAKEN`; no lost update | same | Planned |
-| AT-API-13 | AC-02/04 | Reassign while target concurrently becomes ineligible | invariant preserved; conflict; never points to inactive/Requester | same | Planned |
-| AT-API-14 | AC-05 | Each allowed Action transition | succeeds; version increments | same | Planned |
-| AT-API-15 | AC-05 | Self/terminal/forbidden Action transition | `409`; no mutation | same | Planned |
-| AT-API-16 | AC-06 | Current assignee completes with valid Result | `200`; Completed; performer=current assignee/authenticated actor; completedAt set; versions increment | same | Planned |
-| AT-API-17 | AC-06 | Complete without Result or invalid follow-up | `400`; remains active | same | Planned |
-| AT-API-18 | AC-07 | Cancel active Action | Cancelled row retained; cancelledBy/current server cancelledAt recorded; no delete; terminal read-only | same | Planned |
-| AT-API-19 | AC-07 | Edit Completed/Cancelled | `409 ACTION_NOT_EDITABLE`; unchanged | same | Planned |
-| AT-API-20 | AC-01/09 | Create Action on Resolved/Closed/Cancelled Ticket | `409 ACTION_TICKET_NOT_ACTIVE`; no Action | same | Planned |
-| AT-API-21 | AC-09/13 | Action mutation parent aggregate | parent Ticket `updatedAt` advances and `version` increments in same committed operation | same | Planned |
-| AT-API-22 | AC-09/22 | Repeated stale Action status request | at most one transition commits; later request conflict/no duplicate terminal mutation | same | Planned |
-| AT-API-23 | AC-01/18 | Wrong/missing/null Origin on Action mutation | `403`; no mutation | `authorization.api.test.ts` | Planned |
-| AT-API-24 | AC-18 | Password-change-required user calls new Action endpoint | `403 PASSWORD_CHANGE_REQUIRED`; no mutation | `authorization.api.test.ts` | Planned |
-| AT-API-25 | AC-26 | Admin deactivates/demotes user with Planned/In Progress assigned Action | `409 ACTIVE_ACTIONS_REQUIRE_REASSIGNMENT`; user and Action unchanged | `actions-taken.api.test.ts` / existing Admin route tests | Planned |
-| AT-API-26 | AC-26 | Concurrent Action assign/reassign vs Admin deactivate/demote | at most one conflicting state change wins; final active Action assignee remains eligible | same | Planned |
-| AT-API-27 | AC-28 | **POST create succeeds, response is treated as lost, then identical request retries same `clientRequestId`** | second call returns existing Action (`200`), one row total, parent version increments only once | same | Planned |
-| AT-API-28 | AC-28 | Same Ticket/`clientRequestId` reused with materially different create payload | `409 IDEMPOTENCY_KEY_REUSE`; original row unchanged | same | Planned |
-| AT-API-29 | AC-06 | **Reassign and Complete race on same active Action/version** | if reassign wins, former assignee cannot Complete; if Complete wins, row becomes terminal and reassign fails; performer always equals authoritative assignee at completion | same | Planned |
-| AT-API-30 | AC-06 | Non-assignee directly attempts Complete without prior reassign | `409 ACTION_COMPLETION_REQUIRES_ASSIGNEE`; unchanged | same | Planned |
-| AT-API-31 | AC-27 | Action Date/Time timezone/future boundary | equivalent offsets persist same UTC; backdated valid; >now+5m `400` | same | Planned |
+| AT-API-01 | AC-01/28 | Staff creates valid Action on active Ticket | `201`; correct ticket/current workflow cycle; Planned; authenticated creator; approved assignee; Action version 1; parent version increments | `actions-taken.api.test.ts` | **Pass — `98b5274`** |
+| AT-API-02 | AC-01 | Administrator creates valid Action | Allowed per matrix | same | **Pass — `98b5274`** |
+| AT-API-03 | AC-01/18 | Requester calls Staff create endpoint | `403`; no row created | same / `authorization.api.test.ts` | **Pass — `98b5274`** |
+| AT-API-04 | AC-02 | Assignee is inactive Staff | `409 ACTION_ASSIGNEE_NOT_ELIGIBLE`; no row | same | **Pass — `98b5274`** |
+| AT-API-05 | AC-02 | Assignee is Requester/unknown | Rejected; no row | same | **Pass — `98b5274`** |
+| AT-API-06 | AC-03 | Follow-up true without note / false with supplied note | true+blank -> `400`; false normalizes persisted note to null | same | **Pass — `98b5274`** |
+| AT-API-07 | AC-03 | Description/result/follow-up/attachment-note boundaries | Correct 2,000/2,001 Unicode behavior | same | **Pass — `98b5274`** |
+| AT-API-08 | AC-08 | Ticket contains zero/one/multiple Actions | GET returns stable date-time/id order and correct fields | same | **Pass — `98b5274`** |
+| AT-API-09 | AC-08 | Owning Requester reads Actions | `200` all Actions for own Ticket | same | **Pass — `98b5274`** |
+| AT-API-10 | AC-08 | Other Requester reads Actions by Ticket id | `404`; no content leak | same | **Pass — `98b5274`** |
+| AT-API-11 | AC-04/13 | Active Action edit with correct Action + Ticket expected versions | `200`; values changed; both versions increment as contracted | same | **Pass — `98b5274`** |
+| AT-API-12 | AC-04 | Two edits use same version | one may win; stale loser `409 STALE_ACTION_TAKEN`; no lost update | same | **Pass — `98b5274`** |
+| AT-API-13 | AC-02/04 | Reassign while target concurrently becomes ineligible | invariant preserved; conflict; never points to inactive/Requester | same | **Pass — `98b5274`** |
+| AT-API-14 | AC-05 | Each allowed Action transition | succeeds; version increments | same | **Pass — `98b5274`** |
+| AT-API-15 | AC-05 | Self/terminal/forbidden Action transition | `409`; no mutation | same | **Pass — `98b5274`** |
+| AT-API-16 | AC-06 | Current assignee completes with valid Result | `200`; Completed; performer=current assignee/authenticated actor; completedAt set; versions increment | same | **Pass — `98b5274`** |
+| AT-API-17 | AC-06 | Complete without Result or invalid follow-up | `400`; remains active | same | **Pass — `98b5274`** |
+| AT-API-18 | AC-07 | Cancel active Action | Cancelled row retained; cancelledBy/current server cancelledAt recorded; no delete; terminal read-only | same | **Pass — `98b5274`** |
+| AT-API-19 | AC-07 | Edit Completed/Cancelled | `409 ACTION_NOT_EDITABLE`; unchanged | same | **Pass — `98b5274`** |
+| AT-API-20 | AC-01/09 | Create Action on Resolved/Closed/Cancelled Ticket | `409 ACTION_TICKET_NOT_ACTIVE`; no Action | same | **Pass — `98b5274`** |
+| AT-API-21 | AC-09/13 | Action mutation parent aggregate | parent Ticket `updatedAt` advances and `version` increments in same committed operation | same | **Pass — `98b5274`** |
+| AT-API-22 | AC-09/22 | Repeated stale Action status request | at most one transition commits; later request conflict/no duplicate terminal mutation | same | **Pass — `98b5274`** |
+| AT-API-23 | AC-01/18 | Wrong/missing/null Origin on Action mutation | `403`; no mutation | `authorization.api.test.ts` | **Pass — `98b5274`** |
+| AT-API-24 | AC-18 | Password-change-required user calls new Action endpoint | `403 PASSWORD_CHANGE_REQUIRED`; no mutation | `authorization.api.test.ts` | **Pass — `98b5274`** |
+| AT-API-25 | AC-26 | Admin deactivates/demotes user with Planned/In Progress assigned Action | `409 ACTIVE_ACTIONS_REQUIRE_REASSIGNMENT`; user and Action unchanged | `actions-taken.api.test.ts` / existing Admin route tests | **Pass — `98b5274`** |
+| AT-API-26 | AC-26 | Concurrent Action assign/reassign vs Admin deactivate/demote | at most one conflicting state change wins; final active Action assignee remains eligible | same | **Pass — `98b5274`** |
+| AT-API-27 | AC-28 | **POST create succeeds, response is treated as lost, then identical request retries same `clientRequestId`** | second call returns existing Action (`200`), one row total, parent version increments only once | same | **Pass — `98b5274`** |
+| AT-API-28 | AC-28 | Same Ticket/`clientRequestId` reused with materially different create payload | `409 IDEMPOTENCY_KEY_REUSE`; original row unchanged | same | **Pass — `98b5274`** |
+| AT-API-29 | AC-06 | **Reassign and Complete race on same active Action/version** | if reassign wins, former assignee cannot Complete; if Complete wins, row becomes terminal and reassign fails; performer always equals authoritative assignee at completion | same | **Pass — `98b5274`** |
+| AT-API-30 | AC-06 | Non-assignee directly attempts Complete without prior reassign | `409 ACTION_COMPLETION_REQUIRES_ASSIGNEE`; unchanged | same | **Pass — `98b5274`** |
+| AT-API-31 | AC-27 | Action Date/Time timezone/future boundary | equivalent offsets persist same UTC; backdated valid; >now+5m `400` | same | **Pass — `98b5274`** |
+| AT-API-27R | AC-28 | **Create -> edit/reassign mutable Action -> retry original POST with same key/original payload** | `200` same id/current row; no duplicate; no second parent-version increment; changed original intent still conflicts | same | **Pass — `1d62aa0`** |
+| AT-API-32 | AC-13 | Owner or IT Priority changes after Action client loaded parent version | workflow mutation increments Ticket version; later Action write using old token -> `409 STALE_TICKET_STATE` | same | **Pass — `1d62aa0`** |
+| AT-API-33 | AC-13 | Concurrent Owner mutation vs Action edit on same Ticket version | exactly one commits; stale loser `409`; parent version increments once; no `500` | same | **Pass — `1d62aa0`** |
 
 ## 6. Final Ticket Workflow API Tests
 
@@ -197,6 +244,7 @@ The migration regression creates isolated schemas inside the disposable test dat
 | MIG-03 | AC-19 | Legacy Resolved/Closed zero-Action Ticket | status preserved; no synthetic Action invented | same | **Pass — `065da7c`** |
 | MIG-04 | AC-19 | Inject failure during Lab 4 migration transaction | full rollback/recovery leaves Lab 3 state intact | same/manual disposable DB evidence | **Pass — `065da7c`** |
 | MIG-05 | AC-19 | Verify new FKs/indexes/Action+Ticket versions/workflowCycle/resolvedAt/idempotency uniqueness/provenance defaults | schema matches contract and Prisma validates | same | **Pass — `065da7c`** |
+| MIG-06 | AC-19/28 | Add immutable create-fingerprint storage after existing Lab 4 Actions | existing Action rows preserved with null legacy fingerprint; stored value accepts only 64-char lowercase SHA-256 hex | same | **Pass — `1d62aa0`** |
 | SEED-01 | AC-20 | First Lab 4 seed | required users/Tickets/zero-one-many Actions/dashboard fixtures exist | `seed-regression.test.ts` | **Pass — `065da7c`** |
 | SEED-02 | AC-20 | Seed rerun | no uncontrolled duplicates | same | **Pass — `065da7c`** |
 | SEED-03 | AC-20 | Mutate seeded Action/Ticket then rerun seed | mutable Action status/assignee/result/follow-up/provenance and Ticket workflow cycle/version/resolution are not reset | same | **Pass — `065da7c`** |
@@ -208,19 +256,19 @@ These tests intentionally bypass normal UI controls.
 
 | Test ID | AC | Scenario | Expected | Final |
 |---|---|---|---|---|
-| AZ4-01 | AC-01/18 | Requester POST/PATCH Action endpoints directly | `403`, no mutation | Planned |
-| AZ4-02 | AC-08 | Requester GET another user's Actions | `404`, no Action content | Planned |
+| AZ4-01 | AC-01/18 | Requester POST/PATCH Action endpoints directly | `403`, no mutation | **Pass — `98b5274`** |
+| AZ4-02 | AC-08 | Requester GET another user's Actions | `404`, no Action content | **Pass — `98b5274`** |
 | AZ4-03 | AC-18 | Requester GET Staff dashboard | `403` | Planned |
 | AZ4-04 | AC-18 | Staff/Admin GET Requester dashboard | `403` under role-specific endpoint contract | Planned |
-| AZ4-05 | AC-01/18 | No session on new protected endpoint | `401` | Planned |
-| AZ4-06 | AC-01/18 | mustChangePassword on new normal endpoint | `403 PASSWORD_CHANGE_REQUIRED` | Planned |
-| AZ4-07 | AC-01/18 | wrong/missing/null Origin for new write endpoints | `403`, no mutation | Planned |
-| AZ4-08 | AC-06 | client sends/spoofs creator/performer id | rejected/ignored; backend actor wins | Planned |
-| AZ4-09 | AC-02 | assignee role/activation changes concurrently | final Action never references ineligible assignee due to mutation race | Planned |
+| AZ4-05 | AC-01/18 | No session on new protected endpoint | `401` | **Pass — `98b5274`** |
+| AZ4-06 | AC-01/18 | mustChangePassword on new normal endpoint | `403 PASSWORD_CHANGE_REQUIRED` | **Pass — `98b5274`** |
+| AZ4-07 | AC-01/18 | wrong/missing/null Origin for new write endpoints | `403`, no mutation | **Pass — `98b5274`** |
+| AZ4-08 | AC-06 | client sends/spoofs creator/performer id | rejected/ignored; backend actor wins | **Pass — `98b5274`** |
+| AZ4-09 | AC-02 | assignee role/activation changes concurrently | final Action never references ineligible assignee due to mutation race | **Pass — `98b5274`** |
 | AZ4-10 | AC-21 | Existing Internal Note Requester direct access | still `403`, no note leak | Planned |
-| AZ4-11 | AC-26 | Direct Admin deactivate/demote bypass with active Action assignment | backend returns `409`; no invalid final relation | Planned |
-| AZ4-12 | AC-06 | Non-assignee Staff directly calls Complete endpoint | `409 ACTION_COMPLETION_REQUIRES_ASSIGNEE`; no performer spoof | Planned |
-| AZ4-13 | AC-13 | Stale `expectedTicketVersion` on owner/priority/status/problem-resolved mutation | `409 STALE_TICKET_STATE`; no partial mutation | Planned |
+| AZ4-11 | AC-26 | Direct Admin deactivate/demote bypass with active Action assignment | backend returns `409`; no invalid final relation | **Pass — `98b5274`** |
+| AZ4-12 | AC-06 | Non-assignee Staff directly calls Complete endpoint | `409 ACTION_COMPLETION_REQUIRES_ASSIGNEE`; no performer spoof | **Pass — `98b5274`** |
+| AZ4-13 | AC-13 | Stale `expectedTicketVersion` on owner/priority/status/problem-resolved mutation | `409 STALE_TICKET_STATE`; no partial mutation | **Pass — `1d62aa0`** |
 
 ## 11. Client Component / UI Tests
 

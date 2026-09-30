@@ -18,6 +18,7 @@ const LAB3_MIGRATIONS = [
 ] as const;
 
 const LAB4_MIGRATION = "20260929190000_lab4_actions_data_foundation";
+const LAB4_IDEMPOTENCY_MIGRATION = "20260930153000_lab4_action_create_fingerprint";
 const schemasToDrop = new Set<string>();
 
 function quoteIdent(value: string): string {
@@ -226,6 +227,40 @@ describe("Lab 4 migration regression", () => {
         ) VALUES (1, '33333333-3333-4333-8333-333333333333', 1, CURRENT_TIMESTAMP, 'Bad performer', 'Done', false, 'COMPLETED', 2, 1, 2, CURRENT_TIMESTAMP)`,
       ),
     ).rejects.toThrow();
+  }, 45_000);
+
+  it("MIG-06: immutable create-fingerprint migration preserves existing Actions and accepts only SHA-256 hex", async () => {
+    const schema = freshSchema("fingerprint");
+    await createLab3Schema(schema);
+    await insertLab3Fixture(schema);
+    executeSqlInSchema(schema, migrationSql(LAB4_MIGRATION));
+
+    const s = quoteIdent(schema);
+    await getPrisma().$executeRawUnsafe(
+      `INSERT INTO ${s}."ActionTaken" (
+        "ticketId", "clientRequestId", "workflowCycle", "actionDateTime", "description",
+        "followUpRequired", "status", "createdById", "assigneeId"
+      ) VALUES (1, '44444444-4444-4444-8444-444444444444', 1, CURRENT_TIMESTAMP, 'Pre-fingerprint Action', false, 'PLANNED', 2, 2)`,
+    );
+
+    executeSqlInSchema(schema, migrationSql(LAB4_IDEMPOTENCY_MIGRATION));
+    expect(await countRows(schema, "ActionTaken")).toBe(1);
+    const rows = await getPrisma().$queryRawUnsafe<Array<{ createFingerprint: string | null }>>(
+      `SELECT "createFingerprint" FROM ${s}."ActionTaken" WHERE "clientRequestId" = '44444444-4444-4444-8444-444444444444'`,
+    );
+    expect(rows).toEqual([{ createFingerprint: null }]);
+
+    await expect(
+      getPrisma().$executeRawUnsafe(
+        `UPDATE ${s}."ActionTaken" SET "createFingerprint" = 'not-a-valid-fingerprint'
+         WHERE "clientRequestId" = '44444444-4444-4444-8444-444444444444'`,
+      ),
+    ).rejects.toThrow();
+    const valid = "a".repeat(64);
+    await getPrisma().$executeRawUnsafe(
+      `UPDATE ${s}."ActionTaken" SET "createFingerprint" = '${valid}'
+       WHERE "clientRequestId" = '44444444-4444-4444-8444-444444444444'`,
+    );
   }, 45_000);
 
   it("MIG-04: a forced failure before COMMIT rolls the complete Lab 4 migration back", async () => {

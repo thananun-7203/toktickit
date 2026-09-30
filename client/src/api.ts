@@ -38,6 +38,9 @@ export interface Ticket {
   itPriority?: RequestedPriority | null;
   status: string;
   problemAppearsResolvedAt?: string | null;
+  version?: number;
+  workflowCycle?: number;
+  resolvedAt?: string | null;
   createdAt: string;
   requester: { id: number; name: string };
   category: { id: number; name: string };
@@ -54,6 +57,9 @@ export interface Attachment {
 }
 
 export interface TicketDetail extends Ticket {
+  version: number;
+  workflowCycle: number;
+  resolvedAt?: string | null;
   attachments: Attachment[];
 }
 
@@ -142,6 +148,9 @@ export interface StaffQueueResponse {
 export interface StaffTicketDetail extends StaffQueueTicket {
   description: string;
   problemAppearsResolvedAt: string | null;
+  version: number;
+  workflowCycle: number;
+  resolvedAt: string | null;
   attachments: Attachment[];
 }
 
@@ -418,13 +427,15 @@ export async function postPublicComment(ticketId: number, content: string): Prom
   return res.json();
 }
 
-export async function indicateProblemAppearsResolved(ticketId: number): Promise<{
+export async function indicateProblemAppearsResolved(ticketId: number, expectedVersion: number): Promise<{
   ticketId: number;
   problemAppearsResolvedAt: string;
   status: string;
+  version: number;
 }> {
   const res = await apiFetch(`/api/v1/tickets/${ticketId}/problem-appears-resolved`, {
     method: "POST",
+    body: JSON.stringify({ expectedVersion }),
   });
   if (!res.ok) throw await responseError(res, "Unable to record resolution indication");
   return res.json();
@@ -462,8 +473,8 @@ export async function getStaffTicketDetail(id: number): Promise<StaffTicketDetai
 
 export async function updateStaffTicketOwner(
   ticketId: number,
-  input: { action: "claim" } | { action: "assign"; ownerId: number },
-): Promise<Pick<StaffTicketDetail, "id" | "owner" | "updatedAt">> {
+  input: ({ action: "claim" } | { action: "assign"; ownerId: number }) & { expectedVersion: number },
+): Promise<Pick<StaffTicketDetail, "id" | "owner" | "version" | "updatedAt">> {
   const res = await apiFetch(`/api/v1/staff/tickets/${ticketId}/owner`, {
     method: "PATCH",
     body: JSON.stringify(input),
@@ -475,10 +486,11 @@ export async function updateStaffTicketOwner(
 export async function updateStaffTicketItPriority(
   ticketId: number,
   itPriority: RequestedPriority,
-): Promise<Pick<StaffTicketDetail, "id" | "requestedPriority" | "itPriority" | "updatedAt">> {
+  expectedVersion: number,
+): Promise<Pick<StaffTicketDetail, "id" | "requestedPriority" | "itPriority" | "version" | "updatedAt">> {
   const res = await apiFetch(`/api/v1/staff/tickets/${ticketId}/it-priority`, {
     method: "PATCH",
-    body: JSON.stringify({ itPriority }),
+    body: JSON.stringify({ itPriority, expectedVersion }),
   });
   if (!res.ok) throw await responseError(res, "Unable to update IT Priority");
   return res.json();
@@ -487,10 +499,11 @@ export async function updateStaffTicketItPriority(
 export async function updateStaffTicketStatus(
   ticketId: number,
   status: TicketStatus,
-): Promise<Pick<StaffTicketDetail, "id" | "status" | "problemAppearsResolvedAt" | "updatedAt">> {
+  expectedVersion: number,
+): Promise<Pick<StaffTicketDetail, "id" | "status" | "problemAppearsResolvedAt" | "version" | "updatedAt">> {
   const res = await apiFetch(`/api/v1/staff/tickets/${ticketId}/status`, {
     method: "PATCH",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, expectedVersion }),
   });
   if (!res.ok) throw await responseError(res, "Unable to update Ticket status");
   return res.json();
