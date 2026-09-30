@@ -14,7 +14,7 @@ Issue plan prepared before implementation:
 |---|---|---|
 | #50 | Sprint 4 Engineering Contract & Test Plan | PR #60 approved and merged to `lab4-staging`; Issue #50 closed |
 | #51 | Actions Taken Data Model, Migration & Seed | PR #61 approved and merged to `lab4-staging`; Issue #51 closed |
-| #52 | Actions Taken API & Authorization | Active on `feature/3-actions-api-authorization`; implementation/test commits `6abc6c7` + `98b5274`; PR pending |
+| #52 | Actions Taken API & Authorization | PR #62 open against `lab4-staging`; review requested from `Tanaboonnnnn` |
 | #53 | Actions Taken Ticket Detail UI | Not started |
 | #54 | Final Ticket Workflow & Resolution Rules | Not started |
 | #55 | IT Staff Dashboard | Not started |
@@ -235,9 +235,13 @@ Verification used disposable PostgreSQL 16 database `toktickit_lab4_issue52_test
 
 ### Pull Request / Review
 
-- PR: **pending**.
-- Required reviewer when opened: `Tanaboonnnnn`.
+- PR: [#62 — `[Lab 4] Issue 3: Actions Taken API & Authorization`](https://github.com/thananun-7203/toktickit/pull/62)
+- Head: `feature/3-actions-api-authorization`
+- Base: `lab4-staging`
+- PR opened after implementation commit `6abc6c7`, strengthened test commit `98b5274`, and evidence/docs commit `6593135` were pushed.
+- Reviewer requested: `Tanaboonnnnn`.
 - Peer-review verdict: **pending**.
+- Issue #52 remains open through review and should close only after approved merge into `lab4-staging`.
 
 ## 5. Pull Requests I Authored — Lab 4
 
@@ -247,7 +251,7 @@ Populate only from actual PRs.
 |---|---|---|---|---|
 | [#60](https://github.com/thananun-7203/toktickit/pull/60) | `feature/1-sprint4-engineering-contract` | `lab4-staging` | Approved by `Tanaboonnnnn` at final reviewed head `48dbae6` | Merged (`6a36d26`) |
 | [#61](https://github.com/thananun-7203/toktickit/pull/61) | `feature/2-actions-data-foundation` | `lab4-staging` | Approved by `Tanaboonnnnn` at `899b7f0` after source-of-truth clarification | Merged (`d3a06ac`) |
-| Pending Issue #52 PR | `feature/3-actions-api-authorization` | `lab4-staging` | Pending | Not opened |
+| [#62](https://github.com/thananun-7203/toktickit/pull/62) | `feature/3-actions-api-authorization` | `lab4-staging` | Review requested from `Tanaboonnnnn` | Open |
 
 ## 6. Review Standard
 
