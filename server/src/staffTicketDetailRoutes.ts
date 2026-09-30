@@ -31,6 +31,9 @@ const detailSelect = Prisma.validator<Prisma.TicketSelect>()({
   itPriority: true,
   status: true,
   problemAppearsResolvedAt: true,
+  version: true,
+  workflowCycle: true,
+  resolvedAt: true,
   createdAt: true,
   updatedAt: true,
   requester: { select: { id: true, name: true, email: true } },
@@ -53,6 +56,26 @@ const detailSelect = Prisma.validator<Prisma.TicketSelect>()({
 class TicketMissingError extends Error {}
 class OwnerNotEligibleError extends Error {}
 class StaleTicketStateError extends Error {}
+
+async function runSerializableOwnerTransaction<T>(
+  operation: (tx: Prisma.TransactionClient) => Promise<T>,
+): Promise<T> {
+  const prisma = getPrisma();
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await prisma.$transaction(operation, {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        maxWait: 5_000,
+        timeout: 10_000,
+      });
+    } catch (error) {
+      lastError = error;
+      if (!isPrismaSerializationConflict(error) || attempt === 2) throw error;
+    }
+  }
+  throw lastError;
+}
 
 const INTERNAL_NOTES_DEFAULT_PAGE_SIZE = 50;
 const INTERNAL_NOTES_MAX_PAGE_SIZE = 100;
@@ -140,13 +163,16 @@ staffTicketDetailRouter.patch(
     }
 
     try {
-      const prisma = getPrisma();
-      const result = await prisma.$transaction(async (tx) => {
+      const result = await runSerializableOwnerTransaction(async (tx) => {
         const before = await tx.ticket.findUnique({
           where: { id: ticketId },
           select: { id: true, ownerId: true },
         });
         if (!before) throw new TicketMissingError();
+        // A Claim is valid only while the Ticket is still unassigned. This
+        // revalidation is essential when a Serializable transaction is retried:
+        // the retry must not turn a lost Claim race into an implicit Reassign.
+        if (action === "claim" && before.ownerId !== null) throw new StaleTicketStateError();
 
         const userIds = Array.from(new Set(
           [before.ownerId, targetOwnerId].filter((id): id is number => typeof id === "number"),
@@ -184,10 +210,6 @@ staffTicketDetailRouter.patch(
             updatedAt: true,
           },
         });
-      }, {
-        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-        maxWait: 5_000,
-        timeout: 10_000,
       });
       res.json(result);
     } catch (error) {

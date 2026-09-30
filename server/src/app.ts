@@ -25,6 +25,7 @@ import { sharedResourceTicketVisibilityWhere } from "./ticketAccess.js";
 import { staffQueueRouter } from "./staffQueueRoutes.js";
 import { staffTicketDetailRouter } from "./staffTicketDetailRoutes.js";
 import { adminUserRouter } from "./adminUserRoutes.js";
+import { actionTakenRouter } from "./actionTakenRoutes.js";
 
 // The Express app is exported separately from app.listen() (see index.ts) so
 // Supertest can import `app` without opening a port. Do not merge these files.
@@ -43,6 +44,7 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/staff", staffQueueRouter);
 app.use("/api/v1/staff", staffTicketDetailRouter);
 app.use("/api/v1/admin", adminUserRouter);
+app.use("/api/v1", actionTakenRouter);
 
 const attachmentUpload = multer({
   storage: multer.memoryStorage(),
