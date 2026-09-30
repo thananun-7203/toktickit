@@ -2,6 +2,7 @@ import { ActionTakenStatus } from "@prisma/client";
 import { describe, expect, it } from "vitest";
 import {
   actionStatusLabel,
+  createActionFingerprint,
   isAllowedActionTransition,
   isCanonicalUuid,
   normalizeOptionalText,
@@ -61,5 +62,23 @@ describe("Lab 4 Actions Taken helpers", () => {
     expect(parsePositiveInteger(1)).toBe(1);
     expect(parsePositiveInteger(0)).toBeNull();
     expect(parsePositiveInteger("1")).toBeNull();
+  });
+
+  it("AT-U-05: create fingerprint is stable for original logical create intent and changes when intent changes", () => {
+    const base = {
+      createdById: 10,
+      actionDateTime: new Date("2026-09-30T08:00:00.000Z"),
+      description: "Inspect logs",
+      assigneeId: 20,
+      followUpRequired: false,
+      followUpNote: null,
+      attachmentNotes: null,
+    };
+    const first = createActionFingerprint(base);
+    const second = createActionFingerprint({ ...base });
+    const changed = createActionFingerprint({ ...base, assigneeId: 21 });
+    expect(first).toMatch(/^[0-9a-f]{64}$/);
+    expect(second).toBe(first);
+    expect(changed).not.toBe(first);
   });
 });

@@ -223,11 +223,12 @@ export default function TicketDetail({ ticketId, onBack }: TicketDetailProps) {
     setIndicatingResolved(true);
     setError(null);
     try {
-      const result = await indicateProblemAppearsResolved(ticket.id);
+      const result = await indicateProblemAppearsResolved(ticket.id, ticket.version);
       setTicket((current) => current ? {
         ...current,
         problemAppearsResolvedAt: result.problemAppearsResolvedAt,
         status: result.status,
+        version: result.version,
       } : current);
       setNotice("Support has been notified that the problem appears resolved.");
     } catch (err) {

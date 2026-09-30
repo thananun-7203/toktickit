@@ -13,6 +13,9 @@ const DETAIL: api.TicketDetail = {
   requestedPriority: "High",
   itPriority: "Medium",
   problemAppearsResolvedAt: null,
+  version: 1,
+  workflowCycle: 1,
+  resolvedAt: null,
   createdAt: "2026-09-15T10:00:00.000Z",
   requester: { id: 301, name: "Authenticated Requester" },
   category: { id: 1, name: "Software" },
@@ -122,6 +125,7 @@ describe("Lab 3 Requester Ticket Detail extensions", () => {
       ticketId: DETAIL.id,
       status: "New",
       problemAppearsResolvedAt: indicatedAt,
+      version: 2,
     });
     vi.spyOn(api, "getTicketDetail")
       .mockResolvedValueOnce(DETAIL)
@@ -132,7 +136,7 @@ describe("Lab 3 Requester Ticket Detail extensions", () => {
     await user.click(screen.getByRole("button", { name: /Problem Appears Resolved/i }));
 
     expect(window.confirm).toHaveBeenCalledWith(expect.stringMatching(/does not formally close/i));
-    expect(api.indicateProblemAppearsResolved).toHaveBeenCalledWith(DETAIL.id);
+    expect(api.indicateProblemAppearsResolved).toHaveBeenCalledWith(DETAIL.id, DETAIL.version);
     await waitFor(() => expect(screen.getByText(/Requester indicated this problem appears resolved/i)).toBeInTheDocument());
     expect(screen.getByText("New")).toBeInTheDocument();
   });

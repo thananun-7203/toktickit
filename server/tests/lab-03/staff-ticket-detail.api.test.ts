@@ -141,7 +141,7 @@ describe("Lab 3 IT Staff Ticket Detail and operations", () => {
       .patch(`/api/v1/staff/tickets/${ticket.id}/owner`)
       .set("Origin", TEST_ORIGIN)
       .set("Cookie", staffCookie)
-      .send({ action: "claim" });
+      .send({ action: "claim", expectedVersion: ticket.version });
     expect(res.status).toBe(200);
     expect(res.body.owner).toMatchObject({ id: staffId, role: "IT_STAFF" });
     expect((await getPrisma().ticket.findUnique({ where: { id: ticket.id } }))?.ownerId).toBe(staffId);
@@ -154,12 +154,12 @@ describe("Lab 3 IT Staff Ticket Detail and operations", () => {
         .patch(`/api/v1/staff/tickets/${ticket.id}/owner`)
         .set("Origin", TEST_ORIGIN)
         .set("Cookie", staffCookie)
-        .send({ action: "claim" }),
+        .send({ action: "claim", expectedVersion: ticket.version }),
       request(app)
         .patch(`/api/v1/staff/tickets/${ticket.id}/owner`)
         .set("Origin", TEST_ORIGIN)
         .set("Cookie", otherStaffCookie)
-        .send({ action: "claim" }),
+        .send({ action: "claim", expectedVersion: ticket.version }),
     ]);
     expect([first.status, second.status].sort()).toEqual([200, 409]);
     const persisted = await getPrisma().ticket.findUnique({ where: { id: ticket.id } });
@@ -168,14 +168,16 @@ describe("Lab 3 IT Staff Ticket Detail and operations", () => {
 
   it("ST-03/ST-04: assigns or reassigns to active Staff and Administrator", async () => {
     const ticket = await createTicket({ ownerId: staffId });
+    let expectedVersion = ticket.version;
     for (const ownerId of [otherStaffId, adminId]) {
       const res = await request(app)
         .patch(`/api/v1/staff/tickets/${ticket.id}/owner`)
         .set("Origin", TEST_ORIGIN)
         .set("Cookie", staffCookie)
-        .send({ action: "assign", ownerId });
+        .send({ action: "assign", ownerId, expectedVersion });
       expect(res.status).toBe(200);
       expect(res.body.owner.id).toBe(ownerId);
+      expectedVersion = res.body.version;
     }
   });
 
@@ -186,7 +188,7 @@ describe("Lab 3 IT Staff Ticket Detail and operations", () => {
         .patch(`/api/v1/staff/tickets/${ticket.id}/owner`)
         .set("Origin", TEST_ORIGIN)
         .set("Cookie", staffCookie)
-        .send({ action: "assign", ownerId: invalidOwnerId });
+        .send({ action: "assign", ownerId: invalidOwnerId, expectedVersion: ticket.version });
       expect(res.status).toBe(409);
       expect(res.body.error.code).toBe("OWNER_NOT_ELIGIBLE");
       expect((await getPrisma().ticket.findUnique({ where: { id: ticket.id } }))?.ownerId).toBe(staffId);
@@ -216,7 +218,7 @@ describe("Lab 3 IT Staff Ticket Detail and operations", () => {
       .patch(`/api/v1/staff/tickets/${ticket.id}/it-priority`)
       .set("Origin", TEST_ORIGIN)
       .set("Cookie", adminCookie)
-      .send({ itPriority: "High" });
+      .send({ itPriority: "High", expectedVersion: ticket.version });
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ requestedPriority: "Low", itPriority: "High" });
     const persisted = await getPrisma().ticket.findUnique({ where: { id: ticket.id } });
@@ -253,7 +255,7 @@ describe("Lab 3 IT Staff Ticket Detail and operations", () => {
           .patch(`/api/v1/staff/tickets/${ticket.id}/status`)
           .set("Origin", TEST_ORIGIN)
           .set("Cookie", staffCookie)
-          .send({ status: target });
+          .send({ status: target, expectedVersion: ticket.version });
         expect(res.status, `${from} -> ${target}`).toBe(200);
         expect(res.body.status).toBe(target);
       }
@@ -267,7 +269,7 @@ describe("Lab 3 IT Staff Ticket Detail and operations", () => {
         .patch(`/api/v1/staff/tickets/${ticket.id}/status`)
         .set("Origin", TEST_ORIGIN)
         .set("Cookie", staffCookie)
-        .send({ status: target });
+        .send({ status: target, expectedVersion: ticket.version });
       expect(res.status).toBe(409);
       expect(res.body.error.code).toBe("INVALID_STATUS_TRANSITION");
       expect((await getPrisma().ticket.findUnique({ where: { id: ticket.id } }))?.status).toBe(from);
@@ -308,7 +310,7 @@ describe("Lab 3 IT Staff Ticket Detail and operations", () => {
       .patch(`/api/v1/staff/tickets/${ticket.id}/status`)
       .set("Origin", TEST_ORIGIN)
       .set("Cookie", staffCookie)
-      .send({ status: "Reopened" });
+      .send({ status: "Reopened", expectedVersion: ticket.version });
     expect(reopen.status).toBe(200);
     expect(reopen.body).toMatchObject({ status: "Reopened", problemAppearsResolvedAt: null });
     const persisted = await getPrisma().ticket.findUnique({ where: { id: ticket.id } });

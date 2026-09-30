@@ -695,14 +695,33 @@ app.post(
         return;
       }
 
+      const expectedVersion = req.body?.expectedVersion;
+      if (!Number.isSafeInteger(expectedVersion) || expectedVersion <= 0) {
+        res.status(400).json({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Validation failed",
+            fields: { expectedVersion: "expectedVersion must be a positive integer" },
+          },
+        });
+        return;
+      }
+
       const requester = res.locals.authUser!;
       const prisma = getPrisma();
       const ticket = await prisma.ticket.findFirst({
         where: { id: ticketId, requesterId: requester.id },
-        select: { id: true, status: true, problemAppearsResolvedAt: true },
+        select: { id: true, status: true, problemAppearsResolvedAt: true, version: true },
       });
       if (!ticket) {
         res.status(404).json({ error: { message: "Ticket not found" } });
+        return;
+      }
+
+      if (ticket.version !== expectedVersion) {
+        res.status(409).json({
+          error: { code: "STALE_TICKET_STATE", message: "Ticket state changed; refresh and try again" },
+        });
         return;
       }
 
@@ -721,6 +740,7 @@ app.post(
           ticketId: ticket.id,
           problemAppearsResolvedAt: ticket.problemAppearsResolvedAt,
           status: ticket.status,
+          version: ticket.version,
         });
         return;
       }
@@ -732,8 +752,9 @@ app.post(
           requesterId: requester.id,
           problemAppearsResolvedAt: null,
           status: { in: Array.from(RESOLUTION_INDICATION_ALLOWED_STATUSES) },
+          version: expectedVersion,
         },
-        data: { problemAppearsResolvedAt: indicatedAt },
+        data: { problemAppearsResolvedAt: indicatedAt, version: { increment: 1 } },
       });
 
       // A concurrent staff transition can change status between the initial
@@ -742,7 +763,7 @@ app.post(
       if (updated.count === 0) {
         const current = await prisma.ticket.findFirst({
           where: { id: ticket.id, requesterId: requester.id },
-          select: { id: true, status: true, problemAppearsResolvedAt: true },
+          select: { id: true, status: true, problemAppearsResolvedAt: true, version: true },
         });
         if (!current) {
           res.status(404).json({ error: { message: "Ticket not found" } });
@@ -757,18 +778,22 @@ app.post(
           });
           return;
         }
-        res.json({
-          ticketId: current.id,
-          problemAppearsResolvedAt: current.problemAppearsResolvedAt,
-          status: current.status,
+        res.status(409).json({
+          error: { code: "STALE_TICKET_STATE", message: "Ticket state changed; refresh and try again" },
         });
         return;
       }
+
+      const saved = await prisma.ticket.findUniqueOrThrow({
+        where: { id: ticket.id },
+        select: { version: true },
+      });
 
       res.json({
         ticketId: ticket.id,
         problemAppearsResolvedAt: indicatedAt,
         status: ticket.status,
+        version: saved.version,
       });
     } catch {
       res.status(500).json({ error: { message: "Unable to record resolution indication" } });

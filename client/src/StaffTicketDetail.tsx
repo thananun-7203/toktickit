@@ -189,8 +189,8 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
     beginOperation();
     setOwnerBusy(true);
     try {
-      const updated = await updateStaffTicketOwner(ticket.id, { action: "claim" });
-      setTicket((current) => current ? { ...current, owner: updated.owner, updatedAt: updated.updatedAt } : current);
+      const updated = await updateStaffTicketOwner(ticket.id, { action: "claim", expectedVersion: ticket.version });
+      setTicket((current) => current ? { ...current, owner: updated.owner, version: updated.version, updatedAt: updated.updatedAt } : current);
       setOwnerDraft(updated.owner ? String(updated.owner.id) : "");
       setOperationNotice("Ticket ownership updated.");
     } catch (error) {
@@ -207,8 +207,8 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
     beginOperation();
     setOwnerBusy(true);
     try {
-      const updated = await updateStaffTicketOwner(ticket.id, { action: "assign", ownerId });
-      setTicket((current) => current ? { ...current, owner: updated.owner, updatedAt: updated.updatedAt } : current);
+      const updated = await updateStaffTicketOwner(ticket.id, { action: "assign", ownerId, expectedVersion: ticket.version });
+      setTicket((current) => current ? { ...current, owner: updated.owner, version: updated.version, updatedAt: updated.updatedAt } : current);
       setOperationNotice(ticket.owner ? "Ticket reassigned successfully." : "Ticket assigned successfully.");
     } catch (error) {
       setOperationError(errorMessage(error, "Unable to assign Ticket"));
@@ -222,11 +222,12 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
     beginOperation();
     setPriorityBusy(true);
     try {
-      const updated = await updateStaffTicketItPriority(ticket.id, priorityDraft);
+      const updated = await updateStaffTicketItPriority(ticket.id, priorityDraft, ticket.version);
       setTicket((current) => current ? {
         ...current,
         requestedPriority: updated.requestedPriority,
         itPriority: updated.itPriority,
+        version: updated.version,
         updatedAt: updated.updatedAt,
       } : current);
       setOperationNotice("IT Priority saved.");
@@ -246,11 +247,12 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
     beginOperation();
     setStatusBusy(true);
     try {
-      const updated = await updateStaffTicketStatus(ticket.id, statusDraft);
+      const updated = await updateStaffTicketStatus(ticket.id, statusDraft, ticket.version);
       setTicket((current) => current ? {
         ...current,
         status: updated.status,
         problemAppearsResolvedAt: updated.problemAppearsResolvedAt,
+        version: updated.version,
         updatedAt: updated.updatedAt,
       } : current);
       setStatusDraft("");

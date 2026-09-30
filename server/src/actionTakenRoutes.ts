@@ -8,6 +8,7 @@ import {
 } from "./auth.js";
 import {
   actionStatusLabel,
+  createActionFingerprint,
   isActiveActionStatus,
   isAllowedActionTransition,
   isCanonicalUuid,
@@ -152,10 +153,6 @@ async function loadAction(tx: Prisma.TransactionClient, actionId: number): Promi
   return tx.actionTaken.findUniqueOrThrow({ where: { id: actionId }, select: actionSelect });
 }
 
-function sameDate(a: Date, b: Date): boolean {
-  return a.getTime() === b.getTime();
-}
-
 async function runSerializableActionTransaction<T>(
   operation: (tx: Prisma.TransactionClient) => Promise<T>,
 ): Promise<T> {
@@ -242,30 +239,26 @@ actionTakenRouter.post(
     }
 
     const actor = res.locals.authUser!;
+    const createFingerprint = createActionFingerprint({
+      createdById: actor.id,
+      actionDateTime: actionDateTime!,
+      description: description!,
+      assigneeId: assigneeId!,
+      followUpRequired: followUp!.followUpRequired,
+      followUpNote: followUp!.followUpNote,
+      attachmentNotes,
+    });
     try {
       const result = await runSerializableActionTransaction(async (tx) => {
         const existing = await tx.actionTaken.findUnique({
           where: { ticketId_clientRequestId: { ticketId, clientRequestId: body.clientRequestId as string } },
           select: {
             id: true,
-            createdById: true,
-            actionDateTime: true,
-            description: true,
-            assigneeId: true,
-            followUpRequired: true,
-            followUpNote: true,
-            attachmentNotes: true,
+            createFingerprint: true,
           },
         });
         if (existing) {
-          const equivalent = existing.createdById === actor.id
-            && sameDate(existing.actionDateTime, actionDateTime!)
-            && existing.description === description
-            && existing.assigneeId === assigneeId
-            && existing.followUpRequired === followUp!.followUpRequired
-            && existing.followUpNote === followUp!.followUpNote
-            && existing.attachmentNotes === attachmentNotes;
-          if (!equivalent) throw new IdempotencyKeyReuseError();
+          if (existing.createFingerprint !== createFingerprint) throw new IdempotencyKeyReuseError();
           return { status: 200, action: await loadAction(tx, existing.id) };
         }
 
@@ -288,6 +281,7 @@ actionTakenRouter.post(
           data: {
             ticketId,
             clientRequestId: body.clientRequestId as string,
+            createFingerprint,
             workflowCycle: ticket.workflowCycle,
             actionDateTime: actionDateTime!,
             description: description!,

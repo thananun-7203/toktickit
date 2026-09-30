@@ -27,6 +27,9 @@ const TICKET: api.StaffTicketDetail = {
   itPriority: "Medium",
   status: "In Progress",
   problemAppearsResolvedAt: "2026-09-17T08:15:00.000Z",
+  version: 1,
+  workflowCycle: 1,
+  resolvedAt: null,
   createdAt: "2026-09-15T08:00:00.000Z",
   updatedAt: "2026-09-16T09:30:00.000Z",
   requester: { id: 10, name: "Somsri Rakdee", email: "somsri@toktick.it" },
@@ -72,17 +75,19 @@ describe("Lab 3 IT Staff Ticket Detail", () => {
     });
     vi.spyOn(api, "postPublicComment").mockResolvedValue(PUBLIC_COMMENT);
     vi.spyOn(api, "postInternalNote").mockResolvedValue(INTERNAL_NOTE);
-    vi.spyOn(api, "updateStaffTicketOwner").mockResolvedValue({ id: TICKET.id, owner: STAFF, updatedAt: TICKET.updatedAt });
+    vi.spyOn(api, "updateStaffTicketOwner").mockResolvedValue({ id: TICKET.id, owner: STAFF, version: 2, updatedAt: TICKET.updatedAt });
     vi.spyOn(api, "updateStaffTicketItPriority").mockResolvedValue({
       id: TICKET.id,
       requestedPriority: TICKET.requestedPriority,
       itPriority: "High",
+      version: 2,
       updatedAt: TICKET.updatedAt,
     });
     vi.spyOn(api, "updateStaffTicketStatus").mockResolvedValue({
       id: TICKET.id,
       status: "Resolved",
       problemAppearsResolvedAt: TICKET.problemAppearsResolvedAt,
+      version: 2,
       updatedAt: TICKET.updatedAt,
     });
   });
@@ -104,12 +109,12 @@ describe("Lab 3 IT Staff Ticket Detail", () => {
     await screen.findByRole("heading", { name: TICKET.ticketNumber });
 
     await user.click(screen.getByRole("button", { name: "Claim" }));
-    await waitFor(() => expect(updateOwner).toHaveBeenCalledWith(TICKET.id, { action: "claim" }));
+    await waitFor(() => expect(updateOwner).toHaveBeenCalledWith(TICKET.id, { action: "claim", expectedVersion: 1 }));
 
-    vi.mocked(api.updateStaffTicketOwner).mockResolvedValueOnce({ id: TICKET.id, owner: OTHER_STAFF, updatedAt: TICKET.updatedAt });
+    vi.mocked(api.updateStaffTicketOwner).mockResolvedValueOnce({ id: TICKET.id, owner: OTHER_STAFF, version: 3, updatedAt: TICKET.updatedAt });
     await user.selectOptions(screen.getByLabelText("Assign / Reassign"), String(OTHER_STAFF.id));
     await user.click(screen.getByRole("button", { name: "Reassign" }));
-    await waitFor(() => expect(updateOwner).toHaveBeenLastCalledWith(TICKET.id, { action: "assign", ownerId: OTHER_STAFF.id }));
+    await waitFor(() => expect(updateOwner).toHaveBeenLastCalledWith(TICKET.id, { action: "assign", ownerId: OTHER_STAFF.id, expectedVersion: 2 }));
   });
 
   it("UI-ST-03: Requested Priority stays read-only while IT Priority can be edited", async () => {
@@ -122,7 +127,7 @@ describe("Lab 3 IT Staff Ticket Detail", () => {
     expect(screen.queryByLabelText("Requested Priority")).not.toBeInTheDocument();
     await user.selectOptions(screen.getByLabelText("IT Priority"), "High");
     await user.click(screen.getByRole("button", { name: "Save" }));
-    await waitFor(() => expect(updatePriority).toHaveBeenCalledWith(TICKET.id, "High"));
+    await waitFor(() => expect(updatePriority).toHaveBeenCalledWith(TICKET.id, "High", TICKET.version));
   });
 
   it("UI-ST-04: Status control offers only allowed next transitions", async () => {

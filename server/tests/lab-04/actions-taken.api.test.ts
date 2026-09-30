@@ -183,6 +183,95 @@ describe("Lab 4 Actions Taken API", () => {
     expect(await getPrisma().actionTaken.count({ where: { ticketId: t.id } })).toBe(1);
   });
 
+  it("AT-API-27R: retry compares immutable original create intent even after edit/reassign", async () => {
+    const t = await ticket();
+    const original = createBody(1, { assigneeId: staffAId });
+    const first = await createViaApi(t.id, staffACookie, original);
+    expect(first.status).toBe(201);
+    expect((await getPrisma().ticket.findUniqueOrThrow({ where: { id: t.id } })).version).toBe(2);
+
+    const mutated = await request(app)
+      .patch(`/api/v1/staff/actions-taken/${first.body.id}`)
+      .set("Cookie", staffACookie)
+      .set("Origin", TEST_ORIGIN)
+      .send({
+        expectedVersion: 1,
+        expectedTicketVersion: 2,
+        assigneeId: staffBId,
+        description: "Mutable state changed after the create response was lost.",
+      });
+    expect(mutated.status).toBe(200);
+    expect(mutated.body.assignee.id).toBe(staffBId);
+    const parentAfterMutation = await getPrisma().ticket.findUniqueOrThrow({ where: { id: t.id } });
+    expect(parentAfterMutation.version).toBe(3);
+
+    // The retry intentionally carries the old expectedTicketVersion from the
+    // original POST. Idempotency lookup/fingerprint comparison happens first.
+    const retry = await createViaApi(t.id, staffACookie, original);
+    expect(retry.status).toBe(200);
+    expect(retry.body.id).toBe(first.body.id);
+    expect(retry.body.description).toBe("Mutable state changed after the create response was lost.");
+    expect(retry.body.assignee.id).toBe(staffBId);
+    expect(await getPrisma().actionTaken.count({ where: { ticketId: t.id } })).toBe(1);
+    expect((await getPrisma().ticket.findUniqueOrThrow({ where: { id: t.id } })).version).toBe(3);
+
+    const conflictingOriginalIntent = await createViaApi(t.id, staffACookie, {
+      ...original,
+      description: "A genuinely different original create payload",
+    });
+    expect(conflictingOriginalIntent.status).toBe(409);
+    expect(conflictingOriginalIntent.body.error.code).toBe("IDEMPOTENCY_KEY_REUSE");
+  });
+
+  it("AT-API-32: Owner and IT Priority mutations invalidate stale Action expectedTicketVersion", async () => {
+    const ownerTicket = await ticket({ ownerId: staffAId });
+    const ownerChange = await request(app)
+      .patch(`/api/v1/staff/tickets/${ownerTicket.id}/owner`)
+      .set("Cookie", adminCookie)
+      .set("Origin", TEST_ORIGIN)
+      .send({ action: "assign", ownerId: staffBId, expectedVersion: ownerTicket.version });
+    expect(ownerChange.status).toBe(200);
+    expect(ownerChange.body.version).toBe(ownerTicket.version + 1);
+    const staleAfterOwner = await createViaApi(ownerTicket.id, staffACookie, createBody(ownerTicket.version));
+    expect(staleAfterOwner.status).toBe(409);
+    expect(staleAfterOwner.body.error.code).toBe("STALE_TICKET_STATE");
+
+    const priorityTicket = await ticket({ ownerId: staffAId });
+    const priorityChange = await request(app)
+      .patch(`/api/v1/staff/tickets/${priorityTicket.id}/it-priority`)
+      .set("Cookie", staffACookie)
+      .set("Origin", TEST_ORIGIN)
+      .send({ itPriority: "High", expectedVersion: priorityTicket.version });
+    expect(priorityChange.status).toBe(200);
+    expect(priorityChange.body.version).toBe(priorityTicket.version + 1);
+    const staleAfterPriority = await createViaApi(priorityTicket.id, staffACookie, createBody(priorityTicket.version));
+    expect(staleAfterPriority.status).toBe(409);
+    expect(staleAfterPriority.body.error.code).toBe("STALE_TICKET_STATE");
+  });
+
+  it("AT-API-33: concurrent Owner vs Action mutation has one aggregate-version winner and no 500", async () => {
+    const t = await ticket({ ownerId: staffAId });
+    const created = await createViaApi(t.id, staffACookie, createBody(1, { assigneeId: staffAId }));
+    expect(created.status).toBe(201);
+
+    const [ownerResult, actionResult] = await Promise.all([
+      request(app)
+        .patch(`/api/v1/staff/tickets/${t.id}/owner`)
+        .set("Cookie", adminCookie).set("Origin", TEST_ORIGIN)
+        .send({ action: "assign", ownerId: staffBId, expectedVersion: 2 }),
+      request(app)
+        .patch(`/api/v1/staff/actions-taken/${created.body.id}`)
+        .set("Cookie", staffACookie).set("Origin", TEST_ORIGIN)
+        .send({ expectedVersion: 1, expectedTicketVersion: 2, description: "Competing aggregate mutation" }),
+    ]);
+
+    expect([ownerResult.status, actionResult.status].filter((status) => status === 200)).toHaveLength(1);
+    expect([ownerResult.status, actionResult.status].filter((status) => status === 409)).toHaveLength(1);
+    expect(ownerResult.status).not.toBe(500);
+    expect(actionResult.status).not.toBe(500);
+    expect((await getPrisma().ticket.findUniqueOrThrow({ where: { id: t.id } })).version).toBe(3);
+  });
+
   it("AT-API-03/04/06/07/20/23: invalid create input and protected identities fail without mutation", async () => {
     const t = await ticket();
     const cases: Array<{ body: Record<string, unknown>; expectedCode?: string }> = [
@@ -458,20 +547,25 @@ describe("Lab 4 Actions Taken API", () => {
   });
 
   it("AT-API-25/AZ4-11: Administrator cannot deactivate/demote a user with an active assigned Action", async () => {
+    const actionOnlyAssignee = await createTestUser({
+      name: `Action Only Assignee ${crypto.randomUUID().slice(0, 6)}`,
+      role: UserRole.IT_STAFF,
+    });
+    createdUserIds.push(actionOnlyAssignee.id);
     const t = await ticket({ ownerId: null });
-    const created = await createViaApi(t.id, staffACookie, createBody(1, { assigneeId: staffBId }));
+    const created = await createViaApi(t.id, staffACookie, createBody(1, { assigneeId: actionOnlyAssignee.id }));
     expect(created.status).toBe(201);
 
     const deactivate = await request(app)
-      .patch(`/api/v1/admin/users/${staffBId}`)
+      .patch(`/api/v1/admin/users/${actionOnlyAssignee.id}`)
       .set("Cookie", adminCookie).set("Origin", TEST_ORIGIN)
       .send({ isActive: false });
     expect(deactivate.status).toBe(409);
     expect(deactivate.body.error.code).toBe("ACTIVE_ACTIONS_REQUIRE_REASSIGNMENT");
-    expect((await getPrisma().user.findUniqueOrThrow({ where: { id: staffBId } })).isActive).toBe(true);
+    expect((await getPrisma().user.findUniqueOrThrow({ where: { id: actionOnlyAssignee.id } })).isActive).toBe(true);
 
     const demote = await request(app)
-      .patch(`/api/v1/admin/users/${staffBId}`)
+      .patch(`/api/v1/admin/users/${actionOnlyAssignee.id}`)
       .set("Cookie", adminCookie).set("Origin", TEST_ORIGIN)
       .send({ role: "REQUESTER" });
     expect(demote.status).toBe(409);

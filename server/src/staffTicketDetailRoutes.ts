@@ -85,6 +85,10 @@ function parseTicketId(raw: string): number | null {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
+function parseExpectedVersion(raw: unknown): number | null {
+  return Number.isSafeInteger(raw) && Number(raw) > 0 ? Number(raw) : null;
+}
+
 function parsePositiveQueryInteger(
   raw: unknown,
   defaultValue: number,
@@ -146,6 +150,11 @@ staffTicketDetailRouter.patch(
       res.status(400).json(validationError({ action: "action must be claim or assign" }));
       return;
     }
+    const expectedVersion = parseExpectedVersion(req.body?.expectedVersion);
+    if (!expectedVersion) {
+      res.status(400).json(validationError({ expectedVersion: "expectedVersion must be a positive integer" }));
+      return;
+    }
     if (action === "claim" && req.body?.ownerId !== undefined) {
       res.status(400).json(validationError({ ownerId: "ownerId is not allowed when action is claim" }));
       return;
@@ -164,11 +173,20 @@ staffTicketDetailRouter.patch(
 
     try {
       const result = await runSerializableOwnerTransaction(async (tx) => {
-        const before = await tx.ticket.findUnique({
-          where: { id: ticketId },
-          select: { id: true, ownerId: true },
-        });
+        // Lock Ticket before any User row. Actions Taken mutations use the
+        // same aggregate-first order (Ticket -> Action -> User). Admin account
+        // eligibility mutations begin at User and rely on Serializable retry;
+        // both paths revalidate semantics after retry so a deadlock/40001 loser
+        // never turns into a different logical operation.
+        const ticketRows = await tx.$queryRaw<Array<{ id: number; ownerId: number | null; version: number }>>(Prisma.sql`
+          SELECT "id", "ownerId", "version"
+          FROM "Ticket"
+          WHERE "id" = ${ticketId}
+          FOR UPDATE
+        `);
+        const before = ticketRows[0];
         if (!before) throw new TicketMissingError();
+        if (before.version !== expectedVersion) throw new StaleTicketStateError();
         // A Claim is valid only while the Ticket is still unassigned. This
         // revalidation is essential when a Serializable transaction is retried:
         // the retry must not turn a lost Claim race into an implicit Reassign.
@@ -197,8 +215,8 @@ staffTicketDetailRouter.patch(
         }
 
         const updated = await tx.ticket.updateMany({
-          where: { id: ticketId, ownerId: before.ownerId },
-          data: { ownerId: targetOwnerId },
+          where: { id: ticketId, ownerId: before.ownerId, version: expectedVersion },
+          data: { ownerId: targetOwnerId, version: { increment: 1 } },
         });
         if (updated.count === 0) throw new StaleTicketStateError();
 
@@ -206,6 +224,7 @@ staffTicketDetailRouter.patch(
           where: { id: ticketId },
           select: {
             id: true,
+            version: true,
             owner: { select: { id: true, name: true, email: true, role: true } },
             updatedAt: true,
           },
@@ -248,18 +267,34 @@ staffTicketDetailRouter.patch(
       res.status(400).json(validationError({ itPriority: "itPriority must be Low, Medium, or High" }));
       return;
     }
+    const expectedVersion = parseExpectedVersion(req.body?.expectedVersion);
+    if (!expectedVersion) {
+      res.status(400).json(validationError({ expectedVersion: "expectedVersion must be a positive integer" }));
+      return;
+    }
 
     try {
       const prisma = getPrisma();
-      const exists = await prisma.ticket.findUnique({ where: { id: ticketId }, select: { id: true } });
+      const exists = await prisma.ticket.findUnique({ where: { id: ticketId }, select: { id: true, version: true } });
       if (!exists) {
         res.status(404).json({ error: { message: "Ticket not found" } });
         return;
       }
-      const updated = await prisma.ticket.update({
+      if (exists.version !== expectedVersion) {
+        res.status(409).json({ error: { code: "STALE_TICKET_STATE", message: "Ticket state changed; refresh and try again" } });
+        return;
+      }
+      const changed = await prisma.ticket.updateMany({
+        where: { id: ticketId, version: expectedVersion },
+        data: { itPriority: req.body.itPriority, version: { increment: 1 } },
+      });
+      if (changed.count === 0) {
+        res.status(409).json({ error: { code: "STALE_TICKET_STATE", message: "Ticket state changed; refresh and try again" } });
+        return;
+      }
+      const updated = await prisma.ticket.findUniqueOrThrow({
         where: { id: ticketId },
-        data: { itPriority: req.body.itPriority },
-        select: { id: true, requestedPriority: true, itPriority: true, updatedAt: true },
+        select: { id: true, requestedPriority: true, itPriority: true, version: true, updatedAt: true },
       });
       res.json(updated);
     } catch {
@@ -282,15 +317,24 @@ staffTicketDetailRouter.patch(
       res.status(400).json(validationError({ status: "status is not a supported Ticket status" }));
       return;
     }
+    const expectedVersion = parseExpectedVersion(req.body?.expectedVersion);
+    if (!expectedVersion) {
+      res.status(400).json(validationError({ expectedVersion: "expectedVersion must be a positive integer" }));
+      return;
+    }
 
     try {
       const prisma = getPrisma();
       const current = await prisma.ticket.findUnique({
         where: { id: ticketId },
-        select: { id: true, status: true },
+        select: { id: true, status: true, version: true },
       });
       if (!current) {
         res.status(404).json({ error: { message: "Ticket not found" } });
+        return;
+      }
+      if (current.version !== expectedVersion) {
+        res.status(409).json({ error: { code: "STALE_TICKET_STATE", message: "Ticket state changed; refresh and try again" } });
         return;
       }
       if (!isTicketStatus(current.status) || !isAllowedStatusTransition(current.status, req.body.status)) {
@@ -300,10 +344,10 @@ staffTicketDetailRouter.patch(
         return;
       }
 
-      const data: Prisma.TicketUpdateManyMutationInput = { status: req.body.status };
+      const data: Prisma.TicketUpdateManyMutationInput = { status: req.body.status, version: { increment: 1 } };
       if (req.body.status === "Reopened") data.problemAppearsResolvedAt = null;
       const changed = await prisma.ticket.updateMany({
-        where: { id: ticketId, status: current.status },
+        where: { id: ticketId, status: current.status, version: expectedVersion },
         data,
       });
       if (changed.count === 0) {
@@ -314,7 +358,7 @@ staffTicketDetailRouter.patch(
       }
       const updated = await prisma.ticket.findUniqueOrThrow({
         where: { id: ticketId },
-        select: { id: true, status: true, problemAppearsResolvedAt: true, updatedAt: true },
+        select: { id: true, status: true, problemAppearsResolvedAt: true, version: true, updatedAt: true },
       });
       res.json(updated);
     } catch {

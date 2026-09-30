@@ -1,4 +1,5 @@
 import { ActionTakenStatus } from "@prisma/client";
+import crypto from "node:crypto";
 
 export const ACTION_STATUS_LABELS = ["Planned", "In Progress", "Completed", "Cancelled"] as const;
 export type ActionStatusLabel = (typeof ACTION_STATUS_LABELS)[number];
@@ -84,4 +85,28 @@ export function normalizeOptionalText(value: unknown, maxCodePoints = 2000): { v
   if (!normalized) return { value: null, valid: true };
   if (unicodeLength(normalized) > maxCodePoints) return { value: null, valid: false };
   return { value: normalized, valid: true };
+}
+
+export function createActionFingerprint(input: {
+  createdById: number;
+  actionDateTime: Date;
+  description: string;
+  assigneeId: number;
+  followUpRequired: boolean;
+  followUpNote: string | null;
+  attachmentNotes: string | null;
+}): string {
+  // JSON array fixes field order and keeps null/boolean/number distinctions
+  // explicit. expectedTicketVersion and clientRequestId are intentionally not
+  // part of the logical create payload equivalence contract.
+  const canonical = JSON.stringify([
+    input.createdById,
+    input.actionDateTime.toISOString(),
+    input.description,
+    input.assigneeId,
+    input.followUpRequired,
+    input.followUpNote,
+    input.attachmentNotes,
+  ]);
+  return crypto.createHash("sha256").update(canonical, "utf8").digest("hex");
 }

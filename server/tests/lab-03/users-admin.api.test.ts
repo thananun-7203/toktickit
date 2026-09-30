@@ -436,7 +436,7 @@ describe("Lab 3 Administrator User Management", () => {
         .patch(`/api/v1/staff/tickets/${ticket.id}/owner`)
         .set("Origin", TEST_ORIGIN)
         .set("Cookie", staffCookie)
-        .send({ action: "assign", ownerId: target.id }),
+        .send({ action: "assign", ownerId: target.id, expectedVersion: ticket.version }),
       request(app)
         .patch(`/api/v1/admin/users/${target.id}`)
         .set("Origin", TEST_ORIGIN)
@@ -460,7 +460,7 @@ describe("Lab 3 Administrator User Management", () => {
         .patch(`/api/v1/staff/tickets/${ticket.id}/owner`)
         .set("Origin", TEST_ORIGIN)
         .set("Cookie", staffCookie)
-        .send({ action: "assign", ownerId: target.id }),
+        .send({ action: "assign", ownerId: target.id, expectedVersion: ticket.version }),
       request(app)
         .patch(`/api/v1/admin/users/${target.id}`)
         .set("Origin", TEST_ORIGIN)
@@ -490,7 +490,7 @@ describe("Lab 3 Administrator User Management", () => {
         .patch(`/api/v1/staff/tickets/${ticket.id}/owner`)
         .set("Origin", TEST_ORIGIN)
         .set("Cookie", staffCookie)
-        .send({ action: "assign", ownerId: target.id }),
+        .send({ action: "assign", ownerId: target.id, expectedVersion: ticket.version }),
       request(app)
         .patch(`/api/v1/admin/users/${target.id}`)
         .set("Origin", TEST_ORIGIN)
