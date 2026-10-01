@@ -150,6 +150,7 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
     setOwnerDraft(detail.owner ? String(detail.owner.id) : "");
     setPriorityDraft(detail.itPriority ?? "Medium");
     setStatusDraft("");
+    return detail.version;
   }, [ticketId]);
 
   const loadComments = useCallback(async () => {

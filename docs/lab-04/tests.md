@@ -139,7 +139,7 @@ Review-specific regression evidence includes: `create -> edit/reassign -> retry 
 
 Implementation commit: `6d60a9336c55b6318978f332bcc9a43bae3ffae0` (`feat(lab4): add actions taken ticket detail ui`).
 
-The UI was implemented only after the student reviewed and approved both desktop and mobile mockups. Verification used mocked component boundaries for detailed UI-state assertions and a disposable PostgreSQL-backed Server regression for the real API paths consumed by the UI. No development database was reset or used as the test target.
+The UI was implemented only after the student reviewed and approved both desktop and mobile mockups. Verification used mocked component boundaries for detailed UI-state assertions and a disposable PostgreSQL-backed Server regression for the real API paths consumed by the UI. For manual browser verification, the existing development database was subsequently migrated forward and seeded; it was **not reset** and no destructive reset was used.
 
 | Check | Result |
 |---|---|

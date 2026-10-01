@@ -15,7 +15,7 @@ Issue plan prepared before implementation:
 | #50 | Sprint 4 Engineering Contract & Test Plan | PR #60 approved and merged to `lab4-staging`; Issue #50 closed |
 | #51 | Actions Taken Data Model, Migration & Seed | PR #61 approved and merged to `lab4-staging`; Issue #51 closed |
 | #52 | Actions Taken API & Authorization | PR #62 approved and merged to `lab4-staging`; Issue #52 closed |
-| #53 | Actions Taken Ticket Detail UI | Implemented/verified on `feature/4-actions-ticket-detail-ui`; PR intentionally not opened yet |
+| #53 | Actions Taken Ticket Detail UI | PR #63 open against `lab4-staging`; Round 1 Changes Requested from `Tanaboonnnnn`; fixes in progress |
 | #54 | Final Ticket Workflow & Resolution Rules | Not started |
 | #55 | IT Staff Dashboard | Not started |
 | #56 | Requester Dashboard | Not started |
@@ -278,7 +278,7 @@ Review-fix verification at `1d62aa0`:
 - Base branch: `lab4-staging`
 - Baseline: Issue #52 merge commit `6b77a33eb199623a1d83db770bd6ec4ebf686cf4`
 - Implementation commit: `6d60a9336c55b6318978f332bcc9a43bae3ffae0` (`feat(lab4): add actions taken ticket detail ui`)
-- Current state: implementation and local verification complete; **PR intentionally not opened yet** because the student requested a manual checkpoint before PR creation.
+- Current state: implementation and local verification complete; PR #63 is open against `lab4-staging` and Round 1 review has requested changes.
 
 ### Human-Approved Mockup Checkpoint
 
@@ -315,10 +315,13 @@ Issue #53 implementation commit `6d60a93` was verified before evidence synchroni
 
 ### Pull Request / Review
 
-- PR: **not opened by explicit student instruction**.
-- Reviewer: **not requested yet**.
-- Peer-review verdict: **not applicable yet**.
-- Issue #53 remains **Open**.
+- PR: [#63 — `[Lab 4] Issue 4: Actions Taken Ticket Detail UI`](https://github.com/thananun-7203/toktickit/pull/63)
+- Reviewer requested: `Tanaboonnnnn`.
+- Round 1 review: **Changes Requested** at head `075429c69812bf4c4010781d4e443e9d24fe61d8` on `2026-10-01T09:07:33Z`.
+- Blockers recorded: authoritative parent Ticket-version refresh between consecutive mutations; terminal Ticket must suppress active Action mutation controls; Refresh must surface parent Ticket refresh failure without closing/clearing the current dialog/draft.
+- Non-blocking cleanup recorded: synchronize this reviewer evidence with PR #63 state and do not describe exact ~390px browser verification as complete; final exact 390px browser evidence remains deferred to Issue #58.
+- After human authorization, Round 1 fixes were implemented in the working branch and verified; **re-review is now pending**.
+- Issue #53 remains **Open** until PR #63 is approved and merged.
 
 ## 6. Pull Requests I Authored — Lab 4
 

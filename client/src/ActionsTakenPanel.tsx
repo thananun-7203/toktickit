@@ -27,7 +27,7 @@ interface Props {
   assignees?: StaffAssignee[];
   readOnly?: boolean;
   onTicketVersionChange?: (version: number) => void;
-  onRefreshTicket?: () => Promise<void> | void;
+  onRefreshTicket?: () => Promise<number | void> | number | void;
 }
 
 const ACTIVE_TICKET_STATUSES = new Set(["New", "Open", "In Progress", "Waiting for Requester", "Reopened"]);
@@ -98,6 +98,9 @@ export default function ActionsTakenPanel({
   const [notice, setNotice] = useState<string | null>(null);
   const [busyActionId, setBusyActionId] = useState<number | null>(null);
   const [dialog, setDialog] = useState<DialogState>(null);
+  const ticketVersionRef = useRef(ticketVersion);
+
+  useEffect(() => { ticketVersionRef.current = ticketVersion; }, [ticketVersion]);
 
   const loadActions = useCallback(async (): Promise<ActionTaken[] | null> => {
     setState("loading");
@@ -117,7 +120,14 @@ export default function ActionsTakenPanel({
   useEffect(() => { void loadActions(); }, [loadActions]);
 
   async function refreshAll() {
-    const [loaded] = await Promise.all([loadActions(), Promise.resolve(onRefreshTicket?.())]);
+    setNotice(null);
+    let loaded: ActionTaken[] | null = null;
+    try {
+      [loaded] = await Promise.all([loadActions(), Promise.resolve(onRefreshTicket?.())]);
+    } catch (refreshError) {
+      setError(refreshError instanceof Error ? "Unable to refresh current Ticket state." : "Unable to refresh current Ticket state.");
+      return;
+    }
     if (!loaded) return;
     setDialog((current) => {
       if (!current || current.type === "create") return current;
@@ -135,8 +145,14 @@ export default function ActionsTakenPanel({
       }));
   }
 
-  function bumpTicketVersion() {
-    onTicketVersionChange?.(ticketVersion + 1);
+  async function syncTicketVersionAfterMutation(): Promise<void> {
+    const refreshedVersion = await onRefreshTicket?.();
+    if (typeof refreshedVersion === "number") {
+      ticketVersionRef.current = refreshedVersion;
+      onTicketVersionChange?.(refreshedVersion);
+      return;
+    }
+    throw new Error("Unable to refresh current Ticket state.");
   }
 
   async function transition(action: ActionTaken, status: "In Progress") {
@@ -147,13 +163,15 @@ export default function ActionsTakenPanel({
       const updated = await updateStaffActionStatus(action.id, {
         status,
         expectedVersion: action.version,
-        expectedTicketVersion: ticketVersion,
+        expectedTicketVersion: ticketVersionRef.current,
       });
       replaceAction(updated);
-      bumpTicketVersion();
+      await syncTicketVersionAfterMutation();
       setNotice(`Action moved to ${status}.`);
     } catch (transitionError) {
-      setError(actionErrorMessage(transitionError));
+      setError(transitionError instanceof Error && transitionError.message === "Unable to refresh current Ticket state."
+        ? transitionError.message
+        : actionErrorMessage(transitionError));
     } finally {
       setBusyActionId(null);
     }
@@ -210,6 +228,7 @@ export default function ActionsTakenPanel({
           {actions.map((action) => {
             const active = ACTIVE_ACTION_STATUSES.has(action.status);
             const isAssignee = currentUserId === action.assignee.id;
+            const ticketActionable = ACTIVE_TICKET_STATUSES.has(ticketStatus);
             return (
               <article key={action.id} className={`action-card ${statusClass(action.status)}`}>
                 <div className="action-card-top">
@@ -219,7 +238,7 @@ export default function ActionsTakenPanel({
                     <h3>{action.description}</h3>
                     <span className="action-business-time-help">Action Date/Time — when the work actually occurred</span>
                   </div>
-                  {!readOnly && active && (
+                  {!readOnly && active && ticketActionable && (
                     <div className="action-card-controls" aria-label={`Controls for Action ${action.id}`}>
                       <button type="button" className="btn btn-sm btn-outline-secondary" disabled={busyActionId === action.id} onClick={() => setDialog({ type: "edit", action })}>Edit</button>
                       <button type="button" className="btn btn-sm btn-outline-secondary" disabled={busyActionId === action.id} onClick={() => setDialog({ type: "reassign", action })}>Reassign</button>
@@ -231,6 +250,9 @@ export default function ActionsTakenPanel({
                       )}
                       <button type="button" className="btn btn-sm btn-outline-danger" disabled={busyActionId === action.id} onClick={() => setDialog({ type: "cancel", action })}>Cancel</button>
                     </div>
+                  )}
+                  {!readOnly && active && !ticketActionable && (
+                    <span className="action-terminal-ticket-control-note" role="status">Reopen Ticket before changing this Action.</span>
                   )}
                 </div>
 
@@ -270,14 +292,13 @@ export default function ActionsTakenPanel({
         <ActionFormDialog
           mode="create"
           ticketId={ticketId}
-          ticketVersion={ticketVersion}
+          ticketVersion={ticketVersionRef.current}
           assignees={assignees}
           onClose={() => setDialog(null)}
           onRefresh={() => void refreshAll()}
-          onSaved={(saved, parentChanged) => {
+          onSaved={async (saved, parentChanged) => {
             setActions((current) => [saved, ...current.filter((item) => item.id !== saved.id)].sort((a, b) => new Date(b.actionDateTime).getTime() - new Date(a.actionDateTime).getTime() || b.id - a.id));
-            if (parentChanged) bumpTicketVersion();
-            else void onRefreshTicket?.();
+            await syncTicketVersionAfterMutation();
             setDialog(null);
             setNotice(parentChanged ? "Action created successfully." : "The original Action submission was recovered successfully.");
           }}
@@ -288,39 +309,39 @@ export default function ActionsTakenPanel({
           mode="edit"
           action={dialog.action}
           ticketId={ticketId}
-          ticketVersion={ticketVersion}
+          ticketVersion={ticketVersionRef.current}
           assignees={assignees}
           onClose={() => setDialog(null)}
           onRefresh={() => void refreshAll()}
-          onSaved={(saved) => { replaceAction(saved); bumpTicketVersion(); setDialog(null); setNotice("Action updated successfully."); }}
+          onSaved={async (saved) => { replaceAction(saved); await syncTicketVersionAfterMutation(); setDialog(null); setNotice("Action updated successfully."); }}
         />
       )}
       {dialog?.type === "reassign" && (
         <ReassignDialog
           action={dialog.action}
-          ticketVersion={ticketVersion}
+          ticketVersion={ticketVersionRef.current}
           assignees={assignees}
           onClose={() => setDialog(null)}
           onRefresh={() => void refreshAll()}
-          onSaved={(saved) => { replaceAction(saved); bumpTicketVersion(); setDialog(null); setNotice("Action reassigned successfully."); }}
+          onSaved={async (saved) => { replaceAction(saved); await syncTicketVersionAfterMutation(); setDialog(null); setNotice("Action reassigned successfully."); }}
         />
       )}
       {dialog?.type === "complete" && (
         <CompleteDialog
           action={dialog.action}
-          ticketVersion={ticketVersion}
+          ticketVersion={ticketVersionRef.current}
           onClose={() => setDialog(null)}
           onRefresh={() => void refreshAll()}
-          onSaved={(saved) => { replaceAction(saved); bumpTicketVersion(); setDialog(null); setNotice("Action completed successfully."); }}
+          onSaved={async (saved) => { replaceAction(saved); await syncTicketVersionAfterMutation(); setDialog(null); setNotice("Action completed successfully."); }}
         />
       )}
       {dialog?.type === "cancel" && (
         <CancelDialog
           action={dialog.action}
-          ticketVersion={ticketVersion}
+          ticketVersion={ticketVersionRef.current}
           onClose={() => setDialog(null)}
           onRefresh={() => void refreshAll()}
-          onSaved={(saved) => { replaceAction(saved); bumpTicketVersion(); setDialog(null); setNotice("Action cancelled."); }}
+          onSaved={async (saved) => { replaceAction(saved); await syncTicketVersionAfterMutation(); setDialog(null); setNotice("Action cancelled."); }}
         />
       )}
     </section>
@@ -371,7 +392,7 @@ function ActionFormDialog({
   assignees: StaffAssignee[];
   onClose: () => void;
   onRefresh: () => void;
-  onSaved: (action: ActionTaken, parentChanged: boolean) => void;
+  onSaved: (action: ActionTaken, parentChanged: boolean) => Promise<void> | void;
 }) {
   const [draft, setDraft] = useState<Draft>(() => ({
     actionDateTime: localInputValue(action?.actionDateTime ?? new Date()),
@@ -404,7 +425,7 @@ function ActionFormDialog({
           followUpNote: draft.followUpRequired ? draft.followUpNote.trim() : null,
           attachmentNotes: draft.attachmentNotes.trim() || null,
         });
-        onSaved(result.action, result.created);
+        await onSaved(result.action, result.created);
       } else if (action) {
         const saved = await updateStaffActionTaken(action.id, {
           expectedVersion: action.version,
@@ -416,7 +437,7 @@ function ActionFormDialog({
           followUpNote: draft.followUpRequired ? draft.followUpNote.trim() : null,
           attachmentNotes: draft.attachmentNotes.trim() || null,
         });
-        onSaved(saved, true);
+        await onSaved(saved, true);
       }
     } catch (error) {
       if (error instanceof ApiError && error.fields) setFields(error.fields);
@@ -469,7 +490,7 @@ function ReassignDialog({ action, ticketVersion, assignees, onClose, onRefresh, 
   assignees: StaffAssignee[];
   onClose: () => void;
   onRefresh: () => void;
-  onSaved: (action: ActionTaken) => void;
+  onSaved: (action: ActionTaken) => Promise<void> | void;
 }) {
   const [assigneeId, setAssigneeId] = useState(String(action.assignee.id));
   const [error, setError] = useState<string | null>(null);
@@ -478,7 +499,7 @@ function ReassignDialog({ action, ticketVersion, assignees, onClose, onRefresh, 
     if (!assigneeId || Number(assigneeId) === action.assignee.id) { setError("Choose a different eligible assignee."); return; }
     setBusy(true); setError(null);
     try {
-      onSaved(await updateStaffActionTaken(action.id, {
+      await onSaved(await updateStaffActionTaken(action.id, {
         expectedVersion: action.version,
         expectedTicketVersion: ticketVersion,
         assigneeId: Number(assigneeId),
@@ -505,7 +526,7 @@ function CompleteDialog({ action, ticketVersion, onClose, onRefresh, onSaved }: 
   ticketVersion: number;
   onClose: () => void;
   onRefresh: () => void;
-  onSaved: (action: ActionTaken) => void;
+  onSaved: (action: ActionTaken) => Promise<void> | void;
 }) {
   const [result, setResult] = useState(action.result ?? "");
   const [followUpRequired, setFollowUpRequired] = useState(action.followUpRequired);
@@ -523,7 +544,7 @@ function CompleteDialog({ action, ticketVersion, onClose, onRefresh, onSaved }: 
     if (Object.keys(next).length) { focusFirstInvalidField(); return; }
     setBusy(true); setError(null);
     try {
-      onSaved(await updateStaffActionStatus(action.id, {
+      await onSaved(await updateStaffActionStatus(action.id, {
         status: "Completed",
         expectedVersion: action.version,
         expectedTicketVersion: ticketVersion,
@@ -561,14 +582,14 @@ function CompleteDialog({ action, ticketVersion, onClose, onRefresh, onSaved }: 
 }
 
 function CancelDialog({ action, ticketVersion, onClose, onRefresh, onSaved }: {
-  action: ActionTaken; ticketVersion: number; onClose: () => void; onRefresh: () => void; onSaved: (action: ActionTaken) => void;
+  action: ActionTaken; ticketVersion: number; onClose: () => void; onRefresh: () => void; onSaved: (action: ActionTaken) => Promise<void> | void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   async function submit() {
     setBusy(true); setError(null);
     try {
-      onSaved(await updateStaffActionStatus(action.id, { status: "Cancelled", expectedVersion: action.version, expectedTicketVersion: ticketVersion }));
+      await onSaved(await updateStaffActionStatus(action.id, { status: "Cancelled", expectedVersion: action.version, expectedTicketVersion: ticketVersion }));
     } catch (submitError) { setError(actionErrorMessage(submitError)); }
     finally { setBusy(false); }
   }

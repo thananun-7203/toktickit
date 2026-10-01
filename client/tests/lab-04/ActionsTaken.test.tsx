@@ -76,7 +76,7 @@ function renderPanel(overrides: Partial<React.ComponentProps<typeof ActionsTaken
     currentUserId: CURRENT_USER_ID,
     assignees: ASSIGNEES,
     onTicketVersionChange: vi.fn(),
-    onRefreshTicket: vi.fn(),
+    onRefreshTicket: vi.fn().mockResolvedValue(6),
     ...overrides,
   };
   return { ...render(<ActionsTakenPanel {...props} />), props };
@@ -223,6 +223,56 @@ describe("Lab 4 Actions Taken Ticket Detail UI", () => {
     expect(within(cancelledCard).queryByRole("button", { name: /Edit|Reassign|Complete|Cancel/ })).not.toBeInTheDocument();
   });
 
+  it("AT-UI-05T: active Actions on a terminal Ticket are read-only and explain Reopen", async () => {
+    vi.mocked(api.getActionsTaken).mockResolvedValue([BASE_ACTION]);
+    renderPanel({ ticketStatus: "Resolved" });
+    const card = await screen.findByText(BASE_ACTION.description).then(() => actionCardFor(BASE_ACTION.description));
+    expect(within(card).queryByRole("button", { name: /Edit|Reassign|Start|Complete|Cancel/ })).not.toBeInTheDocument();
+    expect(within(card).getByText(/Reopen Ticket before changing this Action/i)).toBeInTheDocument();
+  });
+
+  it("AT-UI-10: consecutive mutations use the authoritative refreshed Ticket version", async () => {
+    const planned = { ...BASE_ACTION, status: "Planned" as const, version: 1 };
+    const started = { ...planned, status: "In Progress" as const, version: 3 };
+    const reassigned = { ...started, assignee: { id: OTHER_USER_ID, name: "Malee Support", role: "IT_STAFF" as const }, version: 4 };
+    vi.mocked(api.updateStaffActionStatus).mockResolvedValueOnce(started);
+    vi.mocked(api.updateStaffActionTaken).mockResolvedValueOnce(reassigned);
+    const refresh = vi.fn()
+      .mockResolvedValueOnce(6)
+      .mockResolvedValueOnce(7);
+    const user = userEvent.setup();
+    vi.mocked(api.getActionsTaken).mockResolvedValue([planned]);
+    renderPanel({ onRefreshTicket: refresh });
+    await screen.findByText(planned.description);
+    const card = actionCardFor(planned.description);
+    await user.click(within(card).getByRole("button", { name: "Start" }));
+    await waitFor(() => expect(api.updateStaffActionStatus).toHaveBeenCalledWith(planned.id, expect.objectContaining({ expectedTicketVersion: 5 })));
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    const updatedCard = actionCardFor(planned.description);
+    await user.click(within(updatedCard).getByRole("button", { name: "Reassign" }));
+    const dialog = screen.getByRole("dialog", { name: "Reassign Action" });
+    await user.selectOptions(within(dialog).getByLabelText(/Assignee/), String(OTHER_USER_ID));
+    await user.click(within(dialog).getByRole("button", { name: "Reassign Action" }));
+    await waitFor(() => expect(api.updateStaffActionTaken).toHaveBeenCalledWith(planned.id, expect.objectContaining({ expectedTicketVersion: 6 })));
+    expect(refresh).toHaveBeenCalledTimes(2);
+  });
+
+  it("AT-UI-11: Refresh reports parent Ticket failure without closing the dialog", async () => {
+    vi.mocked(api.getActionsTaken).mockResolvedValue([BASE_ACTION]);
+    vi.mocked(api.updateStaffActionTaken).mockRejectedValueOnce(new api.ApiError("stale", 409, "STALE_ACTION_TAKEN"));
+    const refresh = vi.fn().mockRejectedValue(new Error("parent refresh failed"));
+    const user = userEvent.setup();
+    renderPanel({ onRefreshTicket: refresh });
+    const card = await screen.findByText(BASE_ACTION.description).then(() => actionCardFor(BASE_ACTION.description));
+    await user.click(within(card).getByRole("button", { name: "Edit" }));
+    const dialog = screen.getByRole("dialog", { name: "Edit Action" });
+    await user.click(within(dialog).getByRole("button", { name: "Save Changes" }));
+    const refreshButton = await within(dialog).findByRole("button", { name: "Refresh" });
+    await user.click(refreshButton);
+    await waitFor(() => expect(screen.getByText(/Unable to refresh current Ticket state/i)).toBeInTheDocument());
+    expect(screen.getByRole("dialog", { name: "Edit Action" })).toBeInTheDocument();
+  });
+
   it("AT-UI-05C: Cancel requires explicit confirmation and then renders backend cancellation provenance read-only", async () => {
     const cancelled = {
       ...BASE_ACTION,
@@ -320,7 +370,7 @@ describe("Lab 4 Actions Taken Ticket Detail UI", () => {
     vi.mocked(api.getActionsTaken).mockResolvedValue([]);
     const recovered = { ...BASE_ACTION, id: 302, status: "Planned" as const, version: 1 };
     vi.mocked(api.createStaffActionTaken).mockResolvedValueOnce({ action: recovered, created: false });
-    const refresh = vi.fn().mockResolvedValue(undefined);
+    const refresh = vi.fn().mockResolvedValue(6);
     const bump = vi.fn();
     const user = userEvent.setup();
     renderPanel({ onRefreshTicket: refresh, onTicketVersionChange: bump });
@@ -329,7 +379,7 @@ describe("Lab 4 Actions Taken Ticket Detail UI", () => {
     await user.type(within(dialog).getByLabelText(/Description/), "Recover original logical create");
     await user.click(within(dialog).getByRole("button", { name: "Create Action" }));
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
-    expect(bump).not.toHaveBeenCalled();
+    expect(bump).toHaveBeenCalledWith(6);
     await waitFor(() => expect(document.querySelector(".actions-feedback-success")).toHaveTextContent("original Action submission was recovered"));
   });
 
