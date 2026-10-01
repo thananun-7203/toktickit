@@ -14,8 +14,8 @@ Issue plan prepared before implementation:
 |---|---|---|
 | #50 | Sprint 4 Engineering Contract & Test Plan | PR #60 approved and merged to `lab4-staging`; Issue #50 closed |
 | #51 | Actions Taken Data Model, Migration & Seed | PR #61 approved and merged to `lab4-staging`; Issue #51 closed |
-| #52 | Actions Taken API & Authorization | PR #62 open against `lab4-staging`; review requested from `Tanaboonnnnn` |
-| #53 | Actions Taken Ticket Detail UI | Not started |
+| #52 | Actions Taken API & Authorization | PR #62 approved and merged to `lab4-staging`; Issue #52 closed |
+| #53 | Actions Taken Ticket Detail UI | PR #63 open against `lab4-staging`; Round 1 Changes Requested from `Tanaboonnnnn`; fixes in progress |
 | #54 | Final Ticket Workflow & Resolution Rules | Not started |
 | #55 | IT Staff Dashboard | Not started |
 | #56 | Requester Dashboard | Not started |
@@ -207,7 +207,7 @@ Verification was performed on a disposable PostgreSQL 16 database named `toktick
 - Implementation commit: `6abc6c7f9f0e64fa0ba8367f1d77dfee0253e383` (`feat(lab4): implement actions taken api`)
 - Test follow-up: `98b527412b4f4ca3686493ea1560c26592c645c6` (`test(lab4): strengthen actions api coverage`)
 - Review-fix commit: `1d62aa0a0be4dc8330d1beff6f516610fc17f2da` (`fix(lab4): harden action idempotency and ticket versions`)
-- Current state: PR #62 open; Round 1 Changes Requested were fixed and pushed; final re-review pending.
+- Current state: PR #62 received Round 1 Changes Requested, was fixed/re-reviewed **Approved**, and merged into `lab4-staging` as `6b77a33eb199623a1d83db770bd6ec4ebf686cf4`; Issue #52 is closed.
 
 ### Implemented Backend
 
@@ -262,10 +262,68 @@ Review-fix verification at `1d62aa0`:
 - Blocking feedback: (1) create idempotency must compare immutable original create intent rather than mutable Action columns; (2) existing Owner/IT Priority and the rest of the approved workflow-affecting Ticket writes must participate in `Ticket.version` so Action writes cannot accept stale aggregate snapshots.
 - Additional review focus: document/verify lock ordering and concurrent race safety; synchronize this reviewer record with the actual PR state.
 - Response commit: `1d62aa0a0be4dc8330d1beff6f516610fc17f2da` addresses both blockers plus lock-order/race coverage.
-- Re-review verdict: **pending**.
-- Issue #52 remains open through review and should close only after approved merge into `lab4-staging`.
+- Re-review reviewed head: `a4d13767163ff024890f49f5cba9a700c8192048`.
+- Re-review submitted: `2026-09-30T16:51:09Z`.
+- Re-review verdict: **Approved** by `Tanaboonnnnn`.
+- Reviewer confirmed the immutable original-create idempotency fix, authoritative aggregate `Ticket.version` protocol, Claim retry semantics, lock/race strategy, authorization boundaries, and exact review-fix evidence; remaining route/service refactoring suggestions were explicitly non-blocking.
+- PR #62 merged by `Tanaboonnnnn` at `2026-09-30T16:51:23Z`; merge commit `6b77a33eb199623a1d83db770bd6ec4ebf686cf4`.
+- Issue #52: **Closed** (`2026-09-30T17:51:10Z`).
 
-## 5. Pull Requests I Authored — Lab 4
+## 5. Issue #53 — Actions Taken Ticket Detail UI
+
+### Issue
+
+- GitHub Issue: `#53 — [Lab 4] Issue_4: Actions Taken Ticket Detail UI`
+- Feature branch: `feature/4-actions-ticket-detail-ui`
+- Base branch: `lab4-staging`
+- Baseline: Issue #52 merge commit `6b77a33eb199623a1d83db770bd6ec4ebf686cf4`
+- Implementation commit: `6d60a9336c55b6318978f332bcc9a43bae3ffae0` (`feat(lab4): add actions taken ticket detail ui`)
+- Current state: implementation and local verification complete; PR #63 is open against `lab4-staging` and Round 1 review has requested changes.
+
+### Human-Approved Mockup Checkpoint
+
+- Desktop and mobile mockups were reviewed by the student before frontend implementation.
+- The student explicitly approved both mockups and authorized implementation while instructing the agent **not to open a PR yet**.
+- The implemented UI keeps the established TokTickIT Zen Green visual language instead of introducing a separate Lab 4 theme.
+
+### Implemented UI
+
+- Added reusable `ActionsTakenPanel` to Staff Ticket Detail and Requester Ticket Detail.
+- Staff/Admin view supports Add, Edit, Reassign, Planned -> In Progress, Complete, and Cancel flows using the existing Issue #52 API contract.
+- Create/Edit forms include Action Date/Time, Description, Assignee, Follow-Up Required/Note, and text-only Attachment Notes; create status is not user-selectable and starts as Planned.
+- Complete requires Result plus valid follow-up state; only the current assignee is offered Complete, while other Staff are directed to Reassign first.
+- Completed/Cancelled Actions render read-only audit/provenance details with no edit/delete controls.
+- Requester view reuses the Action list in read-only mode with no Staff mutation controls.
+- Added loading, empty, API failure/Retry, field validation, stale Action/Ticket, ineligible-assignee, busy-submit, idempotent retry/recovery, and safe terminal-Ticket states.
+- Unknown-response create retries preserve one `clientRequestId`; a recovered `200` replay refreshes authoritative Ticket state instead of guessing the parent version.
+- Added modal focus entry/trap/restore, Escape handling, first-invalid focus, text labels that do not rely on color alone, and responsive rules for desktop/tablet/mobile stacking.
+- Actions Taken appears before Public Comments/Internal Notes on Staff Ticket Detail and before Public Comments on Requester Ticket Detail, preserving the approved information hierarchy.
+
+### Verification
+
+Issue #53 implementation commit `6d60a93` was verified before evidence synchronization:
+
+- Targeted Client Actions/Staff/Requester Ticket Detail regression: **31/31 passing (3/3 files)**; Vitest start `2026-10-01 14:33:53 +07`.
+- Full Client regression: **90/90 passing (12/12 files)**; Vitest start `2026-10-01 14:34:25 +07`.
+- Client production build: **Pass**.
+- Disposable PostgreSQL 16 `toktickit_lab4_issue53_test` on test-only port `5548`: **Pass**; seven migrations applied and Lab 4 seed completed with 8 Tickets / 7 Actions Taken.
+- Backend endpoints exercised by the UI: **53/53 passing (4/4 files)** across Actions API, Lab 4 authorization, Staff Ticket Detail, and Comments/Requester resolution indication; Vitest start `2026-10-01 14:40:09 +07`.
+- Prisma validate / Server TypeScript build: **Pass**.
+- Development DB destructive verification: **not used**.
+- Manual browser QA verified the implemented desktop and tablet Actions panel/modal layout without page horizontal overflow. Mobile-specific `<=420px` stacking rules are implemented; final exact 390px real-browser/Playwright evidence remains part of the dedicated Issue #58 accessibility/responsive/visual gate rather than being overstated here.
+- Temporary visual-QA harness/data were not included in the implementation commit.
+
+### Pull Request / Review
+
+- PR: [#63 — `[Lab 4] Issue 4: Actions Taken Ticket Detail UI`](https://github.com/thananun-7203/toktickit/pull/63)
+- Reviewer requested: `Tanaboonnnnn`.
+- Round 1 review: **Changes Requested** at head `075429c69812bf4c4010781d4e443e9d24fe61d8` on `2026-10-01T09:07:33Z`.
+- Blockers recorded: authoritative parent Ticket-version refresh between consecutive mutations; terminal Ticket must suppress active Action mutation controls; Refresh must surface parent Ticket refresh failure without closing/clearing the current dialog/draft.
+- Non-blocking cleanup recorded: synchronize this reviewer evidence with PR #63 state and do not describe exact ~390px browser verification as complete; final exact 390px browser evidence remains deferred to Issue #58.
+- After human authorization, Round 1 fixes were implemented in the working branch and verified; **re-review is now pending**.
+- Issue #53 remains **Open** until PR #63 is approved and merged.
+
+## 6. Pull Requests I Authored — Lab 4
 
 Populate only from actual PRs.
 
@@ -273,9 +331,11 @@ Populate only from actual PRs.
 |---|---|---|---|---|
 | [#60](https://github.com/thananun-7203/toktickit/pull/60) | `feature/1-sprint4-engineering-contract` | `lab4-staging` | Approved by `Tanaboonnnnn` at final reviewed head `48dbae6` | Merged (`6a36d26`) |
 | [#61](https://github.com/thananun-7203/toktickit/pull/61) | `feature/2-actions-data-foundation` | `lab4-staging` | Approved by `Tanaboonnnnn` at `899b7f0` after source-of-truth clarification | Merged (`d3a06ac`) |
-| [#62](https://github.com/thananun-7203/toktickit/pull/62) | `feature/3-actions-api-authorization` | `lab4-staging` | Changes Requested at `0290b66`; fixes pushed in `1d62aa0`, re-review pending | Open |
+| [#62](https://github.com/thananun-7203/toktickit/pull/62) | `feature/3-actions-api-authorization` | `lab4-staging` | Approved by `Tanaboonnnnn` at `a4d1376` after Round 1 fixes | Merged (`6b77a33`) |
 
-## 6. Review Standard
+Issue #53 has no PR row yet because no PR has been opened.
+
+## 7. Review Standard
 
 Each Lab 4 implementation PR should be reviewed against:
 
@@ -292,7 +352,7 @@ Each Lab 4 implementation PR should be reviewed against:
 
 Requested changes remain blocking until fixed or the reviewer explicitly marks them non-blocking.
 
-## 7. Kanban / Project Evidence
+## 8. Kanban / Project Evidence
 
 The existing workflow convention remains:
 
@@ -302,7 +362,7 @@ Backlog -> Specified -> Started -> PR Review -> Fixing -> Done
 
 Issue states/Project columns must be recorded from actual GitHub evidence. This file does not invent a current Project column when it has not been independently verified.
 
-## 8. Final Release Review
+## 9. Final Release Review
 
 To be completed only after Issues #50–#59 have real evidence:
 

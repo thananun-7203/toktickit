@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import ActionsTakenPanel from "./ActionsTakenPanel.js";
 import {
   ApiError,
   Attachment,
@@ -443,6 +444,13 @@ export default function TicketDetail({ ticketId, onBack }: TicketDetailProps) {
         </div>
         <div className="small text-secondary">Up to 5 active files, 5 MB each. JPG, JPEG, PNG, WEBP or PDF.</div>
       </section>
+
+      <ActionsTakenPanel
+        ticketId={ticket.id}
+        ticketStatus={ticket.status}
+        ticketVersion={ticket.version}
+        readOnly
+      />
 
       <section className="zen-card comments-panel mt-4" aria-labelledby="public-comments-heading">
         <div className="comments-panel-header">

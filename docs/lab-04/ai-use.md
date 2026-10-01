@@ -3,8 +3,8 @@
 ## 1. AI Tool Used
 
 - **Model:** GPT-5.6 Sol in ChatGPT.
-- **Primary role in Sprint 4 so far:** specification agent, repository reconnaissance assistant, and implementation/test assistant for the approved data/API increments.
-- **Repository interaction:** ComGu Core was used to inspect the real `C:\toktickit` repository, create/push Lab 4 feature branches, read source/tests/docs, implement Issues #51–#52, run isolated PostgreSQL verification, and maintain evidence records.
+- **Primary role in Sprint 4 so far:** specification agent, repository reconnaissance assistant, mockup/UI implementation assistant, and implementation/test assistant for the approved data/API/UI increments.
+- **Repository interaction:** ComGu Core was used to inspect the real `C:\toktickit` repository, create/push Lab 4 feature branches, read source/tests/docs, implement Issues #51–#53, run isolated PostgreSQL verification, and maintain evidence records. ComGu Desktop/temporary browser harnesses were used for observable visual QA without committing authentication bypasses or QA-only files.
 
 This record includes only assistance that actually occurred. Later coding/debugging/review prompts must be appended from real Sprint 4 work rather than predicted in advance.
 
@@ -66,6 +66,12 @@ The final submission requires 6–10 selected key prompts. The following are rea
 
 **Use:** Authorized implementation of the previously reviewed Issue #52 plan: Actions Taken GET/create/edit/status endpoints, backend-only authorization, idempotency, optimistic concurrency, assignee eligibility races, targeted API/security tests, disposable-PostgreSQL verification, full regression, and PR preparation while keeping Issue #53 UI out of scope.
 
+### Prompt 10 — Approve desktop/mobile mockups and implement Issue #53 without opening a PR
+
+> "โอเค mockup ผ่านทั้งคอมและมือถือแล้ว ลงมือทำได้เลย แต่อย่าพึ่งเปิด PR นะ"
+
+**Use:** Preserved a human UI checkpoint before coding. After both mockups were approved, the AI implemented the Actions Taken Ticket Detail UI on a dedicated branch, but stopped before PR creation exactly as requested.
+
 ## 3. How AI Was Used in Issue #50
 
 ### Specification Agent Work
@@ -115,6 +121,14 @@ For Issue #52, the AI mapped the approved API contract onto the existing Lab 3 a
 Verification again changed the implementation process rather than merely confirming generated code. During a scope audit, the AI temporarily removed a serializable retry helper from the existing Staff owner flow because it looked unrelated to Actions Taken. The directly affected Lab 3 regression then produced `409` for a normal Claim that should remain `200` under concurrent database load. The helper was restored with explicit Claim revalidation, after which the affected five-file suite passed **56/56** and the final full Server suite passed **191/191**. This correction is recorded because it demonstrates that scope reduction must still preserve established concurrency behavior.
 
 The first peer review of PR #62 then found two implementation gaps against the already-approved contract. First, idempotency compared a retry with the Action's **current mutable fields**, which would incorrectly reject an original lost-response retry after a later edit/reassignment. Second, existing Owner/IT Priority mutations had not yet joined the parent `Ticket.version` protocol even though the contract also requires Status and Requester resolution-indication writes to participate. After human authorization to fix the review, the AI added immutable original-create fingerprint storage, extended the Ticket-version token across all four existing workflow-affecting mutation paths, updated existing clients to carry the token without changing visual UX, and added migration/concurrency regressions. The targeted review-fix suite passed **81/81**, full Server regression passed **196/196**, and Client regression remained **76/76** on disposable PostgreSQL-backed verification.
+
+## 4.3 Issue #53 UI / Mockup / Verification Use
+
+For Issue #53, the AI first produced Actions Taken desktop/mobile mockups and revised them after the student compared them with the existing TokTickIT Sign-in and Ticket Queue Zen Green theme. The mockup was also corrected against the Lab 4 contract before coding: Action Date/Time was added, Create no longer exposed a Status selector, file upload was replaced with text-only Attachment Notes, completion/follow-up/audit states were made explicit, and Requester read-only behavior plus error/empty/loading/responsive states were included. Implementation started only after the student explicitly approved both desktop and mobile mockups.
+
+The UI implementation reused one `ActionsTakenPanel` for Staff interactive and Requester read-only contexts, wired the approved Issue #52 API instead of duplicating backend rules in the browser, and added focused component tests for create/edit/reassign/start/complete/cancel, stale conflicts, ineligible assignees, idempotent retry, draft preservation, terminal immutability, modal keyboard behavior, and audit provenance. Verification exposed one additional client-side consistency issue: when a lost-response create is recovered by a `200` idempotent replay, simply rendering the returned Action would leave the local parent Ticket version stale. The UI was changed to refresh authoritative Ticket state on recovered replay rather than guessing a version increment. Final Issue #53 Client regression passed **90/90**, targeted backend/API regression passed **53/53** on disposable PostgreSQL, and the production builds/Prisma validation passed.
+
+Visual QA used a temporary harness that rendered the real component and production CSS with representative Actions. That harness was intentionally removed before commit. Desktop/tablet layouts were inspected successfully; a limitation of the Windows Chrome headless runtime prevented trustworthy exact-390-CSS-pixel evidence because its inner viewport would not go below roughly 499–500 pixels. Rather than record a false pass, exact 390px browser/Playwright evidence remains assigned to the planned Issue #58 visual/accessibility gate; the `<=420px` production CSS rules themselves were implemented during Issue #53.
 
 ## 5. My Reflection — Draft for Finalization
 
