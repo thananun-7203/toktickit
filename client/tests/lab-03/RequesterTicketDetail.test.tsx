@@ -28,6 +28,7 @@ describe("Lab 3 Requester Ticket Detail extensions", () => {
     vi.restoreAllMocks();
     vi.spyOn(api, "getTicketDetail").mockResolvedValue(DETAIL);
     vi.spyOn(api, "getPublicComments").mockResolvedValue([]);
+    vi.spyOn(api, "getActionsTaken").mockResolvedValue([]);
   });
 
   it("shows read-only IT Priority, Public Comments, and the resolution indication action", async () => {

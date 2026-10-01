@@ -66,6 +66,7 @@ describe("Lab 3 IT Staff Ticket Detail", () => {
     vi.restoreAllMocks();
     vi.spyOn(api, "getStaffAssignees").mockResolvedValue([STAFF, OTHER_STAFF]);
     vi.spyOn(api, "getPublicComments").mockResolvedValue([PUBLIC_COMMENT]);
+    vi.spyOn(api, "getActionsTaken").mockResolvedValue([]);
     vi.spyOn(api, "getInternalNotes").mockResolvedValue({
       items: [INTERNAL_NOTE],
       page: 1,

@@ -169,6 +169,69 @@ export interface InternalNotesResponse {
   totalPages: number;
 }
 
+export const ACTION_TAKEN_STATUSES = ["Planned", "In Progress", "Completed", "Cancelled"] as const;
+export type ActionTakenStatus = (typeof ACTION_TAKEN_STATUSES)[number];
+
+export interface ActionActor {
+  id: number;
+  name: string;
+  role: UserRole;
+}
+
+export interface ActionTaken {
+  id: number;
+  ticketId: number;
+  clientRequestId: string;
+  workflowCycle: number;
+  actionDateTime: string;
+  description: string;
+  result: string | null;
+  followUpRequired: boolean;
+  followUpNote: string | null;
+  attachmentNotes: string | null;
+  status: ActionTakenStatus;
+  createdBy: ActionActor;
+  assignee: ActionActor;
+  performedBy: ActionActor | null;
+  completedAt: string | null;
+  cancelledBy: ActionActor | null;
+  cancelledAt: string | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateActionTakenInput {
+  clientRequestId: string;
+  expectedTicketVersion: number;
+  actionDateTime: string;
+  description: string;
+  assigneeId: number;
+  followUpRequired: boolean;
+  followUpNote: string | null;
+  attachmentNotes: string | null;
+}
+
+export interface UpdateActionTakenInput {
+  expectedVersion: number;
+  expectedTicketVersion: number;
+  actionDateTime?: string;
+  description?: string;
+  assigneeId?: number;
+  followUpRequired?: boolean;
+  followUpNote?: string | null;
+  attachmentNotes?: string | null;
+}
+
+export interface UpdateActionStatusInput {
+  status: ActionTakenStatus;
+  expectedVersion: number;
+  expectedTicketVersion: number;
+  result?: string;
+  followUpRequired?: boolean;
+  followUpNote?: string | null;
+}
+
 export interface AdminUser {
   id: number;
   name: string;
@@ -526,6 +589,49 @@ export async function postInternalNote(ticketId: number, content: string): Promi
     body: JSON.stringify({ content }),
   });
   if (!res.ok) throw await responseError(res, "Unable to post Internal Note");
+  return res.json();
+}
+
+export async function getActionsTaken(ticketId: number): Promise<ActionTaken[]> {
+  const res = await apiFetch(`/api/v1/tickets/${ticketId}/actions-taken`);
+  if (!res.ok) throw await responseError(res, "Unable to load Actions Taken");
+  const data = await res.json();
+  return data.items as ActionTaken[];
+}
+
+export async function createStaffActionTaken(
+  ticketId: number,
+  input: CreateActionTakenInput,
+): Promise<{ action: ActionTaken; created: boolean }> {
+  const res = await apiFetch(`/api/v1/staff/tickets/${ticketId}/actions-taken`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw await responseError(res, "Unable to create Action Taken");
+  return { action: await res.json() as ActionTaken, created: res.status === 201 };
+}
+
+export async function updateStaffActionTaken(
+  actionId: number,
+  input: UpdateActionTakenInput,
+): Promise<ActionTaken> {
+  const res = await apiFetch(`/api/v1/staff/actions-taken/${actionId}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw await responseError(res, "Unable to update Action Taken");
+  return res.json();
+}
+
+export async function updateStaffActionStatus(
+  actionId: number,
+  input: UpdateActionStatusInput,
+): Promise<ActionTaken> {
+  const res = await apiFetch(`/api/v1/staff/actions-taken/${actionId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw await responseError(res, "Unable to update Action status");
   return res.json();
 }
 

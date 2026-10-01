@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import ActionsTakenPanel from "./ActionsTakenPanel.js";
 import {
   ApiError,
   downloadAttachment,
@@ -137,6 +138,18 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
         setLoadState("error");
       }
     }
+  }, [ticketId]);
+
+  const refreshDetailSilently = useCallback(async () => {
+    const [detail, nextAssignees] = await Promise.all([
+      getStaffTicketDetail(ticketId),
+      getStaffAssignees(),
+    ]);
+    setTicket(detail);
+    setAssignees(nextAssignees);
+    setOwnerDraft(detail.owner ? String(detail.owner.id) : "");
+    setPriorityDraft(detail.itPriority ?? "Medium");
+    setStatusDraft("");
   }, [ticketId]);
 
   const loadComments = useCallback(async () => {
@@ -516,7 +529,21 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
               </div>
             )}
           </section>
+        </div>
+      </div>
 
+      <ActionsTakenPanel
+        ticketId={ticket.id}
+        ticketStatus={ticket.status}
+        ticketVersion={ticket.version}
+        currentUserId={currentUserId}
+        assignees={assignees}
+        onTicketVersionChange={(version) => setTicket((current) => current ? { ...current, version } : current)}
+        onRefreshTicket={refreshDetailSilently}
+      />
+
+      <div className="staff-detail-grid staff-communications-grid">
+        <div className="staff-detail-column">
           <section className="staff-detail-section communication-section public-section" aria-labelledby="staff-public-comments-title">
             <div className="staff-detail-section-title-row">
               <h2 id="staff-public-comments-title" className="staff-detail-section-title mb-0"><span aria-hidden="true">●</span> Public Comments</h2>
@@ -539,7 +566,9 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
             </div>
             <MessageList state={commentsState} items={comments} empty="No public comments yet." onRetry={() => void loadComments()} />
           </section>
+        </div>
 
+        <div className="staff-detail-column">
           <section className="staff-detail-section communication-section private-section" aria-labelledby="staff-internal-notes-title">
             <div className="staff-detail-section-title-row">
               <h2 id="staff-internal-notes-title" className="staff-detail-section-title mb-0"><span aria-hidden="true">▣</span> Internal Notes</h2>
