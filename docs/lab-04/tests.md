@@ -135,6 +135,28 @@ Verification for review-fix commit `1d62aa0a0be4dc8330d1beff6f516610fc17f2da` us
 
 Review-specific regression evidence includes: `create -> edit/reassign -> retry original POST` returns the existing Action without another parent-version increment; materially different original intent still returns `409 IDEMPOTENCY_KEY_REUSE`; Owner/IT Priority changes invalidate an old Action `expectedTicketVersion`; status/Requester-indication callers use the same Ticket token; concurrent Owner-vs-Action mutation has one aggregate-version winner and no `500`; Action assign/reassign-vs-user eligibility races preserve the active-assignee invariant; and the additive fingerprint migration preserves pre-existing Actions while validating persisted fingerprints.
 
+### 3.3 Issue #53 — Actions Taken Ticket Detail UI Verification
+
+Implementation commit: `6d60a9336c55b6318978f332bcc9a43bae3ffae0` (`feat(lab4): add actions taken ticket detail ui`).
+
+The UI was implemented only after the student reviewed and approved both desktop and mobile mockups. Verification used mocked component boundaries for detailed UI-state assertions and a disposable PostgreSQL-backed Server regression for the real API paths consumed by the UI. No development database was reset or used as the test target.
+
+| Check | Result |
+|---|---|
+| Targeted `ActionsTaken` + Staff/Requester Ticket Detail Client regression | **Pass — 31/31 tests (3/3 files)**; Vitest start `2026-10-01 14:33:53 +07` |
+| Issue #53 `ActionsTaken.test.tsx` inside targeted run | **Pass — 14/14 tests** |
+| Full Client regression | **Pass — 90/90 tests (12/12 files)**; Vitest start `2026-10-01 14:34:25 +07` |
+| Client production build | **Pass** |
+| Disposable PostgreSQL migrate/reset + Lab 4 seed | **Pass — 7 migrations; 8 Tickets / 7 Actions Taken** |
+| Server endpoints directly consumed by Ticket Detail/Actions UI | **Pass — 53/53 tests (4/4 files)**; Vitest start `2026-10-01 14:40:09 +07` |
+| Prisma validate / Server TypeScript build | **Pass** |
+| `git diff --check` / staged implementation diff | **Pass** |
+| Development DB destructive verification | **Not used** |
+
+The Issue #53 component suite covers multiple/empty Actions, Staff create/edit/reassign/start/complete/cancel controls, assignee-only completion, Result/follow-up validation, terminal read-only state, Requester read-only state, loading/failure Retry, stale Action/Ticket and ineligible-assignee feedback, draft preservation, duplicate-submit busy state, stable `clientRequestId` retry identity, recovered-idempotent-create parent refresh, Action occurrence time versus audit time, future-time validation, modal Escape/focus trap/restore, and first-invalid focus.
+
+Manual visual QA used the real `ActionsTakenPanel`/Zen Green CSS with seeded representative Action states. Desktop and tablet layouts rendered without page horizontal overflow; Add Action modal remained scrollable/usable. CSS includes dedicated `<=700px` and `<=420px` stacking for cards, fields, controls, audit rows, and modal footer. Because the Windows Chrome headless runtime enforced an approximately 499–500 CSS-pixel minimum inner width even when requesting a 390px capture, **final exact 390px browser evidence is intentionally deferred to Issue #58** rather than claimed here without trustworthy evidence.
+
 ## 4. Unit Tests
 
 | Test ID | Requirement / AC | What it tests | Expected result | Planned file | Final |
@@ -276,15 +298,15 @@ These tests intentionally bypass normal UI controls.
 
 | Test ID | AC | UI behavior | Final |
 |---|---|---|---|
-| AT-UI-01 | AC-08 | multiple Actions render in stable order with required fields/status/assignee/performer/follow-up/attachment notes | Planned |
-| AT-UI-02 | AC-01/03 | create mode labels required fields; conditional Follow-up Note appears/validates | Planned |
-| AT-UI-03 | AC-02 | inactive-assignee conflict preserves draft and shows safe guidance | Planned |
-| AT-UI-04 | AC-04/13 | edit/reassign active Action sends Action + Ticket versions; stale conflict preserves draft/refresh path | Planned |
-| AT-UI-05 | AC-05/06/07 | only permitted lifecycle controls; Complete available only to current assignee; Result validation; Cancel confirmation/provenance; terminal read-only | Planned |
-| AT-UI-06 | AC-06 | Performed by is read-only/automatic and reflects current assignee completion, not arbitrary click actor | Planned |
-| AT-UI-07 | AC-09/22/28 | busy state blocks ordinary duplicate click; create retains one clientRequestId across unknown-response retry; safe failure preserves draft | Planned |
-| AT-UI-08 | AC-08/18 | Requester Action section is read-only with no Staff controls | Planned |
-| AT-UI-09 | AC-27 | Action Date/Time is labelled as work occurrence time; audit timestamps are separate; timezone/future validation feedback is clear | Planned |
+| AT-UI-01 | AC-08 | multiple Actions render in stable order with required fields/status/assignee/performer/follow-up/attachment notes | **Pass — `6d60a93`** |
+| AT-UI-02 | AC-01/03 | create mode labels required fields; conditional Follow-up Note appears/validates | **Pass — `6d60a93`** |
+| AT-UI-03 | AC-02 | inactive-assignee conflict preserves draft and shows safe guidance | **Pass — `6d60a93`** |
+| AT-UI-04 | AC-04/13 | edit/reassign active Action sends Action + Ticket versions; stale conflict preserves draft/refresh path | **Pass — `6d60a93`** |
+| AT-UI-05 | AC-05/06/07 | only permitted lifecycle controls; Complete available only to current assignee; Result validation; Cancel confirmation/provenance; terminal read-only | **Pass — `6d60a93`** |
+| AT-UI-06 | AC-06 | Performed by is read-only/automatic and reflects current assignee completion, not arbitrary click actor | **Pass — `6d60a93`** |
+| AT-UI-07 | AC-09/22/28 | busy state blocks ordinary duplicate click; create retains one clientRequestId across unknown-response retry; safe failure preserves draft | **Pass — `6d60a93`** |
+| AT-UI-08 | AC-08/18 | Requester Action section is read-only with no Staff controls | **Pass — `6d60a93`** |
+| AT-UI-09 | AC-27 | Action Date/Time is labelled as work occurrence time; audit timestamps are separate; timezone/future validation feedback is clear | **Pass — `6d60a93`** |
 
 ### 11.2 Ticket Workflow — `client/tests/lab-04/TicketWorkflow.test.tsx`
 
@@ -323,12 +345,12 @@ Playwright evidence widths remain 1280x900, approximately 820x1000, and approxim
 |---|---|---|---|---|
 | V4-01 | AC-23 | Requester Dashboard at 1280/820/390 | no page horizontal overflow; cards/lists readable | Planned |
 | V4-02 | AC-23 | Staff Dashboard at 1280/820/390 | no clipping/overlap; lists stack safely | Planned |
-| V4-03 | AC-23 | Staff Ticket Detail Actions Taken at 1280/820/390 | create/edit/read-only controls usable, long text wraps | Planned |
-| V4-04 | AC-23 | Requester Ticket Detail Actions Taken at 1280/820/390 | read-only Action list readable | Planned |
+| V4-03 | AC-23 | Staff Ticket Detail Actions Taken at 1280/820/390 | create/edit/read-only controls usable, long text wraps | **Partial — desktop/tablet manual QA passed; <=420px rules implemented; exact 390 evidence deferred to Issue #58** |
+| V4-04 | AC-23 | Requester Ticket Detail Actions Taken at 1280/820/390 | read-only Action list readable | **Partial — read-only component behavior passes; final multi-width browser evidence deferred to Issue #58** |
 | V4-05 | AC-23 | visible keyboard focus for Dashboard links/Action controls | focus style visible | Planned |
-| V4-06 | AC-23 | modal/dialog keyboard behavior if modal is used | focus enters/traps/restores; Escape safe | Planned |
+| V4-06 | AC-23 | modal/dialog keyboard behavior if modal is used | focus enters/traps/restores; Escape safe | **Pass in Issue #53 component regression — `6d60a93`** |
 | V4-07 | AC-23 | status/priority/private/shared/terminal cues | understandable without color alone | Planned |
-| V4-08 | AC-23 | validation placement / first-invalid focus | adjacent errors and usable focus | Planned |
+| V4-08 | AC-23 | validation placement / first-invalid focus | adjacent errors and usable focus | **Pass in Issue #53 component regression — `6d60a93`** |
 | V4-09 | AC-23/25 | final visual inspection | no placeholder/debug/obsolete controls or broken layouts | Planned |
 
 ## 13. Performance-Smoke Tests
