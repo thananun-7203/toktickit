@@ -16,7 +16,7 @@ Issue plan prepared before implementation:
 | #51 | Actions Taken Data Model, Migration & Seed | PR #61 approved and merged to `lab4-staging`; Issue #51 closed |
 | #52 | Actions Taken API & Authorization | PR #62 approved and merged to `lab4-staging`; Issue #52 closed |
 | #53 | Actions Taken Ticket Detail UI | PR #63 approved and merged to `lab4-staging`; Issue #53 complete |
-| #54 | Final Ticket Workflow & Resolution Rules | Implementation complete locally; PR not opened yet |
+| #54 | Final Ticket Workflow & Resolution Rules | PR #64 open; Round 2 Re-review pending |
 | #55 | IT Staff Dashboard | Not started |
 | #56 | Requester Dashboard | Not started |
 | #57 | Security, Regression & End-to-End Verification | Not started |
@@ -331,7 +331,7 @@ Issue #53 implementation commit `6d60a93` was verified before evidence synchroni
 - Feature branch: `feature/5-final-ticket-workflow-resolution`
 - Base: `lab4-staging`
 - Baseline: Issue #53 merge commit `0b636c2d55d3ee849882061de6a38184228d5926`
-- PR: **Not opened yet**; implementation remains on the working branch pending human review.
+- PR: **#64**; current review-fix HEAD is `b72f10f` and a further re-review is pending after the latest documentation and verification cleanup.
 
 ### Human-Approved Mockup Checkpoint
 
@@ -355,8 +355,7 @@ Issue #53 implementation commit `6d60a93` was verified before evidence synchroni
 - `server/tests/lab-04/workflow.api.test.ts`: **10/10 passing** after adding the outstanding-follow-up Resolution Gate regression.
 - Directly affected Lab 3 Staff Ticket Detail API regression: **16/16 passing**.
 - Combined targeted workflow/detail Server run: **26/26 passing**.
-- Post-fix Lab 4 Server verification: **38 passing tests across 5/6 files** (workflow, Actions API/unit, authorization, and migration regression). The seed-regression file was not rerun in this fix pass.
-- Pre-review exact-head baseline had already passed the full Lab 4 suite at **40/40 (6/6 files)**; this fix adds one workflow test, so the current full-suite total is **41 tests** when all six files are rerun.
+- Post-fix Lab 4 Server verification: **41/41 passing tests across all 6/6 files**. The six files were verified individually against the disposable PostgreSQL test database; this avoids claiming a single full-suite invocation that timed out while running all files together.
 - Client targeted Staff Ticket Detail regression: **12/12 passing**. The pre-review full Client baseline was **95/95 (12/12 files)**; the current fix does not change client source.
 - Server TypeScript build: **Pass**.
 - Client production build: **Pass**.
@@ -381,7 +380,7 @@ Populate only from actual PRs.
 | [#62](https://github.com/thananun-7203/toktickit/pull/62) | `feature/3-actions-api-authorization` | `lab4-staging` | Approved by `Tanaboonnnnn` at `a4d1376` after Round 1 fixes | Merged (`6b77a33`) |
 | [#63](https://github.com/thananun-7203/toktickit/pull/63) | `feature/4-actions-ticket-detail-ui` | `lab4-staging` | Approved by `Tanaboonnnnn` after Round 1 fixes | Merged (`0b636c2`) |
 
-Issue #54 has no PR row yet because no PR has been opened.
+Issue #54 is tracked in **PR #64** against `lab4-staging`; merge remains pending peer approval.
 
 ## 8. Review Standard
 

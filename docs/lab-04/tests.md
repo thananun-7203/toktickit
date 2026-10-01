@@ -168,11 +168,11 @@ The Issue #54 frontend was implemented only after the student approved the final
 | `workflow.api.test.ts` | **Pass — 10/10 tests** |
 | Directly affected Lab 3 `staff-ticket-detail.api.test.ts` | **Pass — 16/16 tests** |
 | Combined workflow/detail Server targeted run | **Pass — 26/26 tests (2/2 files)** |
-| Post-fix Lab 4 Server verification | **Pass — 38 tests across 5/6 files**; seed-regression was not rerun in this fix pass |
-| Full Lab 4 Server suite | **Pre-review baseline — 40/40 tests (6/6 files)**; current fix adds one workflow test, so current full-suite total is 41 when all six files are rerun |
+| Post-fix Lab 4 Server verification | **Pass — 41/41 tests across all 6/6 files**, verified individually against disposable PostgreSQL `toktickit_lab4_test` |
+| Full Lab 4 Server suite | **41/41 tests across 6/6 files verified individually**; no single full-suite invocation result is claimed because the combined command timed out |
 | Full Lab 3 Server suite | **Pass — 116/116 tests (14/14 files)** |
 | Lab 1–2 Server suite | **Pass — 49/49 tests (7/7 files)** |
-| Client Staff Ticket Detail targeted regression | **Pass — 12/12 tests**; pre-review full Client baseline was 95/95 (12/12 files) |
+| Client full Vitest regression | **Pass — 95/95 tests (12/12 files)** |
 | Server TypeScript build | **Pass** |
 | Client production build | **Pass** |
 | Disposable PostgreSQL test database | **Pass** — `toktickit_lab4_test`; migrations + seed applied; development DB was not used as the test target |
