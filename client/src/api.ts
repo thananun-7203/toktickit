@@ -563,7 +563,7 @@ export async function updateStaffTicketStatus(
   ticketId: number,
   status: TicketStatus,
   expectedVersion: number,
-): Promise<Pick<StaffTicketDetail, "id" | "status" | "problemAppearsResolvedAt" | "version" | "updatedAt">> {
+): Promise<Pick<StaffTicketDetail, "id" | "status" | "problemAppearsResolvedAt" | "resolvedAt" | "workflowCycle" | "version" | "updatedAt">> {
   const res = await apiFetch(`/api/v1/staff/tickets/${ticketId}/status`, {
     method: "PATCH",
     body: JSON.stringify({ status, expectedVersion }),

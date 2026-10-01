@@ -33,7 +33,7 @@ Minimum handout-required paths plus supporting files:
 server/tests/lab-04/
 ├── actions-taken.unit.test.ts
 ├── actions-taken.api.test.ts
-├── ticket-workflow.api.test.ts
+├── workflow.api.test.ts
 ├── requester-dashboard.api.test.ts
 ├── staff-dashboard.api.test.ts
 ├── authorization.api.test.ts
@@ -157,6 +157,28 @@ The Issue #53 component suite covers multiple/empty Actions, Staff create/edit/r
 
 Manual visual QA used the real `ActionsTakenPanel`/Zen Green CSS with seeded representative Action states. Desktop and tablet layouts rendered without page horizontal overflow; Add Action modal remained scrollable/usable. CSS includes dedicated `<=700px` and `<=420px` stacking for cards, fields, controls, audit rows, and modal footer. Because the Windows Chrome headless runtime enforced an approximately 499–500 CSS-pixel minimum inner width even when requesting a 390px capture, **final exact 390px browser evidence is intentionally deferred to Issue #58** rather than claimed here without trustworthy evidence.
 
+### 3.4 Issue #54 — Final Ticket Workflow & Resolution Verification
+
+Implementation branch: `feature/5-final-ticket-workflow-resolution`.
+
+The Issue #54 frontend was implemented only after the student approved the final production-like mockup. The mockup was compared against the actual `StaffTicketDetail.tsx`, `ActionsTakenPanel.tsx`, and existing Zen Green CSS before implementation. Public Comments and Internal Notes remain in their existing two-column structure and wording.
+
+| Check | Result |
+|---|---|
+| `workflow.api.test.ts` | **Pass — 9/9 tests** |
+| Directly affected Lab 3 `staff-ticket-detail.api.test.ts` | **Pass — 16/16 tests** |
+| Combined workflow/detail Server targeted run | **Pass — 25/25 tests (2/2 files)** |
+| Full Lab 4 Server suite | **Pass — 40/40 tests (6/6 files)** |
+| Full Lab 3 Server suite | **Pass — 116/116 tests (14/14 files)** |
+| Lab 1–2 Server suite | **Pass — 49/49 tests (7/7 files)** |
+| Full Client Vitest regression | **Pass — 95/95 tests (12/12 files)** |
+| Server TypeScript build | **Pass** |
+| Client production build | **Pass** |
+| Disposable PostgreSQL test database | **Pass** — `toktickit_lab4_test`; migrations + seed applied; development DB was not used as the test target |
+| `git diff --check` | **Pass** |
+
+The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + active Action blocking; current-cycle qualification; prior-cycle rejection after Reopen; server-owned `resolvedAt`; Resolved -> Closed preservation; Reopen timestamp/cycle/version changes; stale workflow conflicts; Requester authorization; and Cancelled Actions not blocking a valid Resolve. Client tests cover safe Resolution Gate feedback and authoritative Reopen state updates. Full cycle-2 Add Action browser/E2E verification remains part of the later E2E/accessibility gates.
+
 ## 4. Unit Tests
 
 | Test ID | Requirement / AC | What it tests | Expected result | Planned file | Final |
@@ -166,8 +188,8 @@ Manual visual QA used the real `ActionsTakenPanel`/Zen Green CSS with seeded rep
 | AT-U-03 | BR-09–BR-13 / AC-03 | Project-chosen Action text/follow-up Unicode boundaries | 2,000 code points accepted, 2,001 rejected; follow-up conditional rule correct | `actions-taken.unit.test.ts` | **Pass — `98b5274`** |
 | AT-U-04 | BR-10 / AC-06 | Completed Result requirement | Blank Result rejected; valid result accepted | `actions-taken.unit.test.ts` | **Pass via AT-API-17 integration — `98b5274`** |
 | AT-U-05 | AC-28 | Immutable original-create fingerprint | same normalized create intent hashes identically; materially changed intent differs | `actions-taken.unit.test.ts` | **Pass — `1d62aa0`** |
-| WF-U-01 | Section 7 / AC-10 | Final Ticket transition matrix | Existing eight-status helper matches approved matrix | existing/extended Staff operations unit test | Planned |
-| WF-U-02 | BR-24–BR-30 / AC-11 | Resolution-gate decision helper if factored | Requires >=1 current-cycle Completed and zero current-cycle Planned/In Progress | `ticket-workflow.api.test.ts` or helper test | Planned |
+| WF-U-01 | Section 7 / AC-10 | Final Ticket transition matrix | Existing eight-status helper plus Staff Detail API coverage matches approved matrix; Resolve is additionally gate-protected | existing Staff operations + `workflow.api.test.ts` | **Pass — 25/25 targeted Server workflow/detail run** |
+| WF-U-02 | BR-24–BR-30 / AC-11 | Resolution-gate decision | Requires >=1 current-cycle Completed and zero current-cycle Planned/In Progress | `workflow.api.test.ts` | **Pass — 9/9 workflow tests** |
 | DASH-U-01 | BR-35–BR-41 / AC-16/17 | Staff Dashboard list predicates/order | Recently Updated uses updated-desc; Urgent is High IT Priority + updated-desc | `staff-dashboard.api.test.ts` or helper test | Planned |
 | TIME-U-01 | BR-08 / AC-27 | Action business-time parser/bounds | ISO offsets normalize to same UTC instant; backdate allowed; > server-now+5m rejected | `actions-taken.unit.test.ts` | **Pass — `98b5274`** |
 
@@ -214,20 +236,20 @@ Manual visual QA used the real `ActionsTakenPanel`/Zen Green CSS with seeded rep
 
 | Test ID | AC | Scenario | Expected | Planned file | Final |
 |---|---|---|---|---|---|
-| WF-API-01 | AC-10 | Every permitted Ticket transition | succeeds | `ticket-workflow.api.test.ts` | Planned |
-| WF-API-02 | AC-10 | Representative forbidden/self transition | `409 INVALID_STATUS_TRANSITION`; unchanged | same | Planned |
-| WF-API-03 | AC-10 | Unknown status | `400`; unchanged | same | Planned |
-| WF-API-04 | AC-11 | Resolve with zero Actions | `409 RESOLUTION_GATE_NOT_MET` | same | Planned |
-| WF-API-05 | AC-11 | Resolve with Completed + Planned/In Progress Action | `409`; unchanged | same | Planned |
-| WF-API-06 | AC-11 | Resolve with >=1 current-cycle Completed and remaining current-cycle Actions only Completed/Cancelled | succeeds; resolvedAt set | same | Planned |
-| WF-API-07 | AC-11 | Requester directly calls Staff status endpoint | `403`; gate cannot be bypassed | same / `authorization.api.test.ts` | Planned |
-| WF-API-08 | AC-12 | Requester advisory indication then formal Reopened | indication cleared atomically; historical Actions remain | same | Planned |
+| WF-API-01 | AC-10 | Every permitted Ticket transition | succeeds when its transition rules and, for Resolve, gate conditions are satisfied | `workflow.api.test.ts` + `staff-ticket-detail.api.test.ts` | **Pass — covered by 25/25 targeted run** |
+| WF-API-02 | AC-10 | Representative forbidden/self transition | `409 INVALID_STATUS_TRANSITION`; unchanged | `staff-ticket-detail.api.test.ts` | **Pass — existing Lab 3 regression** |
+| WF-API-03 | AC-10 | Unknown status | `400`; unchanged | `staff-ticket-detail.api.test.ts` | **Pass — existing Lab 3 regression** |
+| WF-API-04 | AC-11 | Resolve with zero Actions | `409 RESOLUTION_GATE_NOT_MET` | `workflow.api.test.ts` | **Pass — WF-01** |
+| WF-API-05 | AC-11 | Resolve with Completed + Planned/In Progress Action | `409`; unchanged | `workflow.api.test.ts` | **Pass — WF-02** |
+| WF-API-06 | AC-11 | Resolve with >=1 current-cycle Completed and remaining current-cycle Actions only Completed/Cancelled | succeeds; resolvedAt set | `workflow.api.test.ts` | **Pass — WF-04/WF-09** |
+| WF-API-07 | AC-11 | Requester directly calls Staff status endpoint | `403`; gate cannot be bypassed | `workflow.api.test.ts` | **Pass — WF-08** |
+| WF-API-08 | AC-12 | Requester advisory indication then formal Reopened | indication remains advisory; Reopened clears resolution timestamps and preserves historical Actions | `staff-ticket-detail.api.test.ts` + `workflow.api.test.ts` | **Pass — existing ST-13 + WF-06** |
 | WF-API-09 | AC-13 | Two concurrent valid transitions from same Ticket version | at most one commits; stale loser `409 STALE_TICKET_STATE` | same | Planned |
 | WF-API-10 | AC-11/13 | Action/owner/priority aggregate changes while Resolve is evaluated | parent version/row lock + child re-read prevent stale Resolve | same | Planned |
 | WF-API-11 | AC-19 | Pre-Lab-4 already Resolved/Closed zero-Action Ticket | remains readable/valid after migration; no retroactive mutation | `migration-regression.test.ts` | Planned |
-| WF-API-12 | AC-11/12 | **Resolve cycle 1 -> Reopen -> attempt Resolve cycle 2 with only cycle-1 Completed Action** | rejected `409 RESOLUTION_GATE_NOT_MET`; old Action remains historical but does not qualify cycle 2 | `ticket-workflow.api.test.ts` | Planned |
-| WF-API-13 | AC-11/12 | Reopened cycle 2 creates/completes current-cycle Action then Resolve | succeeds; resolvedAt reset to new server time | same | Planned |
-| WF-API-14 | AC-14 | Resolved -> Closed | resolvedAt preserved so recently-resolved metric can still include it | same | Planned |
+| WF-API-12 | AC-11/12 | **Resolve cycle 1 -> Reopen -> attempt Resolve cycle 2 with only cycle-1 Completed Action** | rejected `409 RESOLUTION_GATE_NOT_MET`; old Action remains historical but does not qualify cycle 2 | `workflow.api.test.ts` | **Pass — WF-03** |
+| WF-API-13 | AC-11/12 | Reopened cycle 2 creates/completes current-cycle Action then Resolve | succeeds; resolvedAt reset to new server time | `workflow.api.test.ts` | Planned — covered by future end-to-end cycle test |
+| WF-API-14 | AC-14 | Resolved -> Closed | resolvedAt preserved so recently-resolved metric can still include it | `workflow.api.test.ts` | **Pass — WF-05** |
 
 ## 7. Requester Dashboard API Tests
 
@@ -312,11 +334,11 @@ These tests intentionally bypass normal UI controls.
 
 | Test ID | AC | UI behavior | Final |
 |---|---|---|---|
-| WF-UI-01 | AC-10 | only permitted next Ticket statuses shown | Planned |
-| WF-UI-02 | AC-11 | Resolved path explains **current-cycle** resolution gate; prior-cycle Completed work does not appear as qualifying | Planned |
-| WF-UI-03 | AC-12 | Requester indication visually advisory, not formal Resolved | Planned |
-| WF-UI-04 | AC-13 | stale Ticket conflict offers refresh and does not show false success | Planned |
-| WF-UI-05 | AC-12 | Reopened refresh clears advisory/resolvedAt context, starts new work cycle, preserves historical prior-cycle Actions, and re-enables Add Action | Planned |
+| WF-UI-01 | AC-10 | only permitted next Ticket statuses shown | **Pass — existing UI-ST-04** |
+| WF-UI-02 | AC-11 | Resolved path explains **current-cycle** resolution gate; prior-cycle Completed work does not appear as qualifying | **Pass — UI-ST-10 safe Resolution Gate feedback; current-cycle qualification is server-authoritative** |
+| WF-UI-03 | AC-12 | Requester indication visually advisory, not formal Resolved | **Pass — existing UI-ST-08** |
+| WF-UI-04 | AC-13 | stale Ticket conflict offers refresh and does not show false success | **Pass — existing UI-ST-09** |
+| WF-UI-05 | AC-12 | Reopened refresh clears advisory/resolvedAt context, starts new work cycle, preserves historical prior-cycle Actions, and re-enables Add Action | **Partial — status/resolvedAt/workflowCycle state update covered by UI-ST-11; full Add Action cycle-2 browser/E2E flow remains planned** |
 
 ### 11.3 Requester Dashboard — `client/tests/lab-04/RequesterDashboard.test.tsx`
 
