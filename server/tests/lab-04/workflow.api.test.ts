@@ -69,7 +69,11 @@ describe("Lab 4 Ticket workflow and resolution", () => {
   async function addAction(ticketId: number, options: {
     status: ActionTakenStatus;
     workflowCycle?: number;
+    result?: string | null;
+    followUpRequired?: boolean;
+    followUpNote?: string | null;
   }) {
+    const followUpRequired = options.followUpRequired ?? false;
     return getPrisma().actionTaken.create({
       data: {
         ticketId,
@@ -77,8 +81,9 @@ describe("Lab 4 Ticket workflow and resolution", () => {
         workflowCycle: options.workflowCycle ?? 1,
         actionDateTime: new Date(Date.now() - 60_000),
         description: "Workflow test Action",
-        followUpRequired: false,
-        result: options.status === ActionTakenStatus.COMPLETED ? "Workflow test completed" : null,
+        followUpRequired,
+        followUpNote: followUpRequired ? (options.followUpNote ?? "Workflow follow-up") : null,
+        result: options.status === ActionTakenStatus.COMPLETED ? (options.result ?? "Workflow test completed") : null,
         status: options.status,
         createdById: staffId,
         assigneeId: staffId,
@@ -199,4 +204,22 @@ describe("Lab 4 Ticket workflow and resolution", () => {
     expect(result.status).toBe(200);
     expect(result.body.status).toBe("Resolved");
   });
+
+  it("WF-10: Resolve is blocked when a current-cycle Completed Action has an outstanding follow-up", async () => {
+    const ticket = await createTicket();
+    await addAction(ticket.id, {
+      status: ActionTakenStatus.COMPLETED,
+      result: "Completed but follow-up remains",
+      followUpRequired: true,
+      followUpNote: "Requester confirmation still required",
+    });
+
+    const result = await changeStatus(ticket.id, "Resolved", ticket.version);
+
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("RESOLUTION_GATE_NOT_MET");
+    const saved = await getPrisma().ticket.findUniqueOrThrow({ where: { id: ticket.id } });
+    expect(saved).toMatchObject({ status: "In Progress", version: ticket.version, resolvedAt: null });
+  });
+
 });

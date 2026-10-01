@@ -341,7 +341,7 @@ Issue #53 implementation commit `6d60a93` was verified before evidence synchroni
 
 ### Implemented Workflow
 
-- Formal `Resolved` transition now requires at least one `Completed` Action in the current `Ticket.workflowCycle` and zero current-cycle `Planned`/`In Progress` Actions.
+- Formal `Resolved` transition now requires at least one current-cycle `Completed` Action with a non-blank `Result`, zero current-cycle `Planned`/`In Progress` Actions, and zero current-cycle non-cancelled Actions with outstanding follow-up.
 - Prior-cycle Actions do not satisfy a later Resolve after Reopen; current-cycle `Cancelled` Actions do not block resolution when the Completed requirement is satisfied.
 - Resolve is evaluated inside the same serializable/locked transaction as the Ticket status write, using the authoritative current-cycle Actions and parent `Ticket.version`.
 - Successful Resolve records server-owned `resolvedAt` and increments `Ticket.version`.
@@ -352,17 +352,17 @@ Issue #53 implementation commit `6d60a93` was verified before evidence synchroni
 
 ### Verification
 
-- `server/tests/lab-04/workflow.api.test.ts`: **9/9 passing**.
+- `server/tests/lab-04/workflow.api.test.ts`: **10/10 passing** after adding the outstanding-follow-up Resolution Gate regression.
 - Directly affected Lab 3 Staff Ticket Detail API regression: **16/16 passing**.
-- Combined targeted workflow/detail Server run: **25/25 passing**.
-- Full Lab 4 Server suite: **40/40 passing (6/6 files)**.
-- Full Lab 3 Server suite: **116/116 passing (14/14 files)**.
-- Lab 1–2 Server suite: **49/49 passing (7/7 files)**.
-- Full Client Vitest regression: **95/95 passing (12/12 files)**.
+- Combined targeted workflow/detail Server run: **26/26 passing**.
+- Post-fix Lab 4 Server verification: **38 passing tests across 5/6 files** (workflow, Actions API/unit, authorization, and migration regression). The seed-regression file was not rerun in this fix pass.
+- Pre-review exact-head baseline had already passed the full Lab 4 suite at **40/40 (6/6 files)**; this fix adds one workflow test, so the current full-suite total is **41 tests** when all six files are rerun.
+- Client targeted Staff Ticket Detail regression: **12/12 passing**. The pre-review full Client baseline was **95/95 (12/12 files)**; the current fix does not change client source.
 - Server TypeScript build: **Pass**.
 - Client production build: **Pass**.
 - Test verification used isolated PostgreSQL database `toktickit_lab4_test`; no development database reset was used for the test suite.
 - `git diff --check`: **Pass** before final local verification.
+- No hosted CI status is claimed for this review-fix commit; the evidence above is local exact-head verification.
 
 ### Remaining Before PR
 
