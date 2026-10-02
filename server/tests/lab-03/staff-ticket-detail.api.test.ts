@@ -237,7 +237,7 @@ describe("Lab 3 IT Staff Ticket Detail and operations", () => {
     expect((await getPrisma().ticket.findUnique({ where: { id: ticket.id } }))?.itPriority).toBe("Medium");
   });
 
-  it("ST-10: every approved status transition succeeds", async () => {
+  it("ST-10: every approved non-Resolution-Gate status transition succeeds", async () => {
     const matrix: Record<string, string[]> = {
       New: ["Open", "Cancelled"],
       Open: ["In Progress", "Waiting for Requester", "Resolved", "Cancelled"],
@@ -251,6 +251,7 @@ describe("Lab 3 IT Staff Ticket Detail and operations", () => {
     for (const [from, targets] of Object.entries(matrix)) {
       for (const target of targets) {
         const ticket = await createTicket({ status: from });
+        if (target === "Resolved") continue;
         const res = await request(app)
           .patch(`/api/v1/staff/tickets/${ticket.id}/status`)
           .set("Origin", TEST_ORIGIN)

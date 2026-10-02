@@ -88,6 +88,8 @@ describe("Lab 3 IT Staff Ticket Detail", () => {
       id: TICKET.id,
       status: "Resolved",
       problemAppearsResolvedAt: TICKET.problemAppearsResolvedAt,
+      resolvedAt: "2026-09-17T09:00:00.000Z",
+      workflowCycle: 1,
       version: 2,
       updatedAt: TICKET.updatedAt,
     });
@@ -237,5 +239,47 @@ describe("Lab 3 IT Staff Ticket Detail", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/changed while you were editing/i);
     await user.click(screen.getByRole("button", { name: "Refresh" }));
     await waitFor(() => expect(getDetail).toHaveBeenCalledTimes(2));
+  });
+
+  it("UI-ST-10: Resolution Gate shows safe feedback when Resolve is rejected", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.mocked(api.updateStaffTicketStatus).mockRejectedValueOnce(new api.ApiError(
+      "resolution gate",
+      409,
+      "RESOLUTION_GATE_NOT_MET",
+    ));
+    const user = userEvent.setup();
+    renderDetail();
+    await screen.findByRole("heading", { name: TICKET.ticketNumber });
+
+    await user.selectOptions(screen.getByLabelText("Status"), "Resolved");
+    await user.click(screen.getByRole("button", { name: "Change" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/cannot be resolved yet/i);
+    expect(api.updateStaffTicketStatus).toHaveBeenCalledWith(TICKET.id, "Resolved", TICKET.version);
+  });
+
+  it("UI-ST-11: successful Reopen updates status, resolvedAt, and workflow cycle", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const updateStatus = vi.mocked(api.updateStaffTicketStatus);
+    updateStatus.mockResolvedValueOnce({
+      id: TICKET.id,
+      status: "Reopened",
+      problemAppearsResolvedAt: null,
+      resolvedAt: null,
+      workflowCycle: 2,
+      version: 2,
+      updatedAt: "2026-09-17T09:30:00.000Z",
+    });
+    const user = userEvent.setup();
+    renderDetail({ ...TICKET, status: "Resolved", resolvedAt: "2026-09-17T09:00:00.000Z" });
+    await screen.findByRole("heading", { name: TICKET.ticketNumber });
+
+    await user.selectOptions(screen.getByLabelText("Status"), "Reopened");
+    await user.click(screen.getByRole("button", { name: "Change" }));
+
+    await waitFor(() => expect(updateStatus).toHaveBeenCalledWith(TICKET.id, "Reopened", 1));
+    expect(await screen.findByRole("status")).toHaveTextContent(/Status changed to Reopened/i);
+    expect(screen.getByText(/Allowed next status: In Progress/i)).toBeInTheDocument();
   });
 });

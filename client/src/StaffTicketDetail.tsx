@@ -81,6 +81,9 @@ function errorMessage(error: unknown, fallback: string): string {
   if (error instanceof ApiError && error.code === "INVALID_STATUS_TRANSITION") {
     return "That status transition is no longer allowed because the Ticket state changed.";
   }
+  if (error instanceof ApiError && error.code === "RESOLUTION_GATE_NOT_MET") {
+    return "This Ticket cannot be resolved yet. Complete at least one Action in the current workflow cycle and complete or cancel all active Actions first.";
+  }
   return error instanceof Error ? error.message : fallback;
 }
 
@@ -266,6 +269,8 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
         ...current,
         status: updated.status,
         problemAppearsResolvedAt: updated.problemAppearsResolvedAt,
+        resolvedAt: updated.resolvedAt,
+        workflowCycle: updated.workflowCycle,
         version: updated.version,
         updatedAt: updated.updatedAt,
       } : current);

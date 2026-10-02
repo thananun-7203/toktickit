@@ -15,8 +15,8 @@ Issue plan prepared before implementation:
 | #50 | Sprint 4 Engineering Contract & Test Plan | PR #60 approved and merged to `lab4-staging`; Issue #50 closed |
 | #51 | Actions Taken Data Model, Migration & Seed | PR #61 approved and merged to `lab4-staging`; Issue #51 closed |
 | #52 | Actions Taken API & Authorization | PR #62 approved and merged to `lab4-staging`; Issue #52 closed |
-| #53 | Actions Taken Ticket Detail UI | PR #63 open against `lab4-staging`; Round 1 Changes Requested from `Tanaboonnnnn`; fixes in progress |
-| #54 | Final Ticket Workflow & Resolution Rules | Not started |
+| #53 | Actions Taken Ticket Detail UI | PR #63 approved and merged to `lab4-staging`; Issue #53 complete |
+| #54 | Final Ticket Workflow & Resolution Rules | PR #64 open; Round 2 Re-review pending |
 | #55 | IT Staff Dashboard | Not started |
 | #56 | Requester Dashboard | Not started |
 | #57 | Security, Regression & End-to-End Verification | Not started |
@@ -277,8 +277,8 @@ Review-fix verification at `1d62aa0`:
 - Feature branch: `feature/4-actions-ticket-detail-ui`
 - Base branch: `lab4-staging`
 - Baseline: Issue #52 merge commit `6b77a33eb199623a1d83db770bd6ec4ebf686cf4`
-- Implementation commit: `6d60a9336c55b6318978f332bcc9a43bae3ffae0` (`feat(lab4): add actions taken ticket detail ui`)
-- Current state: implementation and local verification complete; PR #63 is open against `lab4-staging` and Round 1 review has requested changes.
+- Implementation commit: `6d60a9336c55b6318978f332bcc9a43bae3ffae0` (`feat(lab4): add actions taken ticket detail ui`); Round 1 fix commit `2f5087031efbc72b67903c1da56218b5cffe6a5c`.
+- Current state: PR #63 was approved after Round 1 fixes and merged to `lab4-staging`; Issue #53 is complete.
 
 ### Human-Approved Mockup Checkpoint
 
@@ -320,10 +320,56 @@ Issue #53 implementation commit `6d60a93` was verified before evidence synchroni
 - Round 1 review: **Changes Requested** at head `075429c69812bf4c4010781d4e443e9d24fe61d8` on `2026-10-01T09:07:33Z`.
 - Blockers recorded: authoritative parent Ticket-version refresh between consecutive mutations; terminal Ticket must suppress active Action mutation controls; Refresh must surface parent Ticket refresh failure without closing/clearing the current dialog/draft.
 - Non-blocking cleanup recorded: synchronize this reviewer evidence with PR #63 state and do not describe exact ~390px browser verification as complete; final exact 390px browser evidence remains deferred to Issue #58.
-- After human authorization, Round 1 fixes were implemented in the working branch and verified; **re-review is now pending**.
-- Issue #53 remains **Open** until PR #63 is approved and merged.
+- After human authorization, Round 1 fixes were implemented in the working branch and verified. `Tanaboonnnnn` approved exact head `2f5087031efbc72b67903c1da56218b5cffe6a5c`; PR #63 was subsequently merged to `lab4-staging` as `0b636c2d55d3ee849882061de6a38184228d5926`.
+- Issue #53 is **complete**; exact 390px browser evidence remains deferred to Issue #58 as documented above.
 
-## 6. Pull Requests I Authored — Lab 4
+## 6. Issue #54 — Final Ticket Workflow & Resolution Rules
+
+### Issue
+
+- GitHub Issue: `#54 — [Lab 4] Issue_5: Final Ticket Workflow & Resolution Rules`
+- Feature branch: `feature/5-final-ticket-workflow-resolution`
+- Base: `lab4-staging`
+- Baseline: Issue #53 merge commit `0b636c2d55d3ee849882061de6a38184228d5926`
+- PR: **#64**; current review-fix HEAD is `b72f10f` and a further re-review is pending after the latest documentation and verification cleanup.
+
+### Human-Approved Mockup Checkpoint
+
+- The Issue #54 frontend mockup was reviewed against the actual `StaffTicketDetail.tsx`, `ActionsTakenPanel.tsx`, and Zen Green CSS structure before implementation.
+- The student explicitly approved the final mockup and requested a production-like UI without preview-only scenario controls.
+- Public Comments and Internal Notes remain in their existing two-column structure and wording; Issue #54 changes are limited to the existing Ticket workflow/status behavior and its safe feedback states.
+
+### Implemented Workflow
+
+- Formal `Resolved` transition now requires at least one current-cycle `Completed` Action with a non-blank `Result`, zero current-cycle `Planned`/`In Progress` Actions, and zero current-cycle non-cancelled Actions with outstanding follow-up.
+- Prior-cycle Actions do not satisfy a later Resolve after Reopen; current-cycle `Cancelled` Actions do not block resolution when the Completed requirement is satisfied.
+- Resolve is evaluated inside the same serializable/locked transaction as the Ticket status write, using the authoritative current-cycle Actions and parent `Ticket.version`.
+- Successful Resolve records server-owned `resolvedAt` and increments `Ticket.version`.
+- `Resolved -> Closed` preserves `resolvedAt`.
+- `Reopened` clears `problemAppearsResolvedAt` and `resolvedAt`, increments `workflowCycle` and `Ticket.version`, and preserves historical Actions.
+- Stale status writes return `409 STALE_TICKET_STATE`; failed Resolution Gate checks return `409 RESOLUTION_GATE_NOT_MET` without Ticket mutation.
+- Staff Ticket Detail now consumes the authoritative `resolvedAt`/`workflowCycle` response fields and maps the Resolution Gate conflict to safe user feedback while retaining the existing Refresh path.
+
+### Verification
+
+- `server/tests/lab-04/workflow.api.test.ts`: **10/10 passing** after adding the outstanding-follow-up Resolution Gate regression.
+- Directly affected Lab 3 Staff Ticket Detail API regression: **16/16 passing**.
+- Combined targeted workflow/detail Server run: **26/26 passing**.
+- Post-fix Lab 4 Server verification: **41/41 passing tests across all 6/6 files**. The six files were verified individually against the disposable PostgreSQL test database; this avoids claiming a single full-suite invocation that timed out while running all files together.
+- Client targeted Staff Ticket Detail regression: **12/12 passing**. The pre-review full Client baseline was **95/95 (12/12 files)**; the current fix does not change client source.
+- Server TypeScript build: **Pass**.
+- Client production build: **Pass**.
+- Test verification used isolated PostgreSQL database `toktickit_lab4_test`; no development database reset was used for the test suite.
+- `git diff --check`: **Pass** before final local verification.
+- No hosted CI status is claimed for this review-fix commit; the evidence above is local exact-head verification.
+
+### Remaining Before PR
+
+- Manual browser verification of the real Ticket Detail workflow states against the approved mockup.
+- Final documentation synchronization for the exact implementation commit/PR head.
+- Human authorization to commit/push and open PR #54 implementation PR; when opened, request review from `Tanaboonnnnn`.
+
+## 7. Pull Requests I Authored — Lab 4
 
 Populate only from actual PRs.
 
@@ -332,10 +378,11 @@ Populate only from actual PRs.
 | [#60](https://github.com/thananun-7203/toktickit/pull/60) | `feature/1-sprint4-engineering-contract` | `lab4-staging` | Approved by `Tanaboonnnnn` at final reviewed head `48dbae6` | Merged (`6a36d26`) |
 | [#61](https://github.com/thananun-7203/toktickit/pull/61) | `feature/2-actions-data-foundation` | `lab4-staging` | Approved by `Tanaboonnnnn` at `899b7f0` after source-of-truth clarification | Merged (`d3a06ac`) |
 | [#62](https://github.com/thananun-7203/toktickit/pull/62) | `feature/3-actions-api-authorization` | `lab4-staging` | Approved by `Tanaboonnnnn` at `a4d1376` after Round 1 fixes | Merged (`6b77a33`) |
+| [#63](https://github.com/thananun-7203/toktickit/pull/63) | `feature/4-actions-ticket-detail-ui` | `lab4-staging` | Approved by `Tanaboonnnnn` after Round 1 fixes | Merged (`0b636c2`) |
 
-Issue #53 has no PR row yet because no PR has been opened.
+Issue #54 is tracked in **PR #64** against `lab4-staging`; merge remains pending peer approval.
 
-## 7. Review Standard
+## 8. Review Standard
 
 Each Lab 4 implementation PR should be reviewed against:
 
@@ -352,7 +399,7 @@ Each Lab 4 implementation PR should be reviewed against:
 
 Requested changes remain blocking until fixed or the reviewer explicitly marks them non-blocking.
 
-## 8. Kanban / Project Evidence
+## 9. Kanban / Project Evidence
 
 The existing workflow convention remains:
 

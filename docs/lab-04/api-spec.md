@@ -407,6 +407,14 @@ Errors: `401`, `403`, `500 STAFF_DASHBOARD_FAILED`.
 
 The Lab 3 path and eight-status transition matrix remain. Sprint 4 adds the final resolution gate and requires conflict handling to be atomic with the authoritative current state.
 
+When `status` is `Resolved`, the authoritative current-cycle Actions must satisfy all of the following:
+
+- at least one `Completed` Action has a non-blank `result` after trim;
+- no current-cycle Action is `Planned` or `In Progress`;
+- no current-cycle non-cancelled Action has `followUpRequired=true`.
+
+Cancelled current-cycle Actions do not block the gate. Prior-cycle Actions do not participate in the gate.
+
 Request is strengthened with the parent aggregate version:
 
 ```json

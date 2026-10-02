@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { Prisma, UserRole } from "@prisma/client";
+import { ActionTakenStatus, Prisma, UserRole } from "@prisma/client";
 import {
   requireApprovedOrigin,
   requireAuth,
@@ -56,8 +56,10 @@ const detailSelect = Prisma.validator<Prisma.TicketSelect>()({
 class TicketMissingError extends Error {}
 class OwnerNotEligibleError extends Error {}
 class StaleTicketStateError extends Error {}
+class ResolutionGateNotMetError extends Error {}
+class InvalidStatusTransitionError extends Error {}
 
-async function runSerializableOwnerTransaction<T>(
+async function runSerializableTicketTransaction<T>(
   operation: (tx: Prisma.TransactionClient) => Promise<T>,
 ): Promise<T> {
   const prisma = getPrisma();
@@ -172,7 +174,7 @@ staffTicketDetailRouter.patch(
     }
 
     try {
-      const result = await runSerializableOwnerTransaction(async (tx) => {
+      const result = await runSerializableTicketTransaction(async (tx) => {
         // Lock Ticket before any User row. Actions Taken mutations use the
         // same aggregate-first order (Ticket -> Action -> User). Admin account
         // eligibility mutations begin at User and rely on Serializable retry;
@@ -324,44 +326,96 @@ staffTicketDetailRouter.patch(
     }
 
     try {
-      const prisma = getPrisma();
-      const current = await prisma.ticket.findUnique({
-        where: { id: ticketId },
-        select: { id: true, status: true, version: true },
+      const updated = await runSerializableTicketTransaction(async (tx) => {
+        const ticketRows = await tx.$queryRaw<Array<{
+          id: number;
+          status: string;
+          version: number;
+          workflowCycle: number;
+        }>>(Prisma.sql`
+          SELECT "id", "status", "version", "workflowCycle"
+          FROM "Ticket"
+          WHERE "id" = ${ticketId}
+          FOR UPDATE
+        `);
+        const current = ticketRows[0];
+        if (!current) throw new TicketMissingError();
+        if (current.version !== expectedVersion) throw new StaleTicketStateError();
+        if (!isTicketStatus(current.status) || !isAllowedStatusTransition(current.status, req.body.status)) {
+          throw new InvalidStatusTransitionError();
+        }
+
+        if (req.body.status === "Resolved") {
+          const currentCycleActions = await tx.actionTaken.findMany({
+            where: { ticketId, workflowCycle: current.workflowCycle },
+            select: { status: true, result: true, followUpRequired: true },
+          });
+          const hasCompletedWithResult = currentCycleActions.some(
+            (action) => action.status === ActionTakenStatus.COMPLETED && Boolean(action.result?.trim()),
+          );
+          const hasActive = currentCycleActions.some((action) =>
+            action.status === ActionTakenStatus.PLANNED || action.status === ActionTakenStatus.IN_PROGRESS,
+          );
+          const hasOutstandingFollowUp = currentCycleActions.some(
+            (action) => action.status !== ActionTakenStatus.CANCELLED && action.followUpRequired,
+          );
+          if (!hasCompletedWithResult || hasActive || hasOutstandingFollowUp) {
+            throw new ResolutionGateNotMetError();
+          }
+        }
+
+        const data: Prisma.TicketUpdateInput = {
+          status: req.body.status,
+          version: { increment: 1 },
+        };
+        if (req.body.status === "Resolved") data.resolvedAt = new Date();
+        if (req.body.status === "Reopened") {
+          data.problemAppearsResolvedAt = null;
+          data.resolvedAt = null;
+          data.workflowCycle = { increment: 1 };
+        }
+
+        await tx.ticket.update({ where: { id: ticketId }, data });
+        return tx.ticket.findUniqueOrThrow({
+          where: { id: ticketId },
+          select: {
+            id: true,
+            status: true,
+            problemAppearsResolvedAt: true,
+            resolvedAt: true,
+            workflowCycle: true,
+            version: true,
+            updatedAt: true,
+          },
+        });
       });
-      if (!current) {
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof TicketMissingError) {
         res.status(404).json({ error: { message: "Ticket not found" } });
         return;
       }
-      if (current.version !== expectedVersion) {
-        res.status(409).json({ error: { code: "STALE_TICKET_STATE", message: "Ticket state changed; refresh and try again" } });
+      if (error instanceof ResolutionGateNotMetError) {
+        res.status(409).json({
+          error: {
+            code: "RESOLUTION_GATE_NOT_MET",
+            message: "Ticket cannot be resolved until the current workflow cycle has a Completed Action with a Result, no Planned or In Progress Actions, and no outstanding follow-up",
+          },
+        });
         return;
       }
-      if (!isTicketStatus(current.status) || !isAllowedStatusTransition(current.status, req.body.status)) {
+      if (error instanceof InvalidStatusTransitionError) {
         res.status(409).json({
           error: { code: "INVALID_STATUS_TRANSITION", message: "Status transition is not allowed" },
         });
         return;
       }
-
-      const data: Prisma.TicketUpdateManyMutationInput = { status: req.body.status, version: { increment: 1 } };
-      if (req.body.status === "Reopened") data.problemAppearsResolvedAt = null;
-      const changed = await prisma.ticket.updateMany({
-        where: { id: ticketId, status: current.status, version: expectedVersion },
-        data,
-      });
-      if (changed.count === 0) {
+      if (error instanceof StaleTicketStateError || isPrismaSerializationConflict(error)) {
         res.status(409).json({
           error: { code: "STALE_TICKET_STATE", message: "Ticket status changed; refresh and try again" },
         });
         return;
       }
-      const updated = await prisma.ticket.findUniqueOrThrow({
-        where: { id: ticketId },
-        select: { id: true, status: true, problemAppearsResolvedAt: true, version: true, updatedAt: true },
-      });
-      res.json(updated);
-    } catch {
       res.status(500).json({ error: { code: "STATUS_UPDATE_FAILED", message: "Unable to update Ticket status" } });
     }
   },
