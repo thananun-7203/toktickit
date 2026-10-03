@@ -90,6 +90,26 @@ describe("App", () => {
     expect(screen.getByText("Hardware")).toBeInTheDocument();
   });
 
+  it("routes the Requester Waiting for You metric to a status-filtered My Tickets view", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, "getCurrentUser").mockResolvedValue(REQUESTER);
+    vi.spyOn(api, "getRequesterDashboard").mockResolvedValue({
+      metrics: { openTickets: 2, waitingForYou: 1 },
+      recentlyUpdatedTickets: [],
+      recentlyResolvedTickets: [],
+    });
+    const getTicketsSpy = vi.spyOn(api, "getTickets").mockResolvedValue({
+      items: [], page: 1, pageSize: 10, totalItems: 0, totalPages: 0,
+    });
+
+    renderApp();
+    await screen.findByRole("heading", { name: /Dashboard/i });
+    await user.click(screen.getByRole("button", { name: /Waiting for You: 1\. View waiting Tickets/i }));
+
+    expect(await screen.findByRole("heading", { name: /My Tickets/i })).toBeInTheDocument();
+    expect(getTicketsSpy).toHaveBeenCalledWith(expect.objectContaining({ status: "Waiting for Requester" }));
+  });
+
   it("shows an Offline error message when the authenticated System Check fails", async () => {
     const user = userEvent.setup();
     vi.spyOn(api, "getCurrentUser").mockResolvedValue(REQUESTER);

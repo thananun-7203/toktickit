@@ -242,6 +242,7 @@ app.get(
     }
     if (q.categoryId) where.categoryId = q.categoryId;
     if (q.relatedSystemId) where.relatedSystemId = q.relatedSystemId;
+    if (q.status) where.status = q.status;
 
     const orderBy = toPrismaOrderBy(q.sort);
     const skip = (q.page - 1) * q.pageSize;

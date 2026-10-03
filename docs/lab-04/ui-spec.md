@@ -305,7 +305,7 @@ After a successful Reopened transition:
 | Source | Destination / context |
 |---|---|
 | Requester Open Tickets card | My Tickets root or active context; no client-side hidden cross-owner data. |
-| Requester Waiting for You card | My Tickets with Waiting for Requester context/filter when implemented. |
+| Requester Waiting for You card | My Tickets with the `Waiting for Requester` status filter applied. |
 | Requester recent Ticket | Requester Ticket Detail. |
 | Staff Unassigned card | Ticket Queue with unassigned context. |
 | Staff My Active card | Ticket Queue with owner=mine context. |

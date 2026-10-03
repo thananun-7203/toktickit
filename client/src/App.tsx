@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentProps } from "react";
-import { checkSystem, Category } from "./api.js";
+import { checkSystem, Category, type TicketStatus } from "./api.js";
 import { useAuth } from "./AuthContext.js";
 import Login from "./Login.js";
 import ChangePassword from "./ChangePassword.js";
@@ -74,6 +74,7 @@ export default function App() {
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [logoutBusy, setLogoutBusy] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
+  const [myTicketsStatus, setMyTicketsStatus] = useState<TicketStatus | undefined>();
   const [staffQueueParams, setStaffQueueParams] = useState<ComponentProps<typeof StaffTicketQueue>["initialParams"]>();
 
   useEffect(() => {
@@ -121,6 +122,14 @@ export default function App() {
 
   function showMyTickets() {
     setSelectedTicketId(null);
+    setView("my-tickets");
+    setMyTicketsStatus(undefined);
+    setMobileMenuOpen(false);
+  }
+
+  function showWaitingTickets() {
+    setSelectedTicketId(null);
+    setMyTicketsStatus("Waiting for Requester");
     setView("my-tickets");
     setMobileMenuOpen(false);
   }
@@ -294,6 +303,7 @@ export default function App() {
           <RequesterDashboard
             onOpenTicket={(ticketId) => { setSelectedTicketId(ticketId); setView("ticket-detail"); }}
             onOpenMyTickets={showMyTickets}
+            onOpenWaitingTickets={showWaitingTickets}
           />
         ) : (isStaff || isAdmin) && view === "staff-dashboard" ? (
           <StaffDashboard
@@ -328,7 +338,7 @@ export default function App() {
         ) : view === "ticket-detail" && selectedTicketId !== null ? (
           <TicketDetail ticketId={selectedTicketId} onBack={showMyTickets} />
         ) : view === "my-tickets" ? (
-          <MyTickets onCreateTicket={showCreateTicket} onOpenTicket={openTicket} />
+          <MyTickets onCreateTicket={showCreateTicket} onOpenTicket={openTicket} initialStatus={myTicketsStatus} />
         ) : (
           <section className="zen-card content-card">
             <h1 className="page-title">System Check</h1>

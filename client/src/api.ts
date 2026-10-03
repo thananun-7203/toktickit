@@ -441,6 +441,7 @@ export interface GetTicketsParams {
   search?: string;
   categoryId?: number;
   relatedSystemId?: number;
+  status?: TicketStatus;
   sort?: "newest" | "oldest" | "summary_asc";
   page?: number;
   pageSize?: number;
@@ -461,6 +462,7 @@ export async function getTickets(
   if (params.search) qs.set("search", params.search);
   if (params.categoryId) qs.set("categoryId", String(params.categoryId));
   if (params.relatedSystemId) qs.set("relatedSystemId", String(params.relatedSystemId));
+  if (params.status) qs.set("status", params.status);
   if (params.sort) qs.set("sort", params.sort);
   if (params.page) qs.set("page", String(params.page));
   if (params.pageSize) qs.set("pageSize", String(params.pageSize));

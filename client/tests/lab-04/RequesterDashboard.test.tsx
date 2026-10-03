@@ -61,6 +61,23 @@ describe("Lab 4 Requester Dashboard", () => {
     expect(openTicket).toHaveBeenCalledWith(101);
   });
 
+  it("RD-UI-05: sends the Waiting for You drill-down to its dedicated handler", async () => {
+    vi.spyOn(api, "getRequesterDashboard").mockResolvedValue(DATA);
+    const openWaitingTickets = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <RequesterDashboard
+        onOpenTicket={() => {}}
+        onOpenMyTickets={() => {}}
+        onOpenWaitingTickets={openWaitingTickets}
+      />,
+    );
+    await screen.findByRole("heading", { name: "Dashboard" });
+
+    await user.click(screen.getByRole("button", { name: /Waiting for You: 1\. View waiting Tickets/i }));
+    expect(openWaitingTickets).toHaveBeenCalledTimes(1);
+  });
+
   it("RD-UI-02: renders intentional zero/empty states", async () => {
     vi.spyOn(api, "getRequesterDashboard").mockResolvedValue({
       metrics: { openTickets: 0, waitingForYou: 0 },

@@ -411,9 +411,10 @@ When `status` is `Resolved`, the authoritative current-cycle Actions must satisf
 
 - at least one `Completed` Action has a non-blank `result` after trim;
 - no current-cycle Action is `Planned` or `In Progress`;
-- no current-cycle non-cancelled Action has `followUpRequired=true`.
 
 Cancelled current-cycle Actions do not block the gate. Prior-cycle Actions do not participate in the gate.
+
+`followUpRequired` and `followUpNote` remain Action-level validation fields. A completed Action may retain `followUpRequired=true` and its required note; because Completed Actions are terminal and immutable and there is no separate follow-up lifecycle, that recorded requirement does not block the Ticket from being resolved.
 
 Request is strengthened with the parent aggregate version:
 

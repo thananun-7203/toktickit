@@ -4,6 +4,7 @@ import { getRequesterDashboard, type RequesterDashboardResponse, type RequesterD
 interface Props {
   onOpenTicket: (ticketId: number) => void;
   onOpenMyTickets: () => void;
+  onOpenWaitingTickets?: () => void;
 }
 
 type LoadState = "loading" | "success" | "error";
@@ -120,7 +121,7 @@ function DashboardList({
   );
 }
 
-export default function RequesterDashboard({ onOpenTicket, onOpenMyTickets }: Props) {
+export default function RequesterDashboard({ onOpenTicket, onOpenMyTickets, onOpenWaitingTickets = onOpenMyTickets }: Props) {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [data, setData] = useState<RequesterDashboardResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState("Unable to load Requester Dashboard");
@@ -191,7 +192,7 @@ export default function RequesterDashboard({ onOpenTicket, onOpenMyTickets }: Pr
           label="Waiting for You"
           value={dashboard.metrics.waitingForYou}
           description="View waiting Tickets"
-          onOpen={onOpenMyTickets}
+          onOpen={onOpenWaitingTickets}
         />
       </div>
 

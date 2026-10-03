@@ -70,7 +70,7 @@ describe("MyTickets (UI-5)", () => {
     expect(screen.getAllByText("High")[0]).toHaveClass("priority-badge", "priority-high");
     expect(screen.getAllByText("Low")[0]).toHaveClass("priority-badge", "priority-low");
     // Zen Green badge
-    const badges = screen.getAllByText("New");
+    const badges = screen.getAllByText("New").filter((element) => element.classList.contains("status-badge"));
     expect(badges[0]).toHaveClass("status-badge");
   });
 
@@ -137,6 +137,19 @@ describe("MyTickets (UI-5)", () => {
     const user = userEvent.setup();
     await user.selectOptions(screen.getByLabelText(/Page size/), "5");
     await waitFor(() => expect(spy).toHaveBeenCalledWith(expect.objectContaining({ pageSize: 5 })));
+  });
+
+  it("applies an initial status context to the My Tickets query", async () => {
+    const spy = vi.spyOn(api, "getTickets").mockResolvedValue({
+      items: [],
+      page: 1,
+      pageSize: 10,
+      totalItems: 0,
+      totalPages: 0,
+    });
+    render(<MyTickets initialStatus="Waiting for Requester" />);
+    await waitFor(() => expect(spy).toHaveBeenCalledWith(expect.objectContaining({ status: "Waiting for Requester" })));
+    expect(screen.getByLabelText(/^Status$/i)).toHaveValue("Waiting for Requester");
   });
 
   it("opens a ticket detail from the list", async () => {
