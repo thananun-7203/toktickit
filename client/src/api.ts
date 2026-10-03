@@ -126,7 +126,7 @@ export interface StaffQueueTicket {
 
 export interface StaffQueueParams {
   search?: string;
-  status?: TicketStatus;
+  status?: TicketStatus | "active";
   requestedPriority?: RequestedPriority;
   itPriority?: RequestedPriority | "not_recorded";
   owner?: "unassigned" | "mine" | number;
@@ -167,6 +167,37 @@ export interface InternalNotesResponse {
   pageSize: number;
   totalItems: number;
   totalPages: number;
+}
+
+export interface StaffDashboardTicketSummary {
+  id: number;
+  ticketNumber: string;
+  summary: string;
+  status: TicketStatus;
+  itPriority: RequestedPriority | null;
+  updatedAt: string;
+}
+
+export interface StaffDashboardActionSummary {
+  id: number;
+  ticketId: number;
+  description: string;
+  status: ActionTakenStatus;
+  updatedAt: string;
+  assignee: { id: number; name: string };
+  ticket: { ticketNumber: string; summary: string };
+}
+
+export interface StaffDashboardResponse {
+  metrics: {
+    unassignedActiveTickets: number;
+    myActiveTickets: number;
+    byStatus: Record<TicketStatus, number>;
+    activeByItPriority: Record<RequestedPriority | "Not recorded", number>;
+  };
+  myActiveActions: StaffDashboardActionSummary[];
+  recentlyUpdatedTickets: StaffDashboardTicketSummary[];
+  urgentTickets: StaffDashboardTicketSummary[];
 }
 
 export const ACTION_TAKEN_STATUSES = ["Planned", "In Progress", "Completed", "Cancelled"] as const;
@@ -589,6 +620,12 @@ export async function postInternalNote(ticketId: number, content: string): Promi
     body: JSON.stringify({ content }),
   });
   if (!res.ok) throw await responseError(res, "Unable to post Internal Note");
+  return res.json();
+}
+
+export async function getStaffDashboard(): Promise<StaffDashboardResponse> {
+  const res = await apiFetch("/api/v1/staff/dashboard");
+  if (!res.ok) throw await responseError(res, "Unable to load Staff Dashboard");
   return res.json();
 }
 

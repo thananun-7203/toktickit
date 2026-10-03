@@ -140,6 +140,13 @@ describe("GET /api/v1/staff/tickets", () => {
     expect(missing.body.items[0].itPriority).toBeNull();
   });
 
+  it("Q-05A: filters the documented active Ticket status group", async () => {
+    const res = await request(app).get(`/api/v1/staff/tickets?search=${stamp}&status=active`).set("Cookie", staffCookie);
+    expect(res.status).toBe(200);
+    expect(res.body.items.every((item: any) => ["New", "Open", "In Progress", "Waiting for Requester", "Reopened"].includes(item.status))).toBe(true);
+    expect(res.body.items.some((item: any) => item.status === "Closed" || item.status === "Cancelled")).toBe(false);
+  });
+
   it("Q-07/Q-08: filters unassigned, mine, and explicit owner id", async () => {
     const unassigned = await request(app).get(`/api/v1/staff/tickets?search=${stamp}&owner=unassigned`).set("Cookie", staffCookie);
     expect(unassigned.body.items).toHaveLength(1);

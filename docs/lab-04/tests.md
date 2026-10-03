@@ -269,17 +269,17 @@ The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + act
 
 | Test ID | AC | Scenario | Expected | Planned file | Final |
 |---|---|---|---|---|---|
-| SD-API-01 | AC-16 | Unassigned active calculation | only active statuses + owner null counted | `staff-dashboard.api.test.ts` | Planned |
-| SD-API-02 | AC-16 | My active calculation | only active + owner=current authenticated user | same | Planned |
-| SD-API-03 | AC-16 | Counts by status | all eight keys present; exact DB counts, zeros included | same | Planned |
-| SD-API-04 | AC-16 | Active IT Priority grouping | High/Medium/Low/null counts exact; terminal excluded | same | Planned |
-| SD-API-05 | AC-17 | My Active Actions | assignee=current + Planned/In Progress + active parent + current workflow cycle only, top 5 updated-desc/id-desc | same | Planned |
-| SD-API-06 | AC-17 | Recently Updated Tickets | active top 5 by updatedAt desc/id desc | same | Planned |
-| SD-API-11 | AC-17 | Urgent Tickets | active `itPriority=High` only, top 5 by updatedAt desc/id desc | same | Planned |
-| SD-API-07 | AC-16/17 | Empty DB/query result | `200` zeros/empty arrays | same | Planned |
-| SD-API-08 | AC-18 | Administrator loads Staff dashboard | allowed with same operational calculations scoped to authenticated admin for `my*` fields | same | Planned |
-| SD-API-09 | AC-18 | Requester calls Staff dashboard | `403`; no operational data | same / authorization | Planned |
-| SD-API-10 | AC-16 | Selected displayed metrics vs direct Prisma/SQL query | values exactly match authoritative query evidence | same | Planned |
+| SD-API-01 | AC-16 | Unassigned active calculation | only active statuses + owner null counted | `staff-dashboard.api.test.ts` | **Pass** |
+| SD-API-02 | AC-16 | My active calculation | only active + owner=current authenticated user | same | **Pass** |
+| SD-API-03 | AC-16 | Counts by status | all eight keys present; exact DB counts, zeros included | same | **Pass** |
+| SD-API-04 | AC-16 | Active IT Priority grouping | High/Medium/Low/null counts exact; terminal excluded | same | **Pass** |
+| SD-API-05 | AC-17 | My Active Actions | assignee=current + Planned/In Progress + active parent + current workflow cycle only, top 5 updated-desc/id-desc | same | **Pass** |
+| SD-API-06 | AC-17 | Recently Updated Tickets | active top 5 by updatedAt desc/id desc | same | **Pass** |
+| SD-API-11 | AC-17 | Urgent Tickets | active `itPriority=High` only, top 5 by updatedAt desc/id desc | same | **Pass** |
+| SD-API-07 | AC-16/17 | Empty DB/query result | `200` zeros/empty arrays | same | **Pass** |
+| SD-API-08 | AC-18 | Administrator loads Staff dashboard | allowed with same operational calculations scoped to authenticated admin for `my*` fields | same | **Pass** |
+| SD-API-09 | AC-18 | Requester calls Staff dashboard | `403`; no operational data | same / authorization | **Pass** |
+| SD-API-10 | AC-16 | Selected displayed metrics vs direct Prisma/SQL query | values exactly match authoritative query evidence | same | **Pass** |
 
 ## 9. Migration / Seed Tests
 
@@ -355,11 +355,11 @@ These tests intentionally bypass normal UI controls.
 
 | Test ID | AC | UI behavior | Final |
 |---|---|---|---|
-| SD-UI-01 | AC-16 | operational cards/status/priority values render with text labels | Planned |
-| SD-UI-02 | AC-17 | My Active Actions plus separate Recently Updated and Urgent lists render with correct labels | Planned |
-| SD-UI-03 | AC-17 | metric/list drill-down sends correct Queue/Ticket context | Planned |
-| SD-UI-04 | AC-16/22 | loading/zero/empty/forbidden/safe-failure states | Planned |
-| SD-UI-05 | AC-18 | Administrator can render Staff Dashboard under approved role path | Planned |
+| SD-UI-01 | AC-16 | operational cards/status/priority values render with text labels | **Pass — `StaffDashboard.test.tsx`** |
+| SD-UI-02 | AC-17 | My Active Actions plus separate Recently Updated and Urgent lists render with correct labels | **Pass — `StaffDashboard.test.tsx`** |
+| SD-UI-03 | AC-17 | metric/list drill-down sends correct Queue/Ticket context | **Pass — `StaffDashboard.test.tsx`** |
+| SD-UI-04 | AC-16/22 | loading/zero/empty/forbidden/safe-failure states | **Pass — `StaffDashboard.test.tsx`** |
+| SD-UI-05 | AC-18 | Administrator can render Staff Dashboard under approved role path | **Pass — `AuthenticatedShell.test.tsx`** |
 
 ## 12. Responsive / Accessibility / Visual Tests
 

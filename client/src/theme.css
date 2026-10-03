@@ -373,6 +373,83 @@
   box-shadow: 0 5px 18px rgba(27, 69, 38, .045);
   overflow: hidden;
 }
+
+/* Lab 4 Issue 6 — Staff Dashboard frontend mockup. These styles extend the
+   existing Zen Green shell without changing the established application
+   navigation, spacing, or visual language. */
+.staff-dashboard-page { padding-bottom: 2.5rem; }
+.staff-dashboard-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.35rem; }
+.staff-dashboard-eyebrow { margin: 0 0 .3rem; color: var(--zen-green-700); font-size: .72rem; font-weight: 800; letter-spacing: .12em; }
+.staff-dashboard-feedback { margin-bottom: 1rem; }
+.staff-dashboard-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+.staff-dashboard-metric { min-height: 150px; padding: 1.25rem 1.3rem; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow-soft); color: var(--ink-900); text-align: left; display: flex; flex-direction: column; align-items: flex-start; transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
+.staff-dashboard-metric:hover, .staff-dashboard-metric:focus-visible { transform: translateY(-1px); border-color: #9ac9ab; box-shadow: var(--shadow); outline: none; }
+.staff-dashboard-metric-label { color: var(--ink-700); font-size: .84rem; font-weight: 700; }
+.staff-dashboard-metric strong { margin-top: .35rem; color: var(--zen-green-900); font-size: 2.35rem; line-height: 1; letter-spacing: -.03em; }
+.staff-dashboard-metric-link { margin-top: auto; color: var(--zen-green-700); font-size: .78rem; font-weight: 700; }
+.staff-dashboard-summary-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(320px, .75fr); gap: 1rem; margin-bottom: 1rem; }
+.staff-dashboard-work-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr); gap: 1rem; margin-bottom: 1rem; }
+.staff-dashboard-card { padding: 1.2rem; }
+.staff-dashboard-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.staff-dashboard-section-kicker { display: block; margin-bottom: .25rem; color: var(--zen-green-700); font-size: .66rem; font-weight: 800; letter-spacing: .11em; }
+.staff-dashboard-card h2 { margin: 0; color: var(--ink-900); font-size: 1.08rem; font-weight: 760; letter-spacing: -.01em; }
+.staff-dashboard-count-label { color: var(--ink-500); font-size: .74rem; font-weight: 650; white-space: nowrap; }
+.staff-dashboard-status-list, .staff-dashboard-priority-list { display: grid; gap: .4rem; }
+.staff-dashboard-status-row, .staff-dashboard-priority-row { width: 100%; display: grid; grid-template-columns: 1fr auto 22px; align-items: center; gap: .7rem; padding: .52rem .55rem; border: 0; border-radius: 9px; background: transparent; color: var(--ink-900); text-align: left; }
+.staff-dashboard-status-row:hover, .staff-dashboard-status-row:focus-visible, .staff-dashboard-priority-row:hover, .staff-dashboard-priority-row:focus-visible { background: var(--zen-green-050); outline: none; }
+.staff-dashboard-status-row strong, .staff-dashboard-priority-row strong { min-width: 24px; text-align: right; font-size: .9rem; }
+.staff-dashboard-row-arrow { color: var(--zen-green-700); font-weight: 800; text-align: right; }
+.staff-dashboard-badge { display: inline-flex; align-items: center; min-height: 24px; padding: .2rem .55rem; border-radius: 999px; font-size: .72rem; font-weight: 750; line-height: 1.2; }
+.staff-dashboard-badge.status-new, .staff-dashboard-badge.status-open, .staff-dashboard-badge.status-reopened { background: #e8f1ff; color: #285c95; }
+.staff-dashboard-badge.status-in-progress { background: #fff1d7; color: #79560b; }
+.staff-dashboard-badge.status-waiting-for-requester { background: #f2eafe; color: #664192; }
+.staff-dashboard-badge.status-resolved, .staff-dashboard-badge.status-closed { background: #e6f5ea; color: #25623a; }
+.staff-dashboard-badge.status-cancelled { background: #f0f0f0; color: #5e6063; }
+.staff-dashboard-badge.priority-high { background: #fbeaea; color: #982f2f; }
+.staff-dashboard-badge.priority-medium { background: #fff3d7; color: #7c5b14; }
+.staff-dashboard-badge.priority-low { background: #e7f3ea; color: #28633a; }
+.staff-dashboard-badge.priority-not-recorded { background: #eef0f1; color: #586168; }
+.staff-dashboard-card-note { margin: 1rem 0 0; padding-top: .85rem; border-top: 1px solid var(--line); color: var(--ink-500); font-size: .76rem; line-height: 1.45; }
+.staff-dashboard-action-list, .staff-dashboard-compact-list, .staff-dashboard-recent-list { display: grid; }
+.staff-dashboard-action-row, .staff-dashboard-recent-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .9rem 0; border-top: 1px solid var(--line); }
+.staff-dashboard-action-row:first-child, .staff-dashboard-recent-row:first-child { border-top: 0; padding-top: 0; }
+.staff-dashboard-action-main { min-width: 0; }
+.staff-dashboard-ticket-line { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; }
+.staff-dashboard-ticket-line strong { color: var(--zen-green-900); font-size: .82rem; }
+.staff-dashboard-action-main p, .staff-dashboard-recent-row p { margin: .35rem 0 .2rem; color: var(--ink-900); font-size: .86rem; line-height: 1.45; }
+.staff-dashboard-action-main > span, .staff-dashboard-recent-row > div > span { color: var(--ink-500); font-size: .74rem; }
+.staff-dashboard-compact-row { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: .8rem; padding: .85rem 0; border: 0; border-top: 1px solid var(--line); background: transparent; color: var(--ink-900); text-align: left; }
+.staff-dashboard-compact-row:first-child { border-top: 0; padding-top: 0; }
+.staff-dashboard-compact-row:hover, .staff-dashboard-compact-row:focus-visible { color: var(--zen-green-800); outline: none; }
+.staff-dashboard-compact-row > span:first-child { min-width: 0; display: flex; flex-direction: column; gap: .2rem; }
+.staff-dashboard-compact-row > span:first-child strong { font-size: .8rem; }
+.staff-dashboard-compact-row > span:first-child span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-700); font-size: .8rem; }
+.staff-dashboard-compact-row > span:last-child { display: flex; align-items: flex-end; flex-direction: column; gap: .25rem; flex: 0 0 auto; }
+.staff-dashboard-compact-row small { color: var(--ink-500); font-size: .7rem; }
+.staff-dashboard-recent-card { margin-bottom: 1rem; }
+.staff-dashboard-recent-row > div { min-width: 0; }
+.staff-dashboard-state { min-height: 260px; display: grid; place-items: center; align-content: center; text-align: center; padding: 2.5rem 1.5rem; }
+.staff-dashboard-state h2 { margin: .9rem 0 .35rem; color: var(--ink-900); font-size: 1.15rem; }
+.staff-dashboard-state p { max-width: 540px; color: var(--ink-500); }
+.staff-dashboard-state-icon { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: var(--zen-green-100); color: var(--zen-green-800); font-weight: 800; font-size: 1.25rem; }
+.staff-dashboard-state-icon-error { background: #fbeaea; color: #982f2f; }
+.staff-dashboard-list-empty { padding: 1.5rem .5rem; color: var(--ink-500); font-size: .8rem; text-align: center; }
+.staff-dashboard-all-empty { margin: 0 0 1rem; color: var(--ink-500); font-size: .78rem; text-align: center; }
+
+@media (max-width: 900px) {
+  .staff-dashboard-summary-grid, .staff-dashboard-work-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 767.98px) {
+  .staff-dashboard-heading { align-items: flex-start; }
+  .staff-dashboard-metrics { grid-template-columns: 1fr; }
+  .staff-dashboard-metric { min-height: 132px; }
+  .staff-dashboard-card { padding: 1rem; }
+  .staff-dashboard-card-heading { margin-bottom: .75rem; }
+  .staff-dashboard-action-row, .staff-dashboard-recent-row { align-items: flex-start; flex-direction: column; }
+  .staff-dashboard-action-row .btn, .staff-dashboard-recent-row .btn { width: 100%; }
+  .staff-dashboard-compact-row > span:first-child span { white-space: normal; }
+}
 .actions-panel-header {
   display: flex;
   justify-content: space-between;
