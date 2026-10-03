@@ -232,11 +232,17 @@ test("E2E-ADMIN-01/02 full-stack Administrator workflow and safety boundaries", 
     const ticket = queueBody.items[0];
     if (!ticket) throw new Error("No unassigned Ticket available for assigned-owner safety E2E");
 
+    const detailResponse = await fetch(`${apiUrl}/api/v1/staff/tickets/${ticket.id}`, {
+      credentials: "include",
+    });
+    if (!detailResponse.ok) throw new Error(`Unable to resolve safety Ticket version: ${detailResponse.status}`);
+    const ticketDetail = await detailResponse.json() as { version: number };
+
     const assignResponse = await fetch(`${apiUrl}/api/v1/staff/tickets/${ticket.id}/owner`, {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "assign", ownerId: managed.id }),
+      body: JSON.stringify({ action: "assign", ownerId: managed.id, expectedVersion: ticketDetail.version }),
     });
     if (!assignResponse.ok) throw new Error(`Unable to assign E2E safety Ticket: ${assignResponse.status}`);
     return { actorId: actor.id, managedId: managed.id };
