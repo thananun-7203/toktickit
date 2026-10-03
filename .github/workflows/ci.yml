@@ -145,7 +145,7 @@ jobs:
         run: docker compose -f compose.lab2.yml up -d --wait
 
       - name: Wait for SeaweedFS filer
-        run: curl --fail --retry 20 --retry-connrefused --retry-delay 2 http://127.0.0.1:8888/
+        run: curl --fail --retry 30 --retry-all-errors --retry-delay 2 http://127.0.0.1:8888/
 
       - name: Create dedicated Lab 3 E2E database
         run: docker compose -f compose.lab2.yml exec -T postgres createdb -U toktickit toktickit_lab3_e2e
