@@ -193,6 +193,8 @@ test("Staff browser UI flow smoke covers the Ticket Detail operational workflow"
   await page.locator("#login-password").fill("ValidPassword123!");
   await page.getByRole("button", { name: "Sign In" }).click();
 
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await page.getByRole("button", { name: "Ticket Queue" }).click();
   await expect(page.getByRole("heading", { name: "Ticket Queue" })).toBeVisible();
   await page.getByLabel("Search").fill("internal system");
   await page.getByRole("button", { name: "Search" }).click();
@@ -274,8 +276,11 @@ test("E2E-STAFF-01/02 full-stack Staff workflow and authorization boundaries", a
     users.staffOneEmail,
     users.initialPassword,
     staffPassword,
-    "Ticket Queue",
+    "Dashboard",
   );
+
+  await page.getByRole("button", { name: "Ticket Queue" }).click();
+  await expect(page.getByRole("heading", { name: "Ticket Queue" })).toBeVisible();
 
   await page.getByLabel("Search").fill(summary);
   await page.getByRole("button", { name: "Search" }).click();

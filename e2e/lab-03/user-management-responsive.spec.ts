@@ -22,6 +22,7 @@ const users = [
 
 async function mockAdminApis(page: Page) {
   await page.route("**/api/v1/auth/me", async (route) => route.fulfill({ json: adminUser }));
+  await page.route("**/api/v1/staff/dashboard", async (route) => route.fulfill({ json: { metrics: { unassignedActiveTickets: 0, myActiveTickets: 0, byStatus: {}, activeByItPriority: {} }, myActiveActions: [], recentlyUpdatedTickets: [], urgentTickets: [] } }));
   await page.route("**/api/v1/admin/users**", async (route) => {
     if (route.request().method() === "GET") {
       await route.fulfill({ json: { items: users } });
@@ -46,6 +47,7 @@ test("V-05/V-06 User Management stays usable and modal focus stays contained", a
 
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/");
+  await page.getByRole("button", { name: "User Management" }).click();
   await expect(page.getByRole("heading", { name: "User Management" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Create User/i })).toBeVisible();
   await expect(page.locator(".admin-users-table-wrap")).toBeVisible();

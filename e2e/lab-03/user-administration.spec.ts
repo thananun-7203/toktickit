@@ -119,6 +119,8 @@ test("Administrator browser UI flow covers create, edit, initial password, and s
   await page.locator("#login-password").fill("ValidPassword123!");
   await page.getByRole("button", { name: "Sign In" }).click();
 
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await page.getByRole("button", { name: "User Management" }).click();
   await expect(page.getByRole("heading", { name: "User Management" })).toBeVisible();
   await page.getByLabel("Search").fill("Narin");
   await page.getByRole("button", { name: "Search" }).click();
@@ -177,8 +179,11 @@ test("E2E-ADMIN-01/02 full-stack Administrator workflow and safety boundaries", 
     users.adminEmail,
     users.initialPassword,
     adminPassword,
-    "User Management",
+    "Dashboard",
   );
+
+  await page.getByRole("button", { name: "User Management" }).click();
+  await expect(page.getByRole("heading", { name: "User Management" })).toBeVisible();
 
   await page.getByLabel("Search").fill(users.staffOneEmail);
   await page.getByRole("button", { name: "Search" }).click();
@@ -282,7 +287,7 @@ test("E2E-ADMIN-01/02 full-stack Administrator workflow and safety boundaries", 
 
   await logoutFromUserMenu(page, "E2E Administrator");
   await signIn(page, managedEmail, resetManagedPassword);
-  await completeMandatoryPasswordChange(page, resetManagedPassword, `ManagedFinal${Date.now()}7C`, "Ticket Queue");
+  await completeMandatoryPasswordChange(page, resetManagedPassword, `ManagedFinal${Date.now()}7C`, "Dashboard");
 
   const forbiddenAdmin = await page.evaluate(async (apiUrl) => {
     const response = await fetch(`${apiUrl}/api/v1/admin/users`, { credentials: "include" });
