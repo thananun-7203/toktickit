@@ -269,17 +269,18 @@ The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + act
 
 | Test ID | AC | Scenario | Expected | Planned file | Final |
 |---|---|---|---|---|---|
-| SD-API-01 | AC-16 | Unassigned active calculation | only active statuses + owner null counted | `staff-dashboard.api.test.ts` | Planned |
-| SD-API-02 | AC-16 | My active calculation | only active + owner=current authenticated user | same | Planned |
-| SD-API-03 | AC-16 | Counts by status | all eight keys present; exact DB counts, zeros included | same | Planned |
-| SD-API-04 | AC-16 | Active IT Priority grouping | High/Medium/Low/null counts exact; terminal excluded | same | Planned |
-| SD-API-05 | AC-17 | My Active Actions | assignee=current + Planned/In Progress + active parent + current workflow cycle only, top 5 updated-desc/id-desc | same | Planned |
-| SD-API-06 | AC-17 | Recently Updated Tickets | active top 5 by updatedAt desc/id desc | same | Planned |
-| SD-API-11 | AC-17 | Urgent Tickets | active `itPriority=High` only, top 5 by updatedAt desc/id desc | same | Planned |
-| SD-API-07 | AC-16/17 | Empty DB/query result | `200` zeros/empty arrays | same | Planned |
-| SD-API-08 | AC-18 | Administrator loads Staff dashboard | allowed with same operational calculations scoped to authenticated admin for `my*` fields | same | Planned |
-| SD-API-09 | AC-18 | Requester calls Staff dashboard | `403`; no operational data | same / authorization | Planned |
-| SD-API-10 | AC-16 | Selected displayed metrics vs direct Prisma/SQL query | values exactly match authoritative query evidence | same | Planned |
+| SD-API-01 | AC-16 | Unassigned active calculation | only active statuses + owner null counted | `staff-dashboard.api.test.ts` | **Pass** |
+| SD-API-02 | AC-16 | My active calculation | only active + owner=current authenticated user | same | **Pass** |
+| SD-API-03 | AC-16 | Counts by status | all eight keys present; exact DB counts, zeros included | same | **Pass** |
+| SD-API-04 | AC-16 | Active IT Priority grouping | High/Medium/Low/null counts exact; terminal excluded | same | **Pass** |
+| SD-API-05 | AC-17 | My Active Actions | assignee=current + Planned/In Progress + active parent + current workflow cycle only, top 5 updated-desc/id-desc | same | **Pass** |
+| SD-API-06 | AC-17 | Recently Updated Tickets | active top 5 by updatedAt desc/id desc | same | **Pass** |
+| SD-API-11 | AC-17 | Urgent Tickets | active `itPriority=High` only, top 5 by updatedAt desc/id desc | same | **Pass** |
+| SD-API-12 | AC-22 | Staff Dashboard dependency failure | `500 STAFF_DASHBOARD_FAILED`; safe generic message; no internal error detail leaks | same | **Pass** |
+| SD-API-07 | AC-16/17 | Empty DB/query result | `200` zeros/empty arrays | same | **Pass** |
+| SD-API-08 | AC-18 | Administrator loads Staff dashboard | allowed with same operational calculations scoped to authenticated admin for `my*` fields | same | **Pass** |
+| SD-API-09 | AC-18 | Requester calls Staff dashboard | `403`; no operational data | same / authorization | **Pass** |
+| SD-API-10 | AC-16 | Selected displayed metrics vs direct Prisma/SQL query | values exactly match authoritative query evidence | same | **Pass** |
 
 ## 9. Migration / Seed Tests
 
@@ -355,11 +356,11 @@ These tests intentionally bypass normal UI controls.
 
 | Test ID | AC | UI behavior | Final |
 |---|---|---|---|
-| SD-UI-01 | AC-16 | operational cards/status/priority values render with text labels | Planned |
-| SD-UI-02 | AC-17 | My Active Actions plus separate Recently Updated and Urgent lists render with correct labels | Planned |
-| SD-UI-03 | AC-17 | metric/list drill-down sends correct Queue/Ticket context | Planned |
-| SD-UI-04 | AC-16/22 | loading/zero/empty/forbidden/safe-failure states | Planned |
-| SD-UI-05 | AC-18 | Administrator can render Staff Dashboard under approved role path | Planned |
+| SD-UI-01 | AC-16 | operational cards/status/priority values render with text labels | **Pass — `StaffDashboard.test.tsx`** |
+| SD-UI-02 | AC-17 | My Active Actions plus separate Recently Updated and Urgent lists render with correct labels | **Pass — `StaffDashboard.test.tsx`** |
+| SD-UI-03 | AC-17 | metric/list drill-down sends correct Queue/Ticket context | **Pass — `StaffDashboard.test.tsx`** |
+| SD-UI-04 | AC-16/22 | loading/zero/empty/forbidden/safe-failure states | **Pass — `StaffDashboard.test.tsx`** |
+| SD-UI-05 | AC-18 | Administrator can render Staff Dashboard under approved role path | **Pass — `AuthenticatedShell.test.tsx`** |
 
 ## 12. Responsive / Accessibility / Visual Tests
 
@@ -368,7 +369,7 @@ Playwright evidence widths remain 1280x900, approximately 820x1000, and approxim
 | Test ID | AC | Check | Expected | Final |
 |---|---|---|---|---|
 | V4-01 | AC-23 | Requester Dashboard at 1280/820/390 | no page horizontal overflow; cards/lists readable | Planned |
-| V4-02 | AC-23 | Staff Dashboard at 1280/820/390 | no clipping/overlap; lists stack safely | Planned |
+| V4-02 | AC-23 | Staff Dashboard at 1280/820/390 | no clipping/overlap; lists stack safely | **Pass — Playwright real-browser test `e2e/lab-04/staff-dashboard-responsive.spec.ts` verifies 1280/820/390, grid stacking, action-button width, and no horizontal overflow** |
 | V4-03 | AC-23 | Staff Ticket Detail Actions Taken at 1280/820/390 | create/edit/read-only controls usable, long text wraps | **Partial — desktop/tablet manual QA passed; <=420px rules implemented; exact 390 evidence deferred to Issue #58** |
 | V4-04 | AC-23 | Requester Ticket Detail Actions Taken at 1280/820/390 | read-only Action list readable | **Partial — read-only component behavior passes; final multi-width browser evidence deferred to Issue #58** |
 | V4-05 | AC-23 | visible keyboard focus for Dashboard links/Action controls | focus style visible | Planned |

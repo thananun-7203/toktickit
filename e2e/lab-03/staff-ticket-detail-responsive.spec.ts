@@ -42,6 +42,7 @@ const ticket = {
 
 async function mockStaffDetailApis(page: Page) {
   await page.route("**/api/v1/auth/me", async (route) => route.fulfill({ json: staffUser }));
+  await page.route("**/api/v1/staff/dashboard", async (route) => route.fulfill({ json: { metrics: { unassignedActiveTickets: 0, myActiveTickets: 0, byStatus: {}, activeByItPriority: {} }, myActiveActions: [], recentlyUpdatedTickets: [], urgentTickets: [] } }));
   await page.route("**/api/v1/categories", async (route) => route.fulfill({ json: [{ id: 1, name: "Access / Permissions" }] }));
   await page.route("**/api/v1/related-systems", async (route) => route.fulfill({ json: [{ id: 2, name: "Internal Portal" }] }));
   await page.route("**/api/v1/staff/assignees", async (route) => route.fulfill({ json: assignees }));
@@ -90,6 +91,8 @@ test("V-04/V-08 Staff Ticket Detail stays usable and communication visibility is
   await mockStaffDetailApis(page);
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/");
+  await page.getByRole("button", { name: "Ticket Queue" }).click();
+  await expect(page.getByRole("heading", { name: "Ticket Queue" })).toBeVisible();
   await page.getByRole("button", { name: `Open ${ticket.ticketNumber}` }).click();
   await expect(page.getByRole("heading", { name: ticket.ticketNumber })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Operational Controls/i })).toBeVisible();
@@ -99,7 +102,7 @@ test("V-04/V-08 Staff Ticket Detail stays usable and communication visibility is
   await expectNoHorizontalOverflow(page);
 
   await page.setViewportSize({ width: 820, height: 1000 });
-  await expect(page.locator(".staff-detail-grid")).toHaveCSS("grid-template-columns", /.+/);
+  await expect(page.locator(".staff-detail-grid").first()).toHaveCSS("grid-template-columns", /.+/);
   await expect(page.getByText("Visible to Requester", { exact: true })).toBeVisible();
   await expect(page.getByText("Not visible to Requester", { exact: true })).toBeVisible();
   await expect(page.getByText(/Internal Notes .* not visible to Requester/i)).toBeVisible();

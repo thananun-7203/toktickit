@@ -16,8 +16,8 @@ Issue plan prepared before implementation:
 | #51 | Actions Taken Data Model, Migration & Seed | PR #61 approved and merged to `lab4-staging`; Issue #51 closed |
 | #52 | Actions Taken API & Authorization | PR #62 approved and merged to `lab4-staging`; Issue #52 closed |
 | #53 | Actions Taken Ticket Detail UI | PR #63 approved and merged to `lab4-staging`; Issue #53 complete |
-| #54 | Final Ticket Workflow & Resolution Rules | PR #64 open; Round 2 Re-review pending |
-| #55 | IT Staff Dashboard | Not started |
+| #54 | Final Ticket Workflow & Resolution Rules | PR #64 approved and merged to `lab4-staging`; Issue #54 complete |
+| #55 | IT Staff Dashboard | Implementation verified locally; PR pending opening |
 | #56 | Requester Dashboard | Not started |
 | #57 | Security, Regression & End-to-End Verification | Not started |
 | #58 | Accessibility, Responsive & Visual QA | Not started |
@@ -323,7 +323,62 @@ Issue #53 implementation commit `6d60a93` was verified before evidence synchroni
 - After human authorization, Round 1 fixes were implemented in the working branch and verified. `Tanaboonnnnn` approved exact head `2f5087031efbc72b67903c1da56218b5cffe6a5c`; PR #63 was subsequently merged to `lab4-staging` as `0b636c2d55d3ee849882061de6a38184228d5926`.
 - Issue #53 is **complete**; exact 390px browser evidence remains deferred to Issue #58 as documented above.
 
-## 6. Issue #54 — Final Ticket Workflow & Resolution Rules
+## 6. Issue #55 — IT Staff Dashboard
+
+### Issue
+
+- GitHub Issue: `#55 — [Lab 4] Issue_6: IT Staff Dashboard`
+- Feature branch: `feature/6-staff-dashboard`
+- Base: `lab4-staging`
+- Baseline: PR #64 merge commit `1a4c72d`
+- Implementation is prepared for PR creation after local verification.
+
+### Human-Approved Mockup Checkpoint
+
+- The Staff Dashboard mockup was reviewed against the existing TokTickIT shell, Staff Ticket Queue, Staff Ticket Detail, and Zen Green styling.
+- The student explicitly approved the mockup before real frontend/API implementation.
+- Preview-only state controls are not part of the production Dashboard UI.
+
+### Implemented Dashboard
+
+- Added `GET /api/v1/staff/dashboard` for IT Staff and Administrator roles.
+- Dashboard metrics are calculated server-side from authoritative PostgreSQL data: Unassigned Active Tickets, My Active Tickets, all eight Ticket statuses, and active IT Priority groups including `Not recorded`.
+- Added current-user Active Actions with current `workflowCycle`, active parent Ticket, `Planned`/`In Progress` status, and deterministic top-5 ordering.
+- Added separate `Recently Updated` active Ticket list and `Urgent Tickets` list restricted to active High IT Priority Tickets, both deterministic top-5 summaries.
+- Added safe loading, zero/empty, forbidden, and failure/Retry states.
+- Dashboard actionable metrics and rows drill into the existing Ticket Queue or Ticket Detail rather than duplicating full Ticket-edit controls.
+- Extended the existing Ticket Queue with the documented `status=active` filter so Dashboard drill-down can reuse the existing Queue implementation.
+- Updated role navigation so IT Staff and Administrator land on Dashboard while Ticket Queue/User Management remain reachable.
+- Updated the authenticated-shell regression tests to preserve the Lab 3 role navigation contract with the new Dashboard landing behavior.
+
+### Verification
+
+- Client full Vitest regression: **100/100 passing (13/13 files)**.
+- Staff Dashboard UI + authenticated-shell targeted run: **10/10 passing (2/2 files)**; the new Administrator Dashboard → Ticket Detail → Back regression is included.
+- Server Staff Dashboard API: **4/4 passing (1/1 file)** against a fresh disposable PostgreSQL database; the targeted run is isolated because the broader multi-file invocation can interfere through shared test fixtures.
+- Lab 4 seed regression on the same disposable database: **6/6 passing (2/2 files)**.
+- Server TypeScript build: **Pass**.
+- Prisma validate: **Pass**.
+- Client production build: **Pass**.
+- `git diff --check`: **Pass**.
+- Playwright real-browser responsive verification: **1/1 passing** at exact **1280×900, 820×1000, and 390×844** CSS viewport sizes; no horizontal overflow and expected dashboard stacking/button sizing verified.
+- A broader server multi-file invocation was attempted but showed cross-file interference on a shared test database; those failures were not used as Issue #55 acceptance evidence. Issue #55 evidence above uses the isolated Staff Dashboard suite on a fresh disposable test database.
+- Development database was not reset for verification.
+
+### Browser Verification
+
+- Added `e2e/lab-04/staff-dashboard-responsive.spec.ts` with a dedicated UI-only Playwright configuration so responsive verification can run in a real Chromium browser without changing the development database.
+- Verified exact viewport widths **1280, 820, and 390 CSS pixels**, including no horizontal overflow, two-column desktop metrics, single-column tablet/mobile grids, and full-width mobile work buttons.
+- No authentication bypass was added to the application; the responsive test mocks only the authenticated user and Staff Dashboard read response at the browser-test boundary.
+
+### Pull Request / Review
+
+- PR: `#65` — `[Lab 4] Issue 6: IT Staff Dashboard`.
+- Round 1 review by `Tanaboonnnnn`: **Changes Requested**. The requested fixes are implemented on the same `feature/6-staff-dashboard` branch: Admin navigation regression, Recently Updated predicate test, Urgent top-5/active/High/deterministic-order negative coverage, My Active Actions isolation/current-cycle/terminal/limit/order coverage, centralized active-status source, `lab4-staging` CI trigger, exact responsive Playwright verification, and safe-500 API regression.
+- Re-review is required after the fix commit is pushed; do not merge until the student explicitly authorizes it.
+- Do not merge until explicitly authorized by the student.
+
+## 7. Issue #54 — Final Ticket Workflow & Resolution Rules
 
 ### Issue
 
@@ -331,7 +386,7 @@ Issue #53 implementation commit `6d60a93` was verified before evidence synchroni
 - Feature branch: `feature/5-final-ticket-workflow-resolution`
 - Base: `lab4-staging`
 - Baseline: Issue #53 merge commit `0b636c2d55d3ee849882061de6a38184228d5926`
-- PR: **#64**; current review-fix HEAD is `b72f10f` and a further re-review is pending after the latest documentation and verification cleanup.
+- PR: **#64**; final reviewed HEAD `6fe1db27af293dc4849a50fae516985967a2b100`; `Tanaboonnnnn` approved the final re-review and the PR was merged to `lab4-staging` as `1a4c72d`.
 
 ### Human-Approved Mockup Checkpoint
 
@@ -361,15 +416,15 @@ Issue #53 implementation commit `6d60a93` was verified before evidence synchroni
 - Client production build: **Pass**.
 - Test verification used isolated PostgreSQL database `toktickit_lab4_test`; no development database reset was used for the test suite.
 - `git diff --check`: **Pass** before final local verification.
-- No hosted CI status is claimed for this review-fix commit; the evidence above is local exact-head verification.
+- No hosted CI status was claimed for the review-fix commit; the evidence above is local exact-head verification.
 
-### Remaining Before PR
+### Final Review / Merge State
 
-- Manual browser verification of the real Ticket Detail workflow states against the approved mockup.
-- Final documentation synchronization for the exact implementation commit/PR head.
-- Human authorization to commit/push and open PR #54 implementation PR; when opened, request review from `Tanaboonnnnn`.
+- `Tanaboonnnnn` final re-review at exact head `6fe1db27af293dc4849a50fae516985967a2b100`: **Approved**.
+- PR #64 was merged into `lab4-staging` as `1a4c72d`.
+- Issue #54 is complete; final exact 390px browser evidence remains deferred to Issue #58.
 
-## 7. Pull Requests I Authored — Lab 4
+## 8. Pull Requests I Authored — Lab 4
 
 Populate only from actual PRs.
 
@@ -379,10 +434,10 @@ Populate only from actual PRs.
 | [#61](https://github.com/thananun-7203/toktickit/pull/61) | `feature/2-actions-data-foundation` | `lab4-staging` | Approved by `Tanaboonnnnn` at `899b7f0` after source-of-truth clarification | Merged (`d3a06ac`) |
 | [#62](https://github.com/thananun-7203/toktickit/pull/62) | `feature/3-actions-api-authorization` | `lab4-staging` | Approved by `Tanaboonnnnn` at `a4d1376` after Round 1 fixes | Merged (`6b77a33`) |
 | [#63](https://github.com/thananun-7203/toktickit/pull/63) | `feature/4-actions-ticket-detail-ui` | `lab4-staging` | Approved by `Tanaboonnnnn` after Round 1 fixes | Merged (`0b636c2`) |
+| #64 | `feature/5-final-ticket-workflow-resolution` | `lab4-staging` | Approved by `Tanaboonnnnn` at final reviewed head `6fe1db2` | Merged (`1a4c72d`) |
 
-Issue #54 is tracked in **PR #64** against `lab4-staging`; merge remains pending peer approval.
 
-## 8. Review Standard
+## 9. Review Standard
 
 Each Lab 4 implementation PR should be reviewed against:
 

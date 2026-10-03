@@ -91,6 +91,14 @@ describe("Lab 3 IT Staff Ticket Queue", () => {
     })));
   });
 
+  it("UI-Q-02A: accepts Dashboard drill-down context as initial Queue filters", async () => {
+    const getQueue = vi.spyOn(api, "getStaffQueue").mockResolvedValue(response([TICKET]));
+    render(<StaffTicketQueue onOpenTicket={() => {}} initialParams={{ owner: "unassigned", status: "active" }} />);
+    await waitFor(() => expect(getQueue).toHaveBeenLastCalledWith(expect.objectContaining({ owner: "unassigned", status: "active", page: 1 })));
+    expect(screen.getByLabelText("Status")).toHaveValue("active");
+    expect(screen.getByLabelText("Owner")).toHaveValue("unassigned");
+  });
+
   it("UI-Q-03: renders pagination metadata and requests the next page", async () => {
     const getQueue = vi.spyOn(api, "getStaffQueue")
       .mockResolvedValueOnce({ ...response([TICKET], 1, 2), totalItems: 2 })

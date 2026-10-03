@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentProps } from "react";
 import { checkSystem, Category } from "./api.js";
 import { useAuth } from "./AuthContext.js";
 import Login from "./Login.js";
@@ -9,9 +9,10 @@ import TicketDetail from "./TicketDetail.js";
 import StaffTicketQueue from "./StaffTicketQueue.js";
 import StaffTicketDetail from "./StaffTicketDetail.js";
 import UserManagement from "./UserManagement.js";
+import StaffDashboard from "./StaffDashboard.js";
 
 type UiState = "idle" | "loading" | "success" | "error";
-type View = "home" | "create" | "my-tickets" | "ticket-detail" | "staff-queue" | "staff-ticket-detail" | "admin-users";
+type View = "home" | "create" | "my-tickets" | "ticket-detail" | "staff-dashboard" | "staff-queue" | "staff-ticket-detail" | "admin-users";
 
 function AuthLoading() {
   return (
@@ -71,11 +72,12 @@ export default function App() {
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [logoutBusy, setLogoutBusy] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
+  const [staffQueueParams, setStaffQueueParams] = useState<ComponentProps<typeof StaffTicketQueue>["initialParams"]>();
 
   useEffect(() => {
     if (user?.id) {
       setSelectedTicketId(null);
-      setView(user.role === "IT_STAFF" ? "staff-queue" : user.role === "ADMINISTRATOR" ? "admin-users" : "my-tickets");
+      setView(user.role === "IT_STAFF" || user.role === "ADMINISTRATOR" ? "staff-dashboard" : "my-tickets");
       setMobileMenuOpen(false);
       setShowChangePassword(false);
     }
@@ -133,6 +135,19 @@ export default function App() {
     setMobileMenuOpen(false);
   }
 
+  function showStaffDashboard() {
+    setSelectedTicketId(null);
+    setView("staff-dashboard");
+    setMobileMenuOpen(false);
+  }
+
+  function showStaffQueue(params?: ComponentProps<typeof StaffTicketQueue>["initialParams"]) {
+    setSelectedTicketId(null);
+    setView("staff-queue");
+    setStaffQueueParams(params);
+    setMobileMenuOpen(false);
+  }
+
   async function handleCheck() {
     setState("loading");
     try {
@@ -172,8 +187,13 @@ export default function App() {
                     <button type="button" role="menuitem" onClick={showSystemCheck}><span aria-hidden="true">⌁</span> Check System</button>
                   </>
                 )}
+                {(isStaff || isAdmin) && (
+                  <button type="button" role="menuitem" onClick={showStaffDashboard}>
+                    <span aria-hidden="true">⌂</span> Dashboard
+                  </button>
+                )}
                 {isStaff && (
-                  <button type="button" role="menuitem" onClick={() => { setView("staff-queue"); setSelectedTicketId(null); setMobileMenuOpen(false); }}>
+                  <button type="button" role="menuitem" onClick={() => showStaffQueue()}>
                     <span aria-hidden="true">≡</span> Ticket Queue
                   </button>
                 )}
@@ -212,7 +232,10 @@ export default function App() {
           )}
           {isStaff && (
             <nav className="app-nav-links" aria-label="Primary navigation">
-              <button className={`app-nav-button ${view === "staff-queue" || view === "staff-ticket-detail" ? "active" : ""}`} onClick={() => { setView("staff-queue"); setSelectedTicketId(null); }}>
+              <button className={`app-nav-button ${view === "staff-dashboard" ? "active" : ""}`} onClick={showStaffDashboard}>
+                <span className="nav-icon" aria-hidden="true">⌂</span> Dashboard
+              </button>
+              <button className={`app-nav-button ${view === "staff-queue" || view === "staff-ticket-detail" ? "active" : ""}`} onClick={() => showStaffQueue()}>
                 <span className="nav-icon" aria-hidden="true">≡</span> Ticket Queue
               </button>
             </nav>
@@ -220,6 +243,9 @@ export default function App() {
 
           {isAdmin && (
             <nav className="app-nav-links" aria-label="Primary navigation">
+              <button className={`app-nav-button ${view === "staff-dashboard" ? "active" : ""}`} onClick={showStaffDashboard}>
+                <span className="nav-icon" aria-hidden="true">⌂</span> Dashboard
+              </button>
               <button className={`app-nav-button ${view === "admin-users" ? "active" : ""}`} onClick={() => { setView("admin-users"); setSelectedTicketId(null); }}>
                 <span className="nav-icon" aria-hidden="true">◎</span> User Management
               </button>
@@ -252,13 +278,24 @@ export default function App() {
             {logoutError}
           </div>
         )}
-        {isStaff && view === "staff-queue" ? (
-          <StaffTicketQueue onOpenTicket={(ticketId) => { setSelectedTicketId(ticketId); setView("staff-ticket-detail"); }} />
+        {(isStaff || isAdmin) && view === "staff-dashboard" ? (
+          <StaffDashboard
+            onOpenTicket={(ticketId) => { setSelectedTicketId(ticketId); setView("staff-ticket-detail"); }}
+            onOpenQueue={showStaffQueue}
+          />
+        ) : (isStaff || isAdmin) && view === "staff-queue" ? (
+          <StaffTicketQueue initialParams={staffQueueParams} onOpenTicket={(ticketId) => { setSelectedTicketId(ticketId); setView("staff-ticket-detail"); }} />
         ) : isStaff && view === "staff-ticket-detail" && selectedTicketId !== null ? (
           <StaffTicketDetail
             ticketId={selectedTicketId}
             currentUserId={user.id}
             onBack={() => { setSelectedTicketId(null); setView("staff-queue"); }}
+          />
+        ) : isAdmin && view === "staff-ticket-detail" && selectedTicketId !== null ? (
+          <StaffTicketDetail
+            ticketId={selectedTicketId}
+            currentUserId={user.id}
+            onBack={() => { setSelectedTicketId(null); setView("staff-dashboard"); }}
           />
         ) : isAdmin && view === "admin-users" ? (
           <UserManagement currentUserId={user.id} />

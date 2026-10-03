@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "../../src/App.js";
 import { AuthProvider } from "../../src/AuthContext.js";
@@ -34,6 +34,17 @@ describe("Lab 3 authenticated application shell", () => {
       items: [], page: 1, pageSize: 10, totalItems: 0, totalPages: 0,
     });
     vi.spyOn(api, "getStaffAssignees").mockResolvedValue([]);
+    vi.spyOn(api, "getStaffDashboard").mockResolvedValue({
+      metrics: {
+        unassignedActiveTickets: 0,
+        myActiveTickets: 0,
+        byStatus: { New: 0, Open: 0, "In Progress": 0, "Waiting for Requester": 0, Resolved: 0, Closed: 0, Reopened: 0, Cancelled: 0 },
+        activeByItPriority: { High: 0, Medium: 0, Low: 0, "Not recorded": 0 },
+      },
+      myActiveActions: [],
+      recentlyUpdatedTickets: [],
+      urgentTickets: [],
+    });
     vi.spyOn(api, "getAdminUsers").mockResolvedValue([]);
   });
 
@@ -94,24 +105,67 @@ describe("Lab 3 authenticated application shell", () => {
     expect(screen.queryByRole("heading", { name: /Sign in to your account/i })).not.toBeInTheDocument();
   });
 
-  it("shows IT Staff Ticket Queue navigation without Requester actions", async () => {
+  it("routes IT Staff to the Staff Dashboard while keeping Ticket Queue navigation", async () => {
     vi.spyOn(api, "getCurrentUser").mockResolvedValue({ ...REQUESTER, id: 302, name: "Narin Support", role: "IT_STAFF" });
     renderApp();
     const nav = await screen.findByRole("navigation", { name: /Primary navigation/i });
+    expect(within(nav).getByRole("button", { name: /Dashboard/i })).toBeInTheDocument();
     expect(within(nav).getByRole("button", { name: /Ticket Queue/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /Ticket Queue/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Dashboard/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Create Ticket/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /My Tickets/i })).not.toBeInTheDocument();
   });
 
-  it("routes Administrator to User Management without Requester navigation", async () => {
+  it("routes Administrator to the Staff Dashboard while keeping User Management navigation", async () => {
     vi.spyOn(api, "getCurrentUser").mockResolvedValue({ ...REQUESTER, id: 303, role: "ADMINISTRATOR" });
     renderApp();
-    expect(await screen.findByRole("button", { name: /Create User/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /User Management/i })).toBeInTheDocument();
+    await waitFor(() => expect(api.getStaffDashboard).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole("heading", { name: /Dashboard/i })).toBeInTheDocument();
     const nav = screen.getByRole("navigation", { name: /Primary navigation/i });
+    expect(within(nav).getByRole("button", { name: /Dashboard/i })).toBeInTheDocument();
     expect(within(nav).getByRole("button", { name: /User Management/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Create Ticket/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /My Tickets/i })).not.toBeInTheDocument();
+  });
+
+  it("lets Administrator drill from Dashboard to Ticket Detail and return to Dashboard", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, "getCurrentUser").mockResolvedValue({ ...REQUESTER, id: 303, role: "ADMINISTRATOR" });
+    vi.spyOn(api, "getStaffDashboard").mockResolvedValue({
+      metrics: {
+        unassignedActiveTickets: 1,
+        myActiveTickets: 1,
+        byStatus: { New: 1, Open: 0, "In Progress": 0, "Waiting for Requester": 0, Resolved: 0, Closed: 0, Reopened: 0, Cancelled: 0 },
+        activeByItPriority: { High: 1, Medium: 0, Low: 0, "Not recorded": 0 },
+      },
+      myActiveActions: [],
+      recentlyUpdatedTickets: [{ id: 501, ticketNumber: "TKT-ADMIN-501", summary: "Admin drill-down", status: "New", itPriority: "High", updatedAt: "2026-10-03T10:00:00Z" }],
+      urgentTickets: [{ id: 501, ticketNumber: "TKT-ADMIN-501", summary: "Admin drill-down", status: "New", itPriority: "High", updatedAt: "2026-10-03T10:00:00Z" }],
+    });
+    vi.spyOn(api, "getStaffTicketDetail").mockResolvedValue({
+      id: 501,
+      ticketNumber: "TKT-ADMIN-501",
+      summary: "Admin drill-down",
+      description: "Detail",
+      status: "New",
+      requestedPriority: "Medium",
+      itPriority: "High",
+      version: 1,
+      workflowCycle: 1,
+      requester: { id: 1, name: "Requester", email: "requester@toktick.it" },
+      owner: null,
+      category: { id: 1, name: "Network" },
+      relatedSystem: { id: 1, name: "Portal" },
+      attachments: [],
+      actions: [],
+    } as never);
+    renderApp();
+    await waitFor(() => expect(api.getCurrentUser).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(api.getStaffDashboard).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole("heading", { name: /Dashboard/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /TKT-ADMIN-501/i }));
+    expect(await screen.findByRole("heading", { name: /TKT-ADMIN-501/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Back/i }));
+    expect(await screen.findByRole("heading", { name: /Dashboard/i })).toBeInTheDocument();
   });
 });
