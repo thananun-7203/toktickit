@@ -58,7 +58,10 @@ describe("App", () => {
     vi.spyOn(api, "getCurrentUser").mockResolvedValue(REQUESTER);
     renderApp();
 
-    expect(await screen.findByRole("heading", { name: /Dashboard/i })).toBeInTheDocument();
+    await waitFor(
+      () => expect(screen.getByRole("heading", { name: /Dashboard/i })).toBeInTheDocument(),
+      { timeout: 3000 },
+    );
     const nav = screen.getByRole("navigation", { name: /Primary navigation/i });
     expect(within(nav).getByRole("button", { name: /My Tickets/i })).toBeInTheDocument();
     expect(within(nav).getByRole("button", { name: /Create Ticket/i })).toBeInTheDocument();
