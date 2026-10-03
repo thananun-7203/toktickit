@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentProps } from "react";
-import { checkSystem, Category } from "./api.js";
+import { checkSystem, Category, type AuthUser } from "./api.js";
 import { useAuth } from "./AuthContext.js";
 import Login from "./Login.js";
 import ChangePassword from "./ChangePassword.js";
@@ -10,9 +10,10 @@ import StaffTicketQueue from "./StaffTicketQueue.js";
 import StaffTicketDetail from "./StaffTicketDetail.js";
 import UserManagement from "./UserManagement.js";
 import StaffDashboard from "./StaffDashboard.js";
+import RequesterDashboard from "./RequesterDashboard.js";
 
 type UiState = "idle" | "loading" | "success" | "error";
-type View = "home" | "create" | "my-tickets" | "ticket-detail" | "staff-dashboard" | "staff-queue" | "staff-ticket-detail" | "admin-users";
+type View = "home" | "create" | "my-tickets" | "ticket-detail" | "requester-dashboard" | "staff-dashboard" | "staff-queue" | "staff-ticket-detail" | "admin-users";
 
 function AuthLoading() {
   return (
@@ -64,9 +65,19 @@ function AuthBootstrapError({ message, onRetry }: { message: string; onRetry: ()
 
 export default function App() {
   const { state: authState, user, signOut, refresh, bootstrapError } = useAuth();
+  const requesterMockMode = import.meta.env.DEV && new URLSearchParams(window.location.search).get("mock") === "requester-dashboard";
+  const mockRequester: AuthUser = {
+    id: -1,
+    name: "Requester Preview",
+    email: "requester.preview@example.invalid",
+    role: "REQUESTER",
+    isActive: true,
+    mustChangePassword: false,
+  };
+  const effectiveUser = requesterMockMode ? (user ?? mockRequester) : user;
   const [state, setState] = useState<UiState>("idle");
   const [categories, setCategories] = useState<Category[]>([]);
-  const [view, setView] = useState<View>("my-tickets");
+  const [view, setView] = useState<View>(requesterMockMode ? "requester-dashboard" : "my-tickets");
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -77,14 +88,14 @@ export default function App() {
   useEffect(() => {
     if (user?.id) {
       setSelectedTicketId(null);
-      setView(user.role === "IT_STAFF" || user.role === "ADMINISTRATOR" ? "staff-dashboard" : "my-tickets");
+      setView(user.role === "IT_STAFF" || user.role === "ADMINISTRATOR" ? "staff-dashboard" : "requester-dashboard");
       setMobileMenuOpen(false);
       setShowChangePassword(false);
     }
   }, [user?.id]);
 
-  if (authState === "loading") return <AuthLoading />;
-  if (authState === "error") {
+  if (!requesterMockMode && authState === "loading") return <AuthLoading />;
+  if (!requesterMockMode && authState === "error") {
     return (
       <AuthBootstrapError
         message={bootstrapError ?? "Unable to verify your session. Please try again."}
@@ -92,8 +103,8 @@ export default function App() {
       />
     );
   }
-  if (!user) return <Login />;
-  if (user.mustChangePassword) return <ChangePassword mandatory />;
+  if (!requesterMockMode && !effectiveUser) return <Login />;
+  if (!requesterMockMode && effectiveUser?.mustChangePassword) return <ChangePassword mandatory />;
   if (showChangePassword) {
     return <ChangePassword mandatory={false} onDone={() => setShowChangePassword(false)} onCancel={() => setShowChangePassword(false)} />;
   }
@@ -120,6 +131,12 @@ export default function App() {
   function showMyTickets() {
     setSelectedTicketId(null);
     setView("my-tickets");
+    setMobileMenuOpen(false);
+  }
+
+  function showRequesterDashboard() {
+    setSelectedTicketId(null);
+    setView("requester-dashboard");
     setMobileMenuOpen(false);
   }
 
@@ -159,9 +176,9 @@ export default function App() {
     }
   }
 
-  const isRequester = user.role === "REQUESTER";
-  const isStaff = user.role === "IT_STAFF";
-  const isAdmin = user.role === "ADMINISTRATOR";
+  const isRequester = effectiveUser?.role === "REQUESTER";
+  const isStaff = effectiveUser?.role === "IT_STAFF";
+  const isAdmin = effectiveUser?.role === "ADMINISTRATOR";
 
   return (
     <div className="app-shell">
@@ -182,6 +199,7 @@ export default function App() {
               <div className="mobile-nav-panel" role="menu">
                 {isRequester && (
                   <>
+                    <button type="button" role="menuitem" onClick={showRequesterDashboard}><span aria-hidden="true">⌂</span> Dashboard</button>
                     <button type="button" role="menuitem" onClick={showMyTickets}><span aria-hidden="true">≡</span> My Tickets</button>
                     <button type="button" role="menuitem" onClick={showCreateTicket}><span aria-hidden="true">+</span> Create Ticket</button>
                     <button type="button" role="menuitem" onClick={showSystemCheck}><span aria-hidden="true">⌁</span> Check System</button>
@@ -203,8 +221,8 @@ export default function App() {
                   </button>
                 )}
                 <div className="mobile-nav-user">
-                  <strong>{user.name}</strong>
-                  <span className="role-badge">{user.role.replace("_", " ")}</span>
+                  <strong>{effectiveUser?.name}</strong>
+                  <span className="role-badge">{effectiveUser?.role.replace("_", " ")}</span>
                   <button type="button" onClick={() => { setMobileMenuOpen(false); setShowChangePassword(true); }}>Change Password</button>
                   <button type="button" disabled={logoutBusy} onClick={() => void handleLogout()}>{logoutBusy ? "Logging out…" : "Logout"}</button>
                 </div>
@@ -219,6 +237,9 @@ export default function App() {
 
           {isRequester && (
             <nav className="app-nav-links" aria-label="Primary navigation">
+              <button className={`app-nav-button ${view === "requester-dashboard" ? "active" : ""}`} onClick={showRequesterDashboard}>
+                <span className="nav-icon" aria-hidden="true">⌂</span> Dashboard
+              </button>
               <button className={`app-nav-button ${view === "my-tickets" || view === "ticket-detail" ? "active" : ""}`} onClick={showMyTickets}>
                 <span className="nav-icon" aria-hidden="true">≡</span> My Tickets
               </button>
@@ -253,18 +274,18 @@ export default function App() {
           )}
 
           <details className="user-menu">
-            <summary aria-label={`User menu for ${user.name}`}>
+            <summary aria-label={`User menu for ${effectiveUser?.name}`}>
               <span className="user-avatar" aria-hidden="true">●</span>
               <span className="user-summary-copy">
-                <span className="user-name">{user.name}</span>
-                <span className="user-role">{user.role.replace("_", " ")}</span>
+                <span className="user-name">{effectiveUser?.name}</span>
+                <span className="user-role">{effectiveUser?.role.replace("_", " ")}</span>
               </span>
               <span aria-hidden="true">⌄</span>
             </summary>
             <div className="user-dropdown">
-              <div className="fw-semibold px-2 pt-1">{user.name}</div>
-              <div className="small text-secondary px-2 pb-2">{user.email}</div>
-              <div className="px-2 pb-2"><span className="role-badge">{user.role.replace("_", " ")}</span></div>
+              <div className="fw-semibold px-2 pt-1">{effectiveUser?.name}</div>
+              <div className="small text-secondary px-2 pb-2">{effectiveUser?.email}</div>
+              <div className="px-2 pb-2"><span className="role-badge">{effectiveUser?.role.replace("_", " ")}</span></div>
               <button className="btn btn-light btn-sm" onClick={() => setShowChangePassword(true)}>Change Password</button>
               <button className="btn btn-light btn-sm text-danger" disabled={logoutBusy} onClick={() => void handleLogout()}>{logoutBusy ? "Logging out…" : "Logout"}</button>
             </div>
@@ -278,7 +299,12 @@ export default function App() {
             {logoutError}
           </div>
         )}
-        {(isStaff || isAdmin) && view === "staff-dashboard" ? (
+        {isRequester && view === "requester-dashboard" ? (
+          <RequesterDashboard
+            onOpenTicket={(ticketId) => { setSelectedTicketId(ticketId); setView("ticket-detail"); }}
+            onOpenMyTickets={showMyTickets}
+          />
+        ) : (isStaff || isAdmin) && view === "staff-dashboard" ? (
           <StaffDashboard
             onOpenTicket={(ticketId) => { setSelectedTicketId(ticketId); setView("staff-ticket-detail"); }}
             onOpenQueue={showStaffQueue}
@@ -288,20 +314,20 @@ export default function App() {
         ) : isStaff && view === "staff-ticket-detail" && selectedTicketId !== null ? (
           <StaffTicketDetail
             ticketId={selectedTicketId}
-            currentUserId={user.id}
+            currentUserId={effectiveUser!.id}
             onBack={() => { setSelectedTicketId(null); setView("staff-queue"); }}
           />
         ) : isAdmin && view === "staff-ticket-detail" && selectedTicketId !== null ? (
           <StaffTicketDetail
             ticketId={selectedTicketId}
-            currentUserId={user.id}
+            currentUserId={effectiveUser!.id}
             onBack={() => { setSelectedTicketId(null); setView("staff-dashboard"); }}
           />
         ) : isAdmin && view === "admin-users" ? (
-          <UserManagement currentUserId={user.id} />
+          <UserManagement currentUserId={effectiveUser!.id} />
         ) : !isRequester ? (
           <section className="zen-card content-card role-placeholder">
-            <h1 className="page-title">{user.role === "IT_STAFF" ? "Ticket Queue" : "User Management"}</h1>
+            <h1 className="page-title">{effectiveUser?.role === "IT_STAFF" ? "Ticket Queue" : "User Management"}</h1>
             <p className="page-subtitle">
               Authentication is ready. This role workspace is implemented in the next dedicated Lab 3 issue.
             </p>
