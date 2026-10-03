@@ -200,6 +200,25 @@ export interface StaffDashboardResponse {
   urgentTickets: StaffDashboardTicketSummary[];
 }
 
+export interface RequesterDashboardTicketSummary {
+  id: number;
+  ticketNumber: string;
+  summary: string;
+  status: TicketStatus;
+  itPriority: RequestedPriority | null;
+  updatedAt: string;
+  resolvedAt: string | null;
+}
+
+export interface RequesterDashboardResponse {
+  metrics: {
+    openTickets: number;
+    waitingForYou: number;
+  };
+  recentlyUpdatedTickets: RequesterDashboardTicketSummary[];
+  recentlyResolvedTickets: RequesterDashboardTicketSummary[];
+}
+
 export const ACTION_TAKEN_STATUSES = ["Planned", "In Progress", "Completed", "Cancelled"] as const;
 export type ActionTakenStatus = (typeof ACTION_TAKEN_STATUSES)[number];
 
@@ -626,6 +645,12 @@ export async function postInternalNote(ticketId: number, content: string): Promi
 export async function getStaffDashboard(): Promise<StaffDashboardResponse> {
   const res = await apiFetch("/api/v1/staff/dashboard");
   if (!res.ok) throw await responseError(res, "Unable to load Staff Dashboard");
+  return res.json();
+}
+
+export async function getRequesterDashboard(): Promise<RequesterDashboardResponse> {
+  const res = await apiFetch("/api/v1/requester/dashboard");
+  if (!res.ok) throw await responseError(res, "Unable to load Requester Dashboard");
   return res.json();
 }
 

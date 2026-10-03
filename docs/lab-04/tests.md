@@ -257,13 +257,13 @@ The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + act
 
 | Test ID | AC | Scenario | Expected | Planned file | Final |
 |---|---|---|---|---|---|
-| RD-API-01 | AC-14 | Requester with mixed owned statuses | Open/Waiting counts exactly match BR-31/32 | `requester-dashboard.api.test.ts` | Planned |
-| RD-API-02 | AC-14 | Another Requester has many Tickets | none influence current Requester counts/lists | same | Planned |
-| RD-API-03 | AC-14 | Recently Updated order | top 5 owned by `updatedAt DESC,id DESC` | same | Planned |
-| RD-API-04 | AC-14 | Recently Resolved order | owned Resolved/Closed with non-null resolvedAt only, top 5 by resolvedAt desc/id desc; legacy null excluded | same | Planned |
-| RD-API-05 | AC-15 | Requester has zero Tickets | `200`, counts 0, arrays empty | same | Planned |
-| RD-API-06 | AC-18 | Staff/Admin calls Requester dashboard | `403` unless endpoint policy explicitly restricts to Requester as specified | same / authorization | Planned |
-| RD-API-07 | AC-15/18 | No session/password gate | existing `401`/`403 PASSWORD_CHANGE_REQUIRED` semantics | same | Planned |
+| RD-API-01 | AC-14 | Requester with mixed owned statuses | Open/Waiting counts exactly match BR-31/32 | `requester-dashboard.api.test.ts` | **Pass — 5/5 requester dashboard API tests** |
+| RD-API-02 | AC-14 | Another Requester has many Tickets | none influence current Requester counts/lists | same | **Pass** |
+| RD-API-03 | AC-14 | Recently Updated order | top 5 owned by `updatedAt DESC,id DESC` | same | **Pass** |
+| RD-API-04 | AC-14 | Recently Resolved order | owned Resolved/Closed with non-null resolvedAt only, top 5 by resolvedAt desc/id desc; legacy null excluded | same | **Pass** |
+| RD-API-05 | AC-15 | Requester has zero Tickets | `200`, counts 0, arrays empty | same | **Pass** |
+| RD-API-06 | AC-18 | Staff/Admin calls Requester dashboard | `403` unless endpoint policy explicitly restricts to Requester as specified | same / authorization | **Pass** |
+| RD-API-07 | AC-15/18 | No session/password gate | existing `401`/`403 PASSWORD_CHANGE_REQUIRED` semantics | same | **Pass** |
 
 ## 8. Staff Dashboard API Tests
 
@@ -347,10 +347,10 @@ These tests intentionally bypass normal UI controls.
 
 | Test ID | AC | UI behavior | Final |
 |---|---|---|---|
-| RD-UI-01 | AC-14 | exact metric labels/values and recent lists render | Planned |
-| RD-UI-02 | AC-15 | zero/empty states render intentionally | Planned |
-| RD-UI-03 | AC-15 | Ticket rows/drill-down open Requester Ticket Detail | Planned |
-| RD-UI-04 | AC-15/22 | loading and safe-failure Retry behavior | Planned |
+| RD-UI-01 | AC-14 | exact metric labels/values and recent lists render | **Pass — `RequesterDashboard.test.tsx`** |
+| RD-UI-02 | AC-15 | zero/empty states render intentionally | **Pass — `RequesterDashboard.test.tsx`** |
+| RD-UI-03 | AC-15 | Ticket rows/drill-down open Requester Ticket Detail | **Pass — `RequesterDashboard.test.tsx`** |
+| RD-UI-04 | AC-15/22 | loading and safe-failure Retry behavior | **Pass — `RequesterDashboard.test.tsx`** |
 
 ### 11.4 Staff Dashboard — `client/tests/lab-04/StaffDashboard.test.tsx`
 
@@ -368,7 +368,7 @@ Playwright evidence widths remain 1280x900, approximately 820x1000, and approxim
 
 | Test ID | AC | Check | Expected | Final |
 |---|---|---|---|---|
-| V4-01 | AC-23 | Requester Dashboard at 1280/820/390 | no page horizontal overflow; cards/lists readable | Planned |
+| V4-01 | AC-23 | Requester Dashboard at 1280/820/390 | no page horizontal overflow; cards/lists readable | **Pass — Playwright `requester-dashboard-responsive.spec.ts`** |
 | V4-02 | AC-23 | Staff Dashboard at 1280/820/390 | no clipping/overlap; lists stack safely | **Pass — Playwright real-browser test `e2e/lab-04/staff-dashboard-responsive.spec.ts` verifies 1280/820/390, grid stacking, action-button width, and no horizontal overflow** |
 | V4-03 | AC-23 | Staff Ticket Detail Actions Taken at 1280/820/390 | create/edit/read-only controls usable, long text wraps | **Partial — desktop/tablet manual QA passed; <=420px rules implemented; exact 390 evidence deferred to Issue #58** |
 | V4-04 | AC-23 | Requester Ticket Detail Actions Taken at 1280/820/390 | read-only Action list readable | **Partial — read-only component behavior passes; final multi-width browser evidence deferred to Issue #58** |

@@ -34,6 +34,11 @@ describe("App", () => {
       totalItems: 0,
       totalPages: 0,
     });
+    vi.spyOn(api, "getRequesterDashboard").mockResolvedValue({
+      metrics: { openTickets: 0, waitingForYou: 0 },
+      recentlyUpdatedTickets: [],
+      recentlyResolvedTickets: [],
+    });
   });
 
   it("shows the Login page when there is no authenticated session", async () => {
@@ -49,11 +54,11 @@ describe("App", () => {
     expect(screen.queryByText(/Development Requester/i)).not.toBeInTheDocument();
   });
 
-  it("renders authenticated Requester navigation and lands on My Tickets", async () => {
+  it("renders authenticated Requester navigation and lands on the Requester Dashboard", async () => {
     vi.spyOn(api, "getCurrentUser").mockResolvedValue(REQUESTER);
     renderApp();
 
-    expect(await screen.findByRole("heading", { name: /My Tickets/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /Dashboard/i })).toBeInTheDocument();
     const nav = screen.getByRole("navigation", { name: /Primary navigation/i });
     expect(within(nav).getByRole("button", { name: /My Tickets/i })).toBeInTheDocument();
     expect(within(nav).getByRole("button", { name: /Create Ticket/i })).toBeInTheDocument();

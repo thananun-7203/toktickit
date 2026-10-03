@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentProps } from "react";
-import { checkSystem, Category, type AuthUser } from "./api.js";
+import { checkSystem, Category } from "./api.js";
 import { useAuth } from "./AuthContext.js";
 import Login from "./Login.js";
 import ChangePassword from "./ChangePassword.js";
@@ -65,19 +65,10 @@ function AuthBootstrapError({ message, onRetry }: { message: string; onRetry: ()
 
 export default function App() {
   const { state: authState, user, signOut, refresh, bootstrapError } = useAuth();
-  const requesterMockMode = import.meta.env.DEV && new URLSearchParams(window.location.search).get("mock") === "requester-dashboard";
-  const mockRequester: AuthUser = {
-    id: -1,
-    name: "Requester Preview",
-    email: "requester.preview@example.invalid",
-    role: "REQUESTER",
-    isActive: true,
-    mustChangePassword: false,
-  };
-  const effectiveUser = requesterMockMode ? (user ?? mockRequester) : user;
+  const effectiveUser = user;
   const [state, setState] = useState<UiState>("idle");
   const [categories, setCategories] = useState<Category[]>([]);
-  const [view, setView] = useState<View>(requesterMockMode ? "requester-dashboard" : "my-tickets");
+  const [view, setView] = useState<View>("my-tickets");
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -94,8 +85,8 @@ export default function App() {
     }
   }, [user?.id]);
 
-  if (!requesterMockMode && authState === "loading") return <AuthLoading />;
-  if (!requesterMockMode && authState === "error") {
+  if (authState === "loading") return <AuthLoading />;
+  if (authState === "error") {
     return (
       <AuthBootstrapError
         message={bootstrapError ?? "Unable to verify your session. Please try again."}
@@ -103,8 +94,8 @@ export default function App() {
       />
     );
   }
-  if (!requesterMockMode && !effectiveUser) return <Login />;
-  if (!requesterMockMode && effectiveUser?.mustChangePassword) return <ChangePassword mandatory />;
+  if (!effectiveUser) return <Login />;
+  if (effectiveUser.mustChangePassword) return <ChangePassword mandatory />;
   if (showChangePassword) {
     return <ChangePassword mandatory={false} onDone={() => setShowChangePassword(false)} onCancel={() => setShowChangePassword(false)} />;
   }
