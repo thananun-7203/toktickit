@@ -3,9 +3,9 @@ name: CI
 on:
   workflow_dispatch:
   push:
-    branches: [lab2-staging, lab3-staging, "lab2-*", main]
+    branches: [lab2-staging, lab3-staging, lab4-staging, "lab2-*", main]
   pull_request:
-    branches: [lab2-staging, lab3-staging, main]
+    branches: [lab2-staging, lab3-staging, lab4-staging, main]
 
 jobs:
   server:

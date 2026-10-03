@@ -127,4 +127,45 @@ describe("Lab 3 authenticated application shell", () => {
     expect(screen.queryByRole("button", { name: /Create Ticket/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /My Tickets/i })).not.toBeInTheDocument();
   });
+
+  it("lets Administrator drill from Dashboard to Ticket Detail and return to Dashboard", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, "getCurrentUser").mockResolvedValue({ ...REQUESTER, id: 303, role: "ADMINISTRATOR" });
+    vi.spyOn(api, "getStaffDashboard").mockResolvedValue({
+      metrics: {
+        unassignedActiveTickets: 1,
+        myActiveTickets: 1,
+        byStatus: { New: 1, Open: 0, "In Progress": 0, "Waiting for Requester": 0, Resolved: 0, Closed: 0, Reopened: 0, Cancelled: 0 },
+        activeByItPriority: { High: 1, Medium: 0, Low: 0, "Not recorded": 0 },
+      },
+      myActiveActions: [],
+      recentlyUpdatedTickets: [{ id: 501, ticketNumber: "TKT-ADMIN-501", summary: "Admin drill-down", status: "New", itPriority: "High", updatedAt: "2026-10-03T10:00:00Z" }],
+      urgentTickets: [{ id: 501, ticketNumber: "TKT-ADMIN-501", summary: "Admin drill-down", status: "New", itPriority: "High", updatedAt: "2026-10-03T10:00:00Z" }],
+    });
+    vi.spyOn(api, "getStaffTicketDetail").mockResolvedValue({
+      id: 501,
+      ticketNumber: "TKT-ADMIN-501",
+      summary: "Admin drill-down",
+      description: "Detail",
+      status: "New",
+      requestedPriority: "Medium",
+      itPriority: "High",
+      version: 1,
+      workflowCycle: 1,
+      requester: { id: 1, name: "Requester", email: "requester@toktick.it" },
+      owner: null,
+      category: { id: 1, name: "Network" },
+      relatedSystem: { id: 1, name: "Portal" },
+      attachments: [],
+      actions: [],
+    } as never);
+    renderApp();
+    await waitFor(() => expect(api.getCurrentUser).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(api.getStaffDashboard).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole("heading", { name: /Dashboard/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /TKT-ADMIN-501/i }));
+    expect(await screen.findByRole("heading", { name: /TKT-ADMIN-501/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Back/i }));
+    expect(await screen.findByRole("heading", { name: /Dashboard/i })).toBeInTheDocument();
+  });
 });

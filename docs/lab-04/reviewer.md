@@ -353,26 +353,29 @@ Issue #53 implementation commit `6d60a93` was verified before evidence synchroni
 
 ### Verification
 
-- Client full Vitest regression: **99/99 passing (13/13 files)**.
-- Staff Dashboard UI + authenticated-shell + Queue targeted run: **17/17 passing (3/3 files)**.
-- Server Staff Dashboard API + Staff Queue API targeted run: **17/17 passing (2/2 files)** against disposable PostgreSQL `toktickit_issue55_test`.
+- Client full Vitest regression: **100/100 passing (13/13 files)**.
+- Staff Dashboard UI + authenticated-shell targeted run: **10/10 passing (2/2 files)**; the new Administrator Dashboard → Ticket Detail → Back regression is included.
+- Server Staff Dashboard API: **4/4 passing (1/1 file)** against a fresh disposable PostgreSQL database; the targeted run is isolated because the broader multi-file invocation can interfere through shared test fixtures.
 - Lab 4 seed regression on the same disposable database: **6/6 passing (2/2 files)**.
 - Server TypeScript build: **Pass**.
 - Prisma validate: **Pass**.
 - Client production build: **Pass**.
 - `git diff --check`: **Pass**.
-- A broader server all-file invocation was attempted but showed cross-file interference on a shared test database; those failures were not used as Issue #55 acceptance evidence. Issue #55 evidence above uses isolated, targeted verification on the dedicated disposable test database.
+- Playwright real-browser responsive verification: **1/1 passing** at exact **1280×900, 820×1000, and 390×844** CSS viewport sizes; no horizontal overflow and expected dashboard stacking/button sizing verified.
+- A broader server multi-file invocation was attempted but showed cross-file interference on a shared test database; those failures were not used as Issue #55 acceptance evidence. Issue #55 evidence above uses the isolated Staff Dashboard suite on a fresh disposable test database.
 - Development database was not reset for verification.
 
 ### Browser Verification
 
-- Localhost is running in Chrome and the real TokTickIT Login page is open.
-- The remaining browser step requires an interactive Staff sign-in; password entry is not automated by the desktop helper. No authentication bypass was added to the application.
+- Added `e2e/lab-04/staff-dashboard-responsive.spec.ts` with a dedicated UI-only Playwright configuration so responsive verification can run in a real Chromium browser without changing the development database.
+- Verified exact viewport widths **1280, 820, and 390 CSS pixels**, including no horizontal overflow, two-column desktop metrics, single-column tablet/mobile grids, and full-width mobile work buttons.
+- No authentication bypass was added to the application; the responsive test mocks only the authenticated user and Staff Dashboard read response at the browser-test boundary.
 
 ### Pull Request / Review
 
-- PR has not yet been opened in this working state.
-- When opened, request review from `Tanaboonnnnn` immediately.
+- PR: `#65` — `[Lab 4] Issue 6: IT Staff Dashboard`.
+- Round 1 review by `Tanaboonnnnn`: **Changes Requested**. The requested fixes are implemented on the same `feature/6-staff-dashboard` branch: Admin navigation regression, Recently Updated predicate test, Urgent top-5/active/High/deterministic-order negative coverage, My Active Actions isolation/current-cycle/terminal/limit/order coverage, centralized active-status source, `lab4-staging` CI trigger, exact responsive Playwright verification, and safe-500 API regression.
+- Re-review is required after the fix commit is pushed; do not merge until the student explicitly authorizes it.
 - Do not merge until explicitly authorized by the student.
 
 ## 7. Issue #54 — Final Ticket Workflow & Resolution Rules

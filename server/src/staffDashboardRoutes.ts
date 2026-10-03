@@ -6,7 +6,7 @@ import { actionStatusLabel } from "./actionTakenOperations.js";
 
 export const staffDashboardRouter = Router();
 
-const ACTIVE_TICKET_STATUSES = ["New", "Open", "In Progress", "Waiting for Requester", "Reopened"] as const;
+export const ACTIVE_TICKET_STATUSES = ["New", "Open", "In Progress", "Waiting for Requester", "Reopened"] as const;
 const ALL_TICKET_STATUSES = [
   "New",
   "Open",
@@ -88,7 +88,7 @@ staffDashboardRouter.get(
           INNER JOIN "User" assignee ON assignee."id" = a."assigneeId"
           WHERE a."assigneeId" = ${user.id}
             AND a."status" IN ('PLANNED', 'IN_PROGRESS')
-            AND t."status" IN ('New', 'Open', 'In Progress', 'Waiting for Requester', 'Reopened')
+            AND t."status" IN (${Prisma.join(ACTIVE_TICKET_STATUSES)})
             AND a."workflowCycle" = t."workflowCycle"
           ORDER BY a."updatedAt" DESC, a."id" DESC
           LIMIT 5
