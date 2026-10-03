@@ -33,6 +33,11 @@ describe("Lab 3 Login UI", () => {
     vi.spyOn(api, "getTickets").mockResolvedValue({
       items: [], page: 1, pageSize: 10, totalItems: 0, totalPages: 0,
     });
+    vi.spyOn(api, "getRequesterDashboard").mockResolvedValue({
+      metrics: { openTickets: 0, waitingForYou: 0 },
+      recentlyUpdatedTickets: [],
+      recentlyResolvedTickets: [],
+    });
   });
 
   it("renders the approved simple TokTickIT Login mockup without Forgot Password or app navigation", async () => {
@@ -57,7 +62,7 @@ describe("Lab 3 Login UI", () => {
     expect(screen.queryByRole("heading", { name: /Sign in to your account/i })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /^Retry$/i }));
-    expect(await screen.findByRole("heading", { name: /My Tickets/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /Dashboard/i })).toBeInTheDocument();
   });
 
   it("validates required/email fields before calling the Login API", async () => {
@@ -150,7 +155,8 @@ describe("Lab 3 Login UI", () => {
     expect(screen.getByRole("button", { name: /Signing in/i })).toBeDisabled();
 
     resolveLogin({ user: BASE_USER, nextAction: "APPLICATION" });
-    expect(await screen.findByRole("heading", { name: /My Tickets/i })).toBeInTheDocument();
+    await waitFor(() => expect(api.getRequesterDashboard).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole("heading", { name: /Dashboard/i })).toBeInTheDocument();
   });
 
   it("routes an initial-password Login directly to mandatory Change Your Password", async () => {

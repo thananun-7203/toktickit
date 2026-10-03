@@ -27,6 +27,7 @@ import { staffTicketDetailRouter } from "./staffTicketDetailRoutes.js";
 import { adminUserRouter } from "./adminUserRoutes.js";
 import { actionTakenRouter } from "./actionTakenRoutes.js";
 import { staffDashboardRouter } from "./staffDashboardRoutes.js";
+import { requesterDashboardRouter } from "./requesterDashboardRoutes.js";
 
 // The Express app is exported separately from app.listen() (see index.ts) so
 // Supertest can import `app` without opening a port. Do not merge these files.
@@ -44,6 +45,7 @@ app.use(express.json());
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/staff", staffQueueRouter);
 app.use("/api/v1/staff", staffDashboardRouter);
+app.use("/api/v1/requester", requesterDashboardRouter);
 app.use("/api/v1/staff", staffTicketDetailRouter);
 app.use("/api/v1/admin", adminUserRouter);
 app.use("/api/v1", actionTakenRouter);
@@ -240,6 +242,7 @@ app.get(
     }
     if (q.categoryId) where.categoryId = q.categoryId;
     if (q.relatedSystemId) where.relatedSystemId = q.relatedSystemId;
+    if (q.status) where.status = q.status;
 
     const orderBy = toPrismaOrderBy(q.sort);
     const skip = (q.page - 1) * q.pageSize;

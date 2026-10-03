@@ -200,6 +200,25 @@ export interface StaffDashboardResponse {
   urgentTickets: StaffDashboardTicketSummary[];
 }
 
+export interface RequesterDashboardTicketSummary {
+  id: number;
+  ticketNumber: string;
+  summary: string;
+  status: TicketStatus;
+  itPriority: RequestedPriority | null;
+  updatedAt: string;
+  resolvedAt: string | null;
+}
+
+export interface RequesterDashboardResponse {
+  metrics: {
+    openTickets: number;
+    waitingForYou: number;
+  };
+  recentlyUpdatedTickets: RequesterDashboardTicketSummary[];
+  recentlyResolvedTickets: RequesterDashboardTicketSummary[];
+}
+
 export const ACTION_TAKEN_STATUSES = ["Planned", "In Progress", "Completed", "Cancelled"] as const;
 export type ActionTakenStatus = (typeof ACTION_TAKEN_STATUSES)[number];
 
@@ -422,6 +441,7 @@ export interface GetTicketsParams {
   search?: string;
   categoryId?: number;
   relatedSystemId?: number;
+  status?: TicketStatus;
   sort?: "newest" | "oldest" | "summary_asc";
   page?: number;
   pageSize?: number;
@@ -442,6 +462,7 @@ export async function getTickets(
   if (params.search) qs.set("search", params.search);
   if (params.categoryId) qs.set("categoryId", String(params.categoryId));
   if (params.relatedSystemId) qs.set("relatedSystemId", String(params.relatedSystemId));
+  if (params.status) qs.set("status", params.status);
   if (params.sort) qs.set("sort", params.sort);
   if (params.page) qs.set("page", String(params.page));
   if (params.pageSize) qs.set("pageSize", String(params.pageSize));
@@ -626,6 +647,12 @@ export async function postInternalNote(ticketId: number, content: string): Promi
 export async function getStaffDashboard(): Promise<StaffDashboardResponse> {
   const res = await apiFetch("/api/v1/staff/dashboard");
   if (!res.ok) throw await responseError(res, "Unable to load Staff Dashboard");
+  return res.json();
+}
+
+export async function getRequesterDashboard(): Promise<RequesterDashboardResponse> {
+  const res = await apiFetch("/api/v1/requester/dashboard");
+  if (!res.ok) throw await responseError(res, "Unable to load Requester Dashboard");
   return res.json();
 }
 
