@@ -178,7 +178,7 @@ The Issue #54 frontend was implemented only after the student approved the final
 | Disposable PostgreSQL test database | **Pass** — `toktickit_lab4_test`; migrations + seed applied; development DB was not used as the test target |
 | `git diff --check` | **Pass** |
 
-The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + active Action blocking; Completed without a non-blank Result; current-cycle qualification; prior-cycle rejection after Reopen; server-owned `resolvedAt`; Resolved -> Closed preservation; Reopen timestamp/cycle/version changes; stale workflow conflicts; Requester authorization; and Cancelled Actions not blocking a valid Resolve. The regression set also verifies that a Completed Action may retain a recorded follow-up requirement without blocking Resolve. Client tests cover safe Resolution Gate feedback and authoritative Reopen state updates. Full cycle-2 Add Action browser/E2E verification remains part of the later E2E/accessibility gates.
+The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + active Action blocking; Completed without a non-blank Result; Completed with an outstanding follow-up; current-cycle qualification; prior-cycle rejection after Reopen; server-owned `resolvedAt`; Resolved -> Closed preservation; Reopen timestamp/cycle/version changes; stale workflow conflicts; Requester authorization; and Cancelled Actions not blocking a valid Resolve. Client tests cover safe Resolution Gate feedback and authoritative Reopen state updates. Full cycle-2 Add Action browser/E2E verification remains part of the later E2E/accessibility gates.
 
 ## 4. Unit Tests
 
@@ -190,7 +190,7 @@ The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + act
 | AT-U-04 | BR-10 / AC-06 | Completed Result requirement | Blank Result rejected; valid result accepted | `actions-taken.unit.test.ts` | **Pass via AT-API-17 integration — `98b5274`** |
 | AT-U-05 | AC-28 | Immutable original-create fingerprint | same normalized create intent hashes identically; materially changed intent differs | `actions-taken.unit.test.ts` | **Pass — `1d62aa0`** |
 | WF-U-01 | Section 7 / AC-10 | Final Ticket transition matrix | Existing eight-status helper plus Staff Detail API coverage matches approved matrix; Resolve is additionally gate-protected | existing Staff operations + `workflow.api.test.ts` | **Pass — 25/25 targeted Server workflow/detail run** |
-| WF-U-02 | BR-24–BR-30 / AC-11 | Resolution-gate decision | Requires >=1 current-cycle Completed with non-blank Result and zero current-cycle Planned/In Progress; recorded follow-up requirement on a Completed Action does not block Resolve | `workflow.api.test.ts` | **Pass — 10/10 workflow tests** |
+| WF-U-02 | BR-24–BR-30 / AC-11 | Resolution-gate decision | Requires >=1 current-cycle Completed with non-blank Result, zero current-cycle Planned/In Progress, and zero current-cycle non-cancelled outstanding follow-ups | `workflow.api.test.ts` | **Pass — 10/10 workflow tests** |
 | DASH-U-01 | BR-35–BR-41 / AC-16/17 | Staff Dashboard list predicates/order | Recently Updated uses updated-desc; Urgent is High IT Priority + updated-desc | `staff-dashboard.api.test.ts` or helper test | Planned |
 | TIME-U-01 | BR-08 / AC-27 | Action business-time parser/bounds | ISO offsets normalize to same UTC instant; backdate allowed; > server-now+5m rejected | `actions-taken.unit.test.ts` | **Pass — `98b5274`** |
 
@@ -242,8 +242,8 @@ The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + act
 | WF-API-03 | AC-10 | Unknown status | `400`; unchanged | `staff-ticket-detail.api.test.ts` | **Pass — existing Lab 3 regression** |
 | WF-API-04 | AC-11 | Resolve with zero Actions | `409 RESOLUTION_GATE_NOT_MET` | `workflow.api.test.ts` | **Pass — WF-01** |
 | WF-API-05 | AC-11 | Resolve with Completed + Planned/In Progress Action | `409`; unchanged | `workflow.api.test.ts` | **Pass — WF-02** |
-| WF-API-06 | AC-11 | Resolve with >=1 current-cycle Completed with Result and remaining current-cycle Actions only Completed/Cancelled | succeeds; resolvedAt set | `workflow.api.test.ts` | **Pass — WF-04/WF-09** |
-| WF-API-15 | AC-11 | Resolve with current-cycle Completed + non-blank Result + recorded follow-up requirement | succeeds; resolvedAt set; Action follow-up data remains unchanged | `workflow.api.test.ts` | **Pass — WF-10** |
+| WF-API-06 | AC-11 | Resolve with >=1 current-cycle Completed with Result and remaining current-cycle Actions only Completed/Cancelled without outstanding follow-up | succeeds; resolvedAt set | `workflow.api.test.ts` | **Pass — WF-04/WF-09** |
+| WF-API-15 | AC-11 | Resolve with current-cycle Completed + non-blank Result but outstanding follow-up | `409 RESOLUTION_GATE_NOT_MET`; unchanged | `workflow.api.test.ts` | **Pass — WF-10** |
 | WF-API-07 | AC-11 | Requester directly calls Staff status endpoint | `403`; gate cannot be bypassed | `workflow.api.test.ts` | **Pass — WF-08** |
 | WF-API-08 | AC-12 | Requester advisory indication then formal Reopened | indication remains advisory; Reopened clears resolution timestamps and preserves historical Actions | `staff-ticket-detail.api.test.ts` + `workflow.api.test.ts` | **Pass — existing ST-13 + WF-06** |
 | WF-API-09 | AC-13 | Two concurrent valid transitions from same Ticket version | at most one commits; stale loser `409 STALE_TICKET_STATE` | same | Planned |

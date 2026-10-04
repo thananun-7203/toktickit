@@ -20,6 +20,7 @@ describe("Lab 4 Requester Dashboard API", () => {
   let requesterCookie: string;
   let staffCookie: string;
   let adminCookie: string;
+  let terminalRecentlyUpdatedTicketId = -1;
 
   beforeAll(async () => {
     const prisma = getPrisma();
@@ -54,7 +55,7 @@ describe("Lab 4 Requester Dashboard API", () => {
       { status: "Waiting for Requester", offset: 240_000, priority: "High" },
       { status: "Reopened", offset: 300_000, priority: "Medium" },
       { status: "Resolved", offset: 360_000, priority: "Low", resolvedOffset: 90_000 },
-      { status: "Closed", offset: 420_000, priority: "Medium", resolvedOffset: 30_000 },
+      { status: "Closed", offset: -60_000, priority: "Medium", resolvedOffset: 30_000 },
       { status: "Resolved", offset: 480_000, priority: "High", resolvedOffset: 180_000 },
       { status: "Closed", offset: 540_000, priority: "Low", resolvedOffset: 240_000 },
       { status: "Resolved", offset: 600_000, priority: "Medium", resolvedOffset: undefined },
@@ -79,6 +80,7 @@ describe("Lab 4 Requester Dashboard API", () => {
         },
       });
       ticketIds.push(ticket.id);
+      if (index === 6) terminalRecentlyUpdatedTicketId = ticket.id;
     }
 
     const otherTicket = await prisma.ticket.create({
@@ -123,6 +125,7 @@ describe("Lab 4 Requester Dashboard API", () => {
       take: 5,
     });
     expect(response.body.recentlyUpdatedTickets.map((ticket: { id: number }) => ticket.id)).toEqual(expectedUpdated.map((ticket) => ticket.id));
+    expect(response.body.recentlyUpdatedTickets.map((ticket: { id: number }) => ticket.id)).toContain(terminalRecentlyUpdatedTicketId);
 
     const expectedResolved = await prisma.ticket.findMany({
       where: { requesterId, resolvedAt: { not: null }, status: { in: ["Resolved", "Closed"] } },

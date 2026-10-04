@@ -348,7 +348,7 @@ staffTicketDetailRouter.patch(
         if (req.body.status === "Resolved") {
           const currentCycleActions = await tx.actionTaken.findMany({
             where: { ticketId, workflowCycle: current.workflowCycle },
-            select: { status: true, result: true },
+            select: { status: true, result: true, followUpRequired: true },
           });
           const hasCompletedWithResult = currentCycleActions.some(
             (action) => action.status === ActionTakenStatus.COMPLETED && Boolean(action.result?.trim()),
@@ -356,7 +356,10 @@ staffTicketDetailRouter.patch(
           const hasActive = currentCycleActions.some((action) =>
             action.status === ActionTakenStatus.PLANNED || action.status === ActionTakenStatus.IN_PROGRESS,
           );
-          if (!hasCompletedWithResult || hasActive) {
+          const hasOutstandingFollowUp = currentCycleActions.some(
+            (action) => action.status !== ActionTakenStatus.CANCELLED && action.followUpRequired,
+          );
+          if (!hasCompletedWithResult || hasActive || hasOutstandingFollowUp) {
             throw new ResolutionGateNotMetError();
           }
         }
@@ -396,7 +399,7 @@ staffTicketDetailRouter.patch(
         res.status(409).json({
           error: {
             code: "RESOLUTION_GATE_NOT_MET",
-            message: "Ticket cannot be resolved until the current workflow cycle has a Completed Action with a Result and no Planned or In Progress Actions",
+            message: "Ticket cannot be resolved until the current workflow cycle has a Completed Action with a Result, no Planned or In Progress Actions, and no outstanding follow-up",
           },
         });
         return;

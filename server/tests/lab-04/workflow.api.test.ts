@@ -205,7 +205,7 @@ describe("Lab 4 Ticket workflow and resolution", () => {
     expect(result.body.status).toBe("Resolved");
   });
 
-  it("WF-10: Resolve succeeds when a current-cycle Completed Action has a recorded follow-up requirement", async () => {
+  it("WF-10: Resolve is blocked when a current-cycle Completed Action has an outstanding follow-up", async () => {
     const ticket = await createTicket();
     await addAction(ticket.id, {
       status: ActionTakenStatus.COMPLETED,
@@ -216,12 +216,10 @@ describe("Lab 4 Ticket workflow and resolution", () => {
 
     const result = await changeStatus(ticket.id, "Resolved", ticket.version);
 
-    expect(result.status).toBe(200);
-    expect(result.body.status).toBe("Resolved");
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("RESOLUTION_GATE_NOT_MET");
     const saved = await getPrisma().ticket.findUniqueOrThrow({ where: { id: ticket.id } });
-    expect(saved.status).toBe("Resolved");
-    expect(saved.version).toBe(ticket.version + 1);
-    expect(saved.resolvedAt).not.toBeNull();
+    expect(saved).toMatchObject({ status: "In Progress", version: ticket.version, resolvedAt: null });
   });
 
 });
