@@ -412,11 +412,11 @@ actionTakenRouter.patch(
           data: {
             ...(actionDateTime !== undefined ? { actionDateTime } : {}),
             ...(description !== undefined ? { description } : {}),
-            ...(assigneeId !== undefined ? { assigneeId } : {}),
+            ...(assigneeId !== undefined ? { assignee: { connect: { id: assigneeId } } } : {}),
             followUpRequired: resultingFollowUpRequired,
             followUpNote: resultingFollowUpNote,
             followUpStatus: ActionFollowUpStatus.NOT_REQUIRED,
-            followUpCompletedById: null,
+            followUpCompletedBy: { disconnect: true },
             followUpCompletedAt: null,
             ...(attachmentNotes !== undefined ? { attachmentNotes } : {}),
             version: { increment: 1 },
@@ -521,7 +521,7 @@ actionTakenRouter.patch(
           data.followUpStatus = completionFollowUp.followUpRequired
             ? ActionFollowUpStatus.OUTSTANDING
             : ActionFollowUpStatus.NOT_REQUIRED;
-          data.followUpCompletedById = null;
+          data.followUpCompletedBy = { disconnect: true };
           data.followUpCompletedAt = null;
           data.performedBy = { connect: { id: actor.id } };
           data.completedAt = new Date();
