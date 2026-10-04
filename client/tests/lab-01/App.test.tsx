@@ -113,6 +113,30 @@ describe("App", () => {
     expect(getTicketsSpy).toHaveBeenCalledWith(expect.objectContaining({ status: "Waiting for Requester" }));
   });
 
+  it("clears the Waiting for Requester context when primary My Tickets is selected", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, "getCurrentUser").mockResolvedValue(REQUESTER);
+    vi.spyOn(api, "getRequesterDashboard").mockResolvedValue({
+      metrics: { openTickets: 2, waitingForYou: 1 },
+      recentlyUpdatedTickets: [],
+      recentlyResolvedTickets: [],
+    });
+    const getTicketsSpy = vi.spyOn(api, "getTickets").mockResolvedValue({
+      items: [], page: 1, pageSize: 10, totalItems: 0, totalPages: 0,
+    });
+
+    renderApp();
+    await screen.findByRole("heading", { name: /Dashboard/i });
+    const nav = screen.getByRole("navigation", { name: /Primary navigation/i });
+    await user.click(screen.getByRole("button", { name: /Waiting for You: 1\. View waiting Tickets/i }));
+    await screen.findByRole("heading", { name: /My Tickets/i });
+    expect(getTicketsSpy).toHaveBeenLastCalledWith(expect.objectContaining({ status: "Waiting for Requester" }));
+
+    await user.click(within(nav).getByRole("button", { name: /My Tickets/i }));
+
+    await waitFor(() => expect(getTicketsSpy).toHaveBeenLastCalledWith(expect.not.objectContaining({ status: expect.anything() })));
+  });
+
   it("shows an Offline error message when the authenticated System Check fails", async () => {
     const user = userEvent.setup();
     vi.spyOn(api, "getCurrentUser").mockResolvedValue(REQUESTER);

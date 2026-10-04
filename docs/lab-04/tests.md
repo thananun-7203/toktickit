@@ -263,7 +263,7 @@ The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + act
 | RD-API-04 | AC-14 | Recently Resolved order | owned Resolved/Closed with non-null resolvedAt only, top 5 by resolvedAt desc/id desc; legacy null excluded | same | **Pass** |
 | RD-API-05 | AC-15 | Requester has zero Tickets | `200`, counts 0, arrays empty | same | **Pass** |
 | RD-API-06 | AC-18 | Staff/Admin calls Requester dashboard | `403` unless endpoint policy explicitly restricts to Requester as specified | same / authorization | **Pass** |
-| RD-API-07 | AC-15/18 | No session/password gate | existing `401`/`403 PASSWORD_CHANGE_REQUIRED` semantics | `authorization.api.test.ts` / AZ4-05/AZ4-06 | **Pass — `98b5274` (AZ4-05/AZ4-06)** |
+| RD-API-07 | AC-15/18 | No session/password gate | `401` for anonymous; `403 PASSWORD_CHANGE_REQUIRED` for a Requester whose password change is required | `requester-dashboard.api.test.ts` / `RD-API-06/07 and authorization` | **Pass — exact Requester Dashboard authorization test at current PR head** |
 
 ## 8. Staff Dashboard API Tests
 

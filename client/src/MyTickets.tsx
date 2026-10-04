@@ -51,6 +51,13 @@ export default function MyTickets({ onCreateTicket, onOpenTicket, initialStatus 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  // Navigation context may change while this component remains mounted.
+  // Keep the status filter synchronized with the parent-provided context,
+  // without resetting the other user-controlled filters.
+  useEffect(() => {
+    setFilterStatus(initialStatus ?? "");
+  }, [initialStatus]);
+
   // Debounce search 300ms
   useEffect(() => {
     const id = setTimeout(() => setDebouncedSearch(searchInput.trim()), 300);
