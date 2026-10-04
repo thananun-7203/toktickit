@@ -542,6 +542,7 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
         ticketId={ticket.id}
         ticketStatus={ticket.status}
         ticketVersion={ticket.version}
+        workflowCycle={ticket.workflowCycle}
         currentUserId={currentUserId}
         assignees={assignees}
         onTicketVersionChange={(version) => setTicket((current) => current ? { ...current, version } : current)}

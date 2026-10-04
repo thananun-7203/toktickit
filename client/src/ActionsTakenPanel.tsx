@@ -24,6 +24,7 @@ interface Props {
   ticketId: number;
   ticketStatus: string;
   ticketVersion: number;
+  workflowCycle: number;
   currentUserId?: number;
   assignees?: StaffAssignee[];
   readOnly?: boolean;
@@ -88,6 +89,7 @@ export default function ActionsTakenPanel({
   ticketId,
   ticketStatus,
   ticketVersion,
+  workflowCycle,
   currentUserId,
   assignees = [],
   readOnly = false,
@@ -196,8 +198,7 @@ export default function ActionsTakenPanel({
   }
 
   const canAdd = !readOnly && ACTIVE_TICKET_STATUSES.has(ticketStatus);
-  const currentWorkflowCycle = actions.reduce((max, action) => Math.max(max, action.workflowCycle), 0);
-  const currentCycleActions = actions.filter((action) => action.workflowCycle === currentWorkflowCycle);
+  const currentCycleActions = actions.filter((action) => action.workflowCycle === workflowCycle);
   const hasCompletedWithResult = currentCycleActions.some((action) => action.status === "Completed" && Boolean(action.result?.trim()));
   const hasActiveActions = currentCycleActions.some((action) => action.status === "Planned" || action.status === "In Progress");
   const hasOutstandingFollowUp = currentCycleActions.some((action) => action.status !== "Cancelled" && action.followUpStatus === "OUTSTANDING");
