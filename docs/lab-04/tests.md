@@ -394,9 +394,9 @@ These are local-lab smoke checks, not production load testing.
 
 | Test ID | AC | Scenario | Expected | Final |
 |---|---|---|---|---|
-| PERF-01 | AC-16 | Staff dashboard on seeded dataset | concise query/result; no full Ticket collection materialized for counting | Planned |
-| PERF-02 | AC-14 | Requester dashboard on seeded dataset | ownership-scoped count/top-5 queries use documented indexes/filters | Planned |
-| PERF-03 | AC-08 | Actions list for a Ticket with multiple records | deterministic indexed parent/order query; no unrelated Action scan in response | Planned |
+| PERF-01 | AC-16 | Staff dashboard on seeded dataset | concise query/result; no full Ticket collection materialized for counting | **Pass — `dashboard-performance-smoke.test.ts`** |
+| PERF-02 | AC-14 | Requester dashboard on seeded dataset | ownership-scoped count/top-5 queries use documented indexes/filters | **Pass — `dashboard-performance-smoke.test.ts`** |
+| PERF-03 | AC-08 | Actions list for a Ticket with multiple records | deterministic indexed parent/order query; no unrelated Action scan in response | **Pass — `dashboard-performance-smoke.test.ts`** |
 
 ## 14. End-to-End Tests
 
@@ -427,6 +427,27 @@ Staff sees authoritative operational counts/current-user Actions/separate Recent
 ### E2E-REG-01 — Representative Labs 1–3 regression
 
 At minimum preserve representative real-browser journeys for authentication/password, Requester create/list/detail/attachments/comments, Staff queue/detail/notes/workflow, and Administrator user management.
+
+### 14.1 Issue #57 — Security, Regression & End-to-End Verification
+
+Issue #57 verification is intentionally split between isolated Server integration tests and real browser E2E. The development database is not used as the Server test target.
+
+| Verification area | Final evidence |
+|---|---|
+| Lab 4 authorization / Actions / workflow / dashboards | **Pass — 56/56 Server tests across 9 Lab 4 files** on isolated `toktickit_issue9_test` |
+| Migration / seed regression | **Pass — included in the 56/56 run; 3 migration-regression + 3 seed-regression tests** |
+| Performance smoke | **Pass — 3/3 `PERF-01..03` tests** in `dashboard-performance-smoke.test.ts` |
+| Lab 3 representative Server regression | **Pass — 95/95 tests across 8 representative Lab 3 files** on isolated `toktickit_issue9_test` |
+| Client regression | **Pass — 110/110 tests across 14 files** |
+| Client production build | **Pass** |
+| Server TypeScript build | **Pass** |
+| `git diff --check` | **Pass** |
+| Lab 4 real-browser Actions/Resolution/Dashboard E2E | **Pass — 2/2 tests** in `e2e/lab-04/issue9-fullstack.spec.ts` against disposable `toktickit_issue9_e2e` |
+| Representative Lab 3 real-browser E2E | **Pass — 7/7 tests** covering authentication, Requester regression, Staff workflow/authorization, and Administrator workflow/safety |
+
+The Issue #57 full-stack Actions flow proves: create Ticket -> Staff claim -> workflow status progression -> Action create -> Start -> Complete with required follow-up -> Resolution Gate blocked -> follow-up completion -> Resolve -> Reopen/cycle 2 -> current-cycle Action completion -> Resolve. The same run verifies dashboard data through the real API/database and the cycle boundary where historical Actions must not satisfy the current Resolution Gate.
+
+The first browser run exposed two test-fixture problems rather than application defects: duplicate fixture display names caused an Action to be assigned to an older same-name user, and Ticket status remained `New` before attempting Resolve. The E2E test was corrected to select the authenticated Staff user by ID and to exercise the approved `New -> Open -> In Progress` workflow before Resolution. A clean disposable E2E database was then recreated and the final Issue #57 E2E run passed 2/2.
 
 ## 15. Labs 1–3 Regression Gates
 
