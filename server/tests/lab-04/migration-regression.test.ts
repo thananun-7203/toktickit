@@ -19,6 +19,8 @@ const LAB3_MIGRATIONS = [
 
 const LAB4_MIGRATION = "20260929190000_lab4_actions_data_foundation";
 const LAB4_IDEMPOTENCY_MIGRATION = "20260930153000_lab4_action_create_fingerprint";
+const LAB4_FOLLOW_UP_MIGRATION = "20261004150000_lab4_action_follow_up_lifecycle";
+const LAB4_FOLLOW_UP_ACTIVE_STATE_MIGRATION = "20261004153000_lab4_follow_up_active_state";
 const schemasToDrop = new Set<string>();
 
 function quoteIdent(value: string): string {
@@ -141,6 +143,8 @@ describe("Lab 4 migration regression", () => {
     };
 
     executeSqlInSchema(schema, migrationSql(LAB4_MIGRATION));
+    executeSqlInSchema(schema, migrationSql(LAB4_FOLLOW_UP_MIGRATION));
+    executeSqlInSchema(schema, migrationSql(LAB4_FOLLOW_UP_ACTIVE_STATE_MIGRATION));
 
     const after = {
       users: await countRows(schema, "User"),
@@ -181,6 +185,9 @@ describe("Lab 4 migration regression", () => {
       "cancelledById",
       "cancelledAt",
       "version",
+      "followUpStatus",
+      "followUpCompletedById",
+      "followUpCompletedAt",
     ]) {
       expect(columnNames.has(required)).toBe(true);
     }
@@ -192,6 +199,7 @@ describe("Lab 4 migration regression", () => {
     expect(indexNames.has("ActionTaken_ticketId_clientRequestId_key")).toBe(true);
     expect(indexNames.has("ActionTaken_ticketId_workflowCycle_status_idx")).toBe(true);
     expect(indexNames.has("ActionTaken_assigneeId_status_updatedAt_idx")).toBe(true);
+    expect(indexNames.has("ActionTaken_followUpStatus_idx")).toBe(true);
 
     const s = quoteIdent(schema);
     await getPrisma().$executeRawUnsafe(

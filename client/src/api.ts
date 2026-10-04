@@ -221,6 +221,8 @@ export interface RequesterDashboardResponse {
 
 export const ACTION_TAKEN_STATUSES = ["Planned", "In Progress", "Completed", "Cancelled"] as const;
 export type ActionTakenStatus = (typeof ACTION_TAKEN_STATUSES)[number];
+export const ACTION_FOLLOW_UP_STATUSES = ["NOT_REQUIRED", "OUTSTANDING", "COMPLETED"] as const;
+export type ActionFollowUpStatus = (typeof ACTION_FOLLOW_UP_STATUSES)[number];
 
 export interface ActionActor {
   id: number;
@@ -238,6 +240,9 @@ export interface ActionTaken {
   result: string | null;
   followUpRequired: boolean;
   followUpNote: string | null;
+  followUpStatus: ActionFollowUpStatus;
+  followUpCompletedBy: ActionActor | null;
+  followUpCompletedAt: string | null;
   attachmentNotes: string | null;
   status: ActionTakenStatus;
   createdBy: ActionActor;
@@ -696,6 +701,19 @@ export async function updateStaffActionStatus(
     body: JSON.stringify(input),
   });
   if (!res.ok) throw await responseError(res, "Unable to update Action status");
+  return res.json();
+}
+
+export async function completeStaffActionFollowUp(
+  actionId: number,
+  expectedVersion: number,
+  expectedTicketVersion: number,
+): Promise<ActionTaken> {
+  const res = await apiFetch(`/api/v1/staff/actions-taken/${actionId}/follow-up`, {
+    method: "PATCH",
+    body: JSON.stringify({ expectedVersion, expectedTicketVersion }),
+  });
+  if (!res.ok) throw await responseError(res, "Unable to complete Action follow-up");
   return res.json();
 }
 

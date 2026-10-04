@@ -1,4 +1,4 @@
-import { ActionTakenStatus, UserRole } from "@prisma/client";
+import { ActionFollowUpStatus, ActionTakenStatus, UserRole } from "@prisma/client";
 import { getPrisma } from "../src/prisma.js";
 
 // Lab 3 seed data. Stable natural keys + create-only upserts make reruns safe:
@@ -32,6 +32,7 @@ type SeedAction = {
   result?: string | null;
   followUpRequired: boolean;
   followUpNote?: string | null;
+  followUpStatus: ActionFollowUpStatus;
   attachmentNotes?: string | null;
   status: ActionTakenStatus;
   createdById: number;
@@ -287,6 +288,7 @@ async function main() {
     result: "Monthly report export completed successfully after the worker restart.",
     followUpRequired: false,
     followUpNote: null,
+    followUpStatus: ActionFollowUpStatus.NOT_REQUIRED,
     attachmentNotes: "Use the requester report-error screenshot for comparison.",
     status: ActionTakenStatus.COMPLETED,
     createdById: staff1.id,
@@ -307,6 +309,7 @@ async function main() {
     result: null,
     followUpRequired: true,
     followUpNote: "Check the next scheduled export and record whether the timeout returns.",
+    followUpStatus: ActionFollowUpStatus.NOT_REQUIRED,
     attachmentNotes: null,
     status: ActionTakenStatus.PLANNED,
     createdById: staff1.id,
@@ -322,6 +325,7 @@ async function main() {
     result: null,
     followUpRequired: false,
     followUpNote: null,
+    followUpStatus: ActionFollowUpStatus.NOT_REQUIRED,
     attachmentNotes: null,
     status: ActionTakenStatus.IN_PROGRESS,
     createdById: staff2.id,
@@ -337,6 +341,7 @@ async function main() {
     result: null,
     followUpRequired: false,
     followUpNote: null,
+    followUpStatus: ActionFollowUpStatus.NOT_REQUIRED,
     attachmentNotes: null,
     status: ActionTakenStatus.CANCELLED,
     createdById: staff3.id,
@@ -355,6 +360,7 @@ async function main() {
     result: "Export recovered and the first cycle was resolved.",
     followUpRequired: false,
     followUpNote: null,
+    followUpStatus: ActionFollowUpStatus.NOT_REQUIRED,
     attachmentNotes: null,
     status: ActionTakenStatus.COMPLETED,
     createdById: staff1.id,
@@ -373,6 +379,7 @@ async function main() {
     result: null,
     followUpRequired: true,
     followUpNote: "Compare the new failure signature with the first-cycle recovery evidence.",
+    followUpStatus: ActionFollowUpStatus.NOT_REQUIRED,
     attachmentNotes: null,
     status: ActionTakenStatus.PLANNED,
     createdById: staff2.id,
@@ -388,6 +395,7 @@ async function main() {
     result: "Requester access was verified successfully before the Ticket was closed.",
     followUpRequired: false,
     followUpNote: null,
+    followUpStatus: ActionFollowUpStatus.NOT_REQUIRED,
     attachmentNotes: null,
     status: ActionTakenStatus.COMPLETED,
     createdById: staff1.id,

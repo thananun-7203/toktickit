@@ -449,6 +449,7 @@ export default function TicketDetail({ ticketId, onBack }: TicketDetailProps) {
         ticketId={ticket.id}
         ticketStatus={ticket.status}
         ticketVersion={ticket.version}
+        workflowCycle={ticket.workflowCycle}
         readOnly
       />
 

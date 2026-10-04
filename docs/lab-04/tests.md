@@ -232,6 +232,13 @@ The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + act
 | AT-API-27R | AC-28 | **Create -> edit/reassign mutable Action -> retry original POST with same key/original payload** | `200` same id/current row; no duplicate; no second parent-version increment; changed original intent still conflicts | same | **Pass — `1d62aa0`** |
 | AT-API-32 | AC-13 | Owner or IT Priority changes after Action client loaded parent version | workflow mutation increments Ticket version; later Action write using old token -> `409 STALE_TICKET_STATE` | same | **Pass — `1d62aa0`** |
 | AT-API-33 | AC-13 | Concurrent Owner mutation vs Action edit on same Ticket version | exactly one commits; stale loser `409`; parent version increments once; no `500` | same | **Pass — `1d62aa0`** |
+| FU-API-01 | AC-29 | Complete Action with `followUpRequired=true` | Action completes with `followUpStatus=OUTSTANDING`; completion provenance is recorded | `actions-taken.api.test.ts` | Planned |
+| FU-API-02 | AC-29 | Mark outstanding follow-up complete | `200`; followUpStatus becomes `COMPLETED`; actor/time recorded; Action remains `Completed`; Action/Ticket versions each increment once | same | Planned |
+| FU-API-03 | AC-29 | Requester attempts follow-up completion | `403`; no mutation | `authorization.api.test.ts` / `actions-taken.api.test.ts` | Planned |
+| FU-API-04 | AC-29 | Follow-up completion with stale Action version | `409 STALE_ACTION_TAKEN`; no mutation | `actions-taken.api.test.ts` | Planned |
+| FU-API-05 | AC-29 | Follow-up completion with stale Ticket version | `409 STALE_TICKET_STATE`; no mutation | `actions-taken.api.test.ts` | Planned |
+| FU-API-06 | AC-30 | Resolve with outstanding follow-up | `409 RESOLUTION_GATE_NOT_MET`; Ticket unchanged | `workflow.api.test.ts` | Planned |
+| FU-API-07 | AC-30 | Complete all required follow-ups then Resolve | `Resolved` succeeds with current-cycle Completed work and no outstanding follow-up | `workflow.api.test.ts` | Planned |
 
 ## 6. Final Ticket Workflow API Tests
 
@@ -332,6 +339,8 @@ These tests intentionally bypass normal UI controls.
 | AT-UI-07 | AC-09/22/28 | busy state blocks ordinary duplicate click; create retains one clientRequestId across unknown-response retry; safe failure preserves draft | **Pass — `6d60a93`** |
 | AT-UI-08 | AC-08/18 | Requester Action section is read-only with no Staff controls | **Pass — `6d60a93`** |
 | AT-UI-09 | AC-27 | Action Date/Time is labelled as work occurrence time; audit timestamps are separate; timezone/future validation feedback is clear | **Pass — `6d60a93`** |
+| FU-UI-01 | AC-29 | Completed Action with required follow-up shows Outstanding state and Staff/Admin follow-up completion control; Requester sees read-only state | **Pass — client `ActionsTaken.test.tsx`** |
+| FU-UI-02 | AC-29/30 | Mark Follow-up Complete refreshes versions/provenance and Resolution Gate guidance | **Pass — client `ActionsTaken.test.tsx`** |
 
 ### 11.2 Ticket Workflow — `client/tests/lab-04/TicketWorkflow.test.tsx`
 
@@ -476,6 +485,8 @@ Required release-head gates:
 | AC-26 | AT-API-25/26, AZ4-11, Administrator User Management conflict UI regression |
 | AC-27 | TIME-U-01, AT-API-31, AT-UI-09 |
 | AC-28 | AT-API-27/28, AT-UI-07, E2E-AT-02 |
+| AC-29 | FU-API-01..05, FU-UI-01/02 |
+| AC-30 | FU-API-06/07, WF-UI-02, E2E-WF-01 |
 
 ## 18. Final Result Template
 

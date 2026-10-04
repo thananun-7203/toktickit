@@ -515,6 +515,79 @@ describe("Lab 4 Actions Taken API", () => {
     expect(cancelled.body.cancelledAt).toEqual(expect.any(String));
   });
 
+  it("FU-API-01/02/04/05: required follow-up becomes outstanding and can be completed with both version tokens", async () => {
+    const t = await ticket();
+    const created = await createViaApi(t.id, staffACookie, createBody(1, { assigneeId: staffAId }));
+    const completed = await request(app)
+      .patch(`/api/v1/staff/actions-taken/${created.body.id}/status`)
+      .set("Cookie", staffACookie).set("Origin", TEST_ORIGIN)
+      .send({
+        status: "Completed", expectedVersion: 1, expectedTicketVersion: 2,
+        result: "Completed with a required requester confirmation.",
+        followUpRequired: true, followUpNote: "Confirm the next report export with the requester.",
+      });
+    expect(completed.status).toBe(200);
+    expect(completed.body).toMatchObject({
+      status: "Completed",
+      followUpRequired: true,
+      followUpStatus: "OUTSTANDING",
+      followUpCompletedBy: null,
+      followUpCompletedAt: null,
+      version: 2,
+    });
+
+    const staleAction = await request(app)
+      .patch(`/api/v1/staff/actions-taken/${created.body.id}/follow-up`)
+      .set("Cookie", staffACookie).set("Origin", TEST_ORIGIN)
+      .send({ expectedVersion: 1, expectedTicketVersion: 3 });
+    expect(staleAction.status).toBe(409);
+    expect(staleAction.body.error.code).toBe("STALE_ACTION_TAKEN");
+
+    const staleTicket = await request(app)
+      .patch(`/api/v1/staff/actions-taken/${created.body.id}/follow-up`)
+      .set("Cookie", staffACookie).set("Origin", TEST_ORIGIN)
+      .send({ expectedVersion: 2, expectedTicketVersion: 2 });
+    expect(staleTicket.status).toBe(409);
+    expect(staleTicket.body.error.code).toBe("STALE_TICKET_STATE");
+
+    const followUpCompleted = await request(app)
+      .patch(`/api/v1/staff/actions-taken/${created.body.id}/follow-up`)
+      .set("Cookie", staffACookie).set("Origin", TEST_ORIGIN)
+      .send({ expectedVersion: 2, expectedTicketVersion: 3 });
+    expect(followUpCompleted.status).toBe(200);
+    expect(followUpCompleted.body).toMatchObject({
+      status: "Completed",
+      followUpStatus: "COMPLETED",
+      followUpCompletedBy: { id: staffAId },
+      version: 3,
+    });
+    expect(followUpCompleted.body.followUpCompletedAt).toEqual(expect.any(String));
+
+    const savedTicket = await getPrisma().ticket.findUniqueOrThrow({ where: { id: t.id } });
+    expect(savedTicket.version).toBe(4);
+  });
+
+  it("FU-API-03: Requester cannot complete an Action follow-up", async () => {
+    const t = await ticket();
+    const created = await createViaApi(t.id, staffACookie, createBody(1, { assigneeId: staffAId }));
+    const completed = await request(app)
+      .patch(`/api/v1/staff/actions-taken/${created.body.id}/status`)
+      .set("Cookie", staffACookie).set("Origin", TEST_ORIGIN)
+      .send({
+        status: "Completed", expectedVersion: 1, expectedTicketVersion: 2,
+        result: "Completed; requester follow-up remains.",
+        followUpRequired: true, followUpNote: "Confirm with requester.",
+      });
+    expect(completed.status).toBe(200);
+
+    const attempt = await request(app)
+      .patch(`/api/v1/staff/actions-taken/${created.body.id}/follow-up`)
+      .set("Cookie", requesterACookie).set("Origin", TEST_ORIGIN)
+      .send({ expectedVersion: 2, expectedTicketVersion: 3 });
+    expect(attempt.status).toBe(403);
+    expect(attempt.body.error.code).toBe("FORBIDDEN");
+  });
+
   it("AT-API-29: reassign-vs-complete race commits at most one authoritative outcome", async () => {
     const t = await ticket();
     const created = await createViaApi(t.id, staffACookie, createBody(1, { assigneeId: staffAId }));

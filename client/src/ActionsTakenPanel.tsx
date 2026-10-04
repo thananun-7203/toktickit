@@ -3,6 +3,7 @@ import {
   ActionTaken,
   ActionTakenStatus,
   ApiError,
+  completeStaffActionFollowUp,
   createStaffActionTaken,
   getActionsTaken,
   StaffAssignee,
@@ -23,6 +24,7 @@ interface Props {
   ticketId: number;
   ticketStatus: string;
   ticketVersion: number;
+  workflowCycle: number;
   currentUserId?: number;
   assignees?: StaffAssignee[];
   readOnly?: boolean;
@@ -78,6 +80,7 @@ function actionErrorMessage(error: unknown): string {
     if (error.code === "ACTION_COMPLETION_REQUIRES_ASSIGNEE") return "Only the current assignee can complete this Action. Reassign it first if needed.";
     if (error.code === "ACTION_NOT_EDITABLE") return "This Action is already terminal and can no longer be edited.";
     if (error.code === "IDEMPOTENCY_KEY_REUSE") return "This Action submission key no longer matches the original draft. Start a new Action form before submitting different work.";
+    if (error.code === "FOLLOW_UP_NOT_OUTSTANDING") return "This follow-up is no longer outstanding. Refresh the current Action state before trying again.";
   }
   return error instanceof Error ? error.message : "Unable to update Action Taken";
 }
@@ -86,6 +89,7 @@ export default function ActionsTakenPanel({
   ticketId,
   ticketStatus,
   ticketVersion,
+  workflowCycle,
   currentUserId,
   assignees = [],
   readOnly = false,
@@ -177,7 +181,28 @@ export default function ActionsTakenPanel({
     }
   }
 
+  async function completeFollowUp(action: ActionTaken) {
+    setBusyActionId(action.id);
+    setError(null);
+    setNotice(null);
+    try {
+      const updated = await completeStaffActionFollowUp(action.id, action.version, ticketVersionRef.current);
+      replaceAction(updated);
+      await syncTicketVersionAfterMutation();
+      setNotice("Follow-up marked as completed.");
+    } catch (followUpError) {
+      setError(actionErrorMessage(followUpError));
+    } finally {
+      setBusyActionId(null);
+    }
+  }
+
   const canAdd = !readOnly && ACTIVE_TICKET_STATUSES.has(ticketStatus);
+  const currentCycleActions = actions.filter((action) => action.workflowCycle === workflowCycle);
+  const hasCompletedWithResult = currentCycleActions.some((action) => action.status === "Completed" && Boolean(action.result?.trim()));
+  const hasActiveActions = currentCycleActions.some((action) => action.status === "Planned" || action.status === "In Progress");
+  const hasOutstandingFollowUp = currentCycleActions.some((action) => action.status !== "Cancelled" && action.followUpStatus === "OUTSTANDING");
+  const resolutionBlocked = !hasCompletedWithResult || hasActiveActions || hasOutstandingFollowUp;
 
   return (
     <section className="actions-panel" aria-labelledby={`actions-taken-title-${ticketId}`}>
@@ -200,6 +225,22 @@ export default function ActionsTakenPanel({
         <div className="actions-terminal-ticket-note" role="status">
           New Actions cannot be added while this Ticket is {ticketStatus}.
         </div>
+      )}
+      {!readOnly && ticketStatus !== "Resolved" && ticketStatus !== "Closed" && (
+        <section className={`actions-resolution-gate ${resolutionBlocked ? "is-blocked" : "is-ready"}`} aria-labelledby={`resolution-gate-title-${ticketId}`}>
+          <div className="actions-resolution-gate-heading">
+            <div>
+              <h3 id={`resolution-gate-title-${ticketId}`}>Resolution Gate</h3>
+              <p>{resolutionBlocked ? "Resolve is blocked until all current-cycle requirements pass." : "All current-cycle Resolution Gate requirements are satisfied."}</p>
+            </div>
+            <span className="actions-resolution-gate-state">{resolutionBlocked ? "Blocked" : "Ready"}</span>
+          </div>
+          <ul>
+            <li className={hasCompletedWithResult ? "pass" : "blocked"}>{hasCompletedWithResult ? "✓" : "!"} Current-cycle Completed Action with non-blank Result</li>
+            <li className={!hasActiveActions ? "pass" : "blocked"}>{!hasActiveActions ? "✓" : "!"} No current-cycle Planned / In Progress Actions</li>
+            <li className={!hasOutstandingFollowUp ? "pass" : "blocked"}>{!hasOutstandingFollowUp ? "✓" : "!"} No current-cycle outstanding follow-up</li>
+          </ul>
+        </section>
       )}
       {error && (
         <div className="actions-feedback actions-feedback-error" role="alert">
@@ -261,6 +302,17 @@ export default function ActionsTakenPanel({
                   <div><dt>Result</dt><dd>{action.result ?? "Not recorded yet"}</dd></div>
                   <div><dt>Follow-Up Required</dt><dd><span className={`action-yes-no ${action.followUpRequired ? "yes" : "no"}`}>{action.followUpRequired ? "Yes" : "No"}</span></dd></div>
                   {action.followUpRequired && <div><dt>Follow-up Note</dt><dd>{action.followUpNote ?? "Not recorded"}</dd></div>}
+                  {action.followUpRequired && (
+                    <div><dt>Follow-Up Status</dt><dd><span className={`action-follow-up-badge ${action.followUpStatus.toLowerCase()}`}>
+                      {action.followUpStatus === "NOT_REQUIRED" ? "Not required" : action.followUpStatus === "OUTSTANDING" ? "Outstanding" : "Completed"}
+                    </span></dd></div>
+                  )}
+                  {action.followUpStatus === "COMPLETED" && (
+                    <>
+                      <div><dt>Follow-up completed by</dt><dd>{action.followUpCompletedBy?.name ?? "Not recorded"}</dd></div>
+                      <div><dt>Follow-up completed at</dt><dd>{action.followUpCompletedAt ? formatDateTime(action.followUpCompletedAt) : "Not recorded"}</dd></div>
+                    </>
+                  )}
                   {action.attachmentNotes && <div className="action-detail-wide"><dt>Attachment Notes</dt><dd>{action.attachmentNotes}</dd></div>}
                   {action.status === "Completed" && (
                     <>
@@ -275,6 +327,15 @@ export default function ActionsTakenPanel({
                     </>
                   )}
                 </dl>
+
+                {!readOnly && action.status === "Completed" && action.followUpStatus === "OUTSTANDING" && ticketActionable && (
+                  <div className="action-follow-up-control">
+                    <div><strong>Required follow-up is still outstanding.</strong><span>Complete it before resolving this Ticket.</span></div>
+                    <button type="button" className="btn btn-success btn-sm" disabled={busyActionId === action.id} onClick={() => void completeFollowUp(action)}>
+                      {busyActionId === action.id ? "Saving…" : "Mark Follow-up Complete"}
+                    </button>
+                  </div>
+                )}
 
                 <div className="action-audit-row">
                   <span><strong>Created by</strong> {action.createdBy.name}</span>

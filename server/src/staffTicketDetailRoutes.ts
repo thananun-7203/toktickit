@@ -348,7 +348,7 @@ staffTicketDetailRouter.patch(
         if (req.body.status === "Resolved") {
           const currentCycleActions = await tx.actionTaken.findMany({
             where: { ticketId, workflowCycle: current.workflowCycle },
-            select: { status: true, result: true, followUpRequired: true },
+            select: { status: true, result: true, followUpStatus: true },
           });
           const hasCompletedWithResult = currentCycleActions.some(
             (action) => action.status === ActionTakenStatus.COMPLETED && Boolean(action.result?.trim()),
@@ -357,7 +357,7 @@ staffTicketDetailRouter.patch(
             action.status === ActionTakenStatus.PLANNED || action.status === ActionTakenStatus.IN_PROGRESS,
           );
           const hasOutstandingFollowUp = currentCycleActions.some(
-            (action) => action.status !== ActionTakenStatus.CANCELLED && action.followUpRequired,
+            (action) => action.status !== ActionTakenStatus.CANCELLED && action.followUpStatus === "OUTSTANDING",
           );
           if (!hasCompletedWithResult || hasActive || hasOutstandingFollowUp) {
             throw new ResolutionGateNotMetError();

@@ -22,6 +22,9 @@ const BASE_ACTION: api.ActionTaken = {
   result: null,
   followUpRequired: true,
   followUpNote: "Re-check after config change",
+  followUpStatus: "OUTSTANDING",
+  followUpCompletedBy: null,
+  followUpCompletedAt: null,
   attachmentNotes: "Log file analysis completed.",
   status: "In Progress",
   createdBy: { id: OTHER_USER_ID, name: "Malee Support", role: "IT_STAFF" },
@@ -44,6 +47,9 @@ const COMPLETED_ACTION: api.ActionTaken = {
   result: "Issue identified and configuration corrected.",
   followUpRequired: false,
   followUpNote: null,
+  followUpStatus: "NOT_REQUIRED",
+  followUpCompletedBy: null,
+  followUpCompletedAt: null,
   status: "Completed",
   performedBy: { id: CURRENT_USER_ID, name: "Narin Support", role: "IT_STAFF" },
   completedAt: "2026-09-18T09:50:00.000Z",
@@ -59,6 +65,9 @@ const CANCELLED_ACTION: api.ActionTaken = {
   description: "Restarted report service to clear cache",
   followUpRequired: false,
   followUpNote: null,
+  followUpStatus: "NOT_REQUIRED",
+  followUpCompletedBy: null,
+  followUpCompletedAt: null,
   attachmentNotes: null,
   status: "Cancelled",
   assignee: { id: OTHER_USER_ID, name: "Malee Support", role: "IT_STAFF" },
@@ -73,6 +82,7 @@ function renderPanel(overrides: Partial<React.ComponentProps<typeof ActionsTaken
     ticketId: 501,
     ticketStatus: "In Progress",
     ticketVersion: 5,
+    workflowCycle: 1,
     currentUserId: CURRENT_USER_ID,
     assignees: ASSIGNEES,
     onTicketVersionChange: vi.fn(),
@@ -95,6 +105,7 @@ describe("Lab 4 Actions Taken Ticket Detail UI", () => {
     vi.spyOn(api, "createStaffActionTaken");
     vi.spyOn(api, "updateStaffActionTaken");
     vi.spyOn(api, "updateStaffActionStatus");
+    vi.spyOn(api, "completeStaffActionFollowUp");
   });
 
   it("AT-UI-01: renders multiple Actions in server-stable order with required fields and provenance", async () => {
@@ -322,6 +333,62 @@ describe("Lab 4 Actions Taken Ticket Detail UI", () => {
     expect(savedCard).toHaveTextContent("Performed by");
     expect(savedCard).toHaveTextContent("Narin Support");
     expect(savedCard).toHaveTextContent("Completed at");
+  });
+
+  it("FU-UI-01/02: outstanding follow-up has explicit lifecycle state and completion control", async () => {
+    const requiredCompleted = {
+      ...COMPLETED_ACTION,
+      followUpRequired: true,
+      followUpNote: "Confirm the next export with requester.",
+      followUpStatus: "OUTSTANDING" as const,
+      followUpCompletedBy: null,
+      followUpCompletedAt: null,
+      version: 4,
+    };
+    vi.mocked(api.getActionsTaken).mockResolvedValue([requiredCompleted]);
+    const completed = {
+      ...requiredCompleted,
+      followUpStatus: "COMPLETED" as const,
+      followUpCompletedBy: { id: CURRENT_USER_ID, name: "Narin Support", role: "IT_STAFF" as const },
+      followUpCompletedAt: "2026-09-18T10:05:00.000Z",
+      version: 5,
+    };
+    vi.mocked(api.completeStaffActionFollowUp).mockResolvedValueOnce(completed);
+    const refresh = vi.fn().mockResolvedValue(6);
+    const user = userEvent.setup();
+    renderPanel({ onRefreshTicket: refresh });
+    const card = await screen.findByText(requiredCompleted.description).then(() => actionCardFor(requiredCompleted.description));
+    expect(within(card).getByText("Outstanding")).toBeInTheDocument();
+    await user.click(within(card).getByRole("button", { name: "Mark Follow-up Complete" }));
+    await waitFor(() => expect(api.completeStaffActionFollowUp).toHaveBeenCalledWith(requiredCompleted.id, 4, 5));
+    expect(within(actionCardFor(requiredCompleted.description)).getByText("Follow-Up Status").nextElementSibling).toHaveTextContent("Completed");
+    expect(refresh).toHaveBeenCalled();
+  });
+
+  it("FU-UI-03: Resolution Gate uses the Ticket workflow cycle when only historical Actions are loaded", async () => {
+    const historicalCompleted = {
+      ...COMPLETED_ACTION,
+      workflowCycle: 1,
+      followUpRequired: true,
+      followUpNote: "Historical-cycle follow-up",
+      followUpStatus: "OUTSTANDING" as const,
+      followUpCompletedBy: null,
+      followUpCompletedAt: null,
+    };
+    vi.mocked(api.getActionsTaken).mockResolvedValue([historicalCompleted]);
+
+    renderPanel({ workflowCycle: 2 });
+
+    await screen.findByText(historicalCompleted.description);
+    const gate = screen.getByRole("heading", { name: "Resolution Gate" }).closest("section");
+    expect(gate).not.toBeNull();
+    expect(gate).toHaveTextContent("Blocked");
+    expect(gate).toHaveTextContent("Current-cycle Completed Action with non-blank Result");
+    expect(gate).toHaveTextContent("No current-cycle Planned / In Progress Actions");
+    expect(gate).toHaveTextContent("No current-cycle outstanding follow-up");
+    expect(within(gate as HTMLElement).getByText("! Current-cycle Completed Action with non-blank Result")).toBeInTheDocument();
+    expect(within(gate as HTMLElement).getByText("✓ No current-cycle Planned / In Progress Actions")).toBeInTheDocument();
+    expect(within(gate as HTMLElement).getByText("✓ No current-cycle outstanding follow-up")).toBeInTheDocument();
   });
 
   it("AT-UI-07: unknown create failure preserves draft and reuses one clientRequestId on retry", async () => {

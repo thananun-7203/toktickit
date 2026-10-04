@@ -543,6 +543,29 @@
   font-size: .78rem;
   font-weight: 650;
 }
+.actions-resolution-gate {
+  margin: .85rem 1rem 0;
+  padding: .85rem .9rem;
+  border: 1px solid #e8dcc2;
+  border-radius: 12px;
+  background: #fffdf8;
+}
+.actions-resolution-gate.is-ready { border-color: #c9e4d1; background: #f7fcf8; }
+.actions-resolution-gate-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.actions-resolution-gate h3 { margin: 0; color: #26372d; font-size: .9rem; font-weight: 800; }
+.actions-resolution-gate p { margin: .2rem 0 0; color: var(--ink-500); font-size: .72rem; }
+.actions-resolution-gate-state { display: inline-flex; padding: .22rem .55rem; border-radius: 999px; background: #fff0d9; color: #875918; font-size: .68rem; font-weight: 800; }
+.actions-resolution-gate.is-ready .actions-resolution-gate-state { background: #e2f5e9; color: #24673b; }
+.actions-resolution-gate ul { display: grid; gap: .35rem; margin: .75rem 0 0; padding: 0; list-style: none; }
+.actions-resolution-gate li { color: #6e5b35; font-size: .73rem; }
+.actions-resolution-gate li.pass { color: #2f6840; }
+.action-follow-up-badge { display: inline-flex; padding: .15rem .45rem; border-radius: 999px; font-size: .65rem; font-weight: 800; }
+.action-follow-up-badge.outstanding { background: #fff0d9; color: #875918; }
+.action-follow-up-badge.completed { background: #e2f5e9; color: #24673b; }
+.action-follow-up-badge.not_required { background: #eef1f0; color: #5c665f; }
+.action-follow-up-control { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: .8rem; padding: .7rem .75rem; border: 1px solid #eadfc9; border-radius: 10px; background: #fffaf0; }
+.action-follow-up-control > div { display: grid; gap: .15rem; color: #6b5428; font-size: .72rem; }
+.action-follow-up-control strong { color: #493a20; font-size: .75rem; }
 .actions-feedback {
   margin: .8rem 1rem 0;
   padding: .65rem .75rem;
@@ -641,6 +664,8 @@
 
 @media (max-width: 700px) {
   .staff-ticket-detail { padding: 1rem; border-radius: 14px; }
+  .actions-resolution-gate-heading, .action-follow-up-control { align-items: flex-start; flex-direction: column; }
+  .action-follow-up-control .btn { width: 100%; }
   .staff-detail-heading { padding-bottom: 1rem; margin-bottom: 1rem; }
   .staff-detail-definition-grid { grid-template-columns: 1fr; }
   .staff-detail-definition-grid .staff-detail-wide { grid-column: auto; }
