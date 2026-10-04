@@ -30,6 +30,11 @@ describe("Lab 3 authenticated application shell", () => {
     vi.spyOn(api, "getTickets").mockResolvedValue({
       items: [], page: 1, pageSize: 10, totalItems: 0, totalPages: 0,
     });
+    vi.spyOn(api, "getRequesterDashboard").mockResolvedValue({
+      metrics: { openTickets: 0, waitingForYou: 0 },
+      recentlyUpdatedTickets: [],
+      recentlyResolvedTickets: [],
+    });
     vi.spyOn(api, "getStaffQueue").mockResolvedValue({
       items: [], page: 1, pageSize: 10, totalItems: 0, totalPages: 0,
     });

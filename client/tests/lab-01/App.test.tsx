@@ -34,6 +34,11 @@ describe("App", () => {
       totalItems: 0,
       totalPages: 0,
     });
+    vi.spyOn(api, "getRequesterDashboard").mockResolvedValue({
+      metrics: { openTickets: 0, waitingForYou: 0 },
+      recentlyUpdatedTickets: [],
+      recentlyResolvedTickets: [],
+    });
   });
 
   it("shows the Login page when there is no authenticated session", async () => {
@@ -49,11 +54,14 @@ describe("App", () => {
     expect(screen.queryByText(/Development Requester/i)).not.toBeInTheDocument();
   });
 
-  it("renders authenticated Requester navigation and lands on My Tickets", async () => {
+  it("renders authenticated Requester navigation and lands on the Requester Dashboard", async () => {
     vi.spyOn(api, "getCurrentUser").mockResolvedValue(REQUESTER);
     renderApp();
 
-    expect(await screen.findByRole("heading", { name: /My Tickets/i })).toBeInTheDocument();
+    await waitFor(
+      () => expect(screen.getByRole("heading", { name: /Dashboard/i })).toBeInTheDocument(),
+      { timeout: 3000 },
+    );
     const nav = screen.getByRole("navigation", { name: /Primary navigation/i });
     expect(within(nav).getByRole("button", { name: /My Tickets/i })).toBeInTheDocument();
     expect(within(nav).getByRole("button", { name: /Create Ticket/i })).toBeInTheDocument();
@@ -83,6 +91,50 @@ describe("App", () => {
     expect(await screen.findByText("System Status: Online")).toBeInTheDocument();
     expect(screen.getByText("Account and Access")).toBeInTheDocument();
     expect(screen.getByText("Hardware")).toBeInTheDocument();
+  });
+
+  it("routes the Requester Waiting for You metric to a status-filtered My Tickets view", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, "getCurrentUser").mockResolvedValue(REQUESTER);
+    vi.spyOn(api, "getRequesterDashboard").mockResolvedValue({
+      metrics: { openTickets: 2, waitingForYou: 1 },
+      recentlyUpdatedTickets: [],
+      recentlyResolvedTickets: [],
+    });
+    const getTicketsSpy = vi.spyOn(api, "getTickets").mockResolvedValue({
+      items: [], page: 1, pageSize: 10, totalItems: 0, totalPages: 0,
+    });
+
+    renderApp();
+    await screen.findByRole("heading", { name: /Dashboard/i });
+    await user.click(screen.getByRole("button", { name: /Waiting for You: 1\. View waiting Tickets/i }));
+
+    expect(await screen.findByRole("heading", { name: /My Tickets/i })).toBeInTheDocument();
+    expect(getTicketsSpy).toHaveBeenCalledWith(expect.objectContaining({ status: "Waiting for Requester" }));
+  });
+
+  it("clears the Waiting for Requester context when primary My Tickets is selected", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, "getCurrentUser").mockResolvedValue(REQUESTER);
+    vi.spyOn(api, "getRequesterDashboard").mockResolvedValue({
+      metrics: { openTickets: 2, waitingForYou: 1 },
+      recentlyUpdatedTickets: [],
+      recentlyResolvedTickets: [],
+    });
+    const getTicketsSpy = vi.spyOn(api, "getTickets").mockResolvedValue({
+      items: [], page: 1, pageSize: 10, totalItems: 0, totalPages: 0,
+    });
+
+    renderApp();
+    await screen.findByRole("heading", { name: /Dashboard/i });
+    const nav = screen.getByRole("navigation", { name: /Primary navigation/i });
+    await user.click(screen.getByRole("button", { name: /Waiting for You: 1\. View waiting Tickets/i }));
+    await screen.findByRole("heading", { name: /My Tickets/i });
+    expect(getTicketsSpy).toHaveBeenLastCalledWith(expect.objectContaining({ status: "Waiting for Requester" }));
+
+    await user.click(within(nav).getByRole("button", { name: /My Tickets/i }));
+
+    await waitFor(() => expect(getTicketsSpy).toHaveBeenLastCalledWith(expect.not.objectContaining({ status: expect.anything() })));
   });
 
   it("shows an Offline error message when the authenticated System Check fails", async () => {

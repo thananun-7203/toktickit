@@ -6,6 +6,7 @@ import {
   Category,
   RelatedSystem,
   Ticket,
+  TicketStatus,
   GetTicketsParams,
 } from "./api.js";
 
@@ -18,6 +19,7 @@ type LoadState = "idle" | "loading" | "success" | "error";
 interface MyTicketsProps {
   onCreateTicket?: () => void;
   onOpenTicket?: (ticketId: number) => void;
+  initialStatus?: TicketStatus;
 }
 
 function priorityClass(priority: Ticket["requestedPriority"]): string {
@@ -29,7 +31,7 @@ function statusClass(status: string): string {
   return `status-${status.toLowerCase().replace(/\s+/g, "-")}`;
 }
 
-export default function MyTickets({ onCreateTicket, onOpenTicket }: MyTicketsProps) {
+export default function MyTickets({ onCreateTicket, onOpenTicket, initialStatus }: MyTicketsProps) {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [totalItems, setTotalItems] = useState(0);
@@ -44,9 +46,17 @@ export default function MyTickets({ onCreateTicket, onOpenTicket }: MyTicketsPro
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [filterSystem, setFilterSystem] = useState("");
+  const [filterStatus, setFilterStatus] = useState<TicketStatus | "">(initialStatus ?? "");
   const [sort, setSort] = useState<"newest" | "oldest" | "summary_asc">("newest");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+
+  // Navigation context may change while this component remains mounted.
+  // Keep the status filter synchronized with the parent-provided context,
+  // without resetting the other user-controlled filters.
+  useEffect(() => {
+    setFilterStatus(initialStatus ?? "");
+  }, [initialStatus]);
 
   // Debounce search 300ms
   useEffect(() => {
@@ -57,7 +67,7 @@ export default function MyTickets({ onCreateTicket, onOpenTicket }: MyTicketsPro
   // Reset to page 1 when filters/sort/pageSize/search change
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, filterCategory, filterSystem, sort, pageSize]);
+  }, [debouncedSearch, filterCategory, filterSystem, filterStatus, sort, pageSize]);
 
   // Load dropdown data once
   useEffect(() => {
@@ -86,6 +96,7 @@ export default function MyTickets({ onCreateTicket, onOpenTicket }: MyTicketsPro
     if (debouncedSearch) params.search = debouncedSearch;
     if (filterCategory) params.categoryId = Number(filterCategory);
     if (filterSystem) params.relatedSystemId = Number(filterSystem);
+    if (filterStatus) params.status = filterStatus;
     try {
       const res = await getTickets(params);
       setTickets(res.items);
@@ -96,19 +107,20 @@ export default function MyTickets({ onCreateTicket, onOpenTicket }: MyTicketsPro
       setErrorMsg(err instanceof Error ? err.message : "Unable to load tickets");
       setLoadState("error");
     }
-  }, [debouncedSearch, filterCategory, filterSystem, sort, page, pageSize]);
+  }, [debouncedSearch, filterCategory, filterSystem, filterStatus, sort, page, pageSize]);
 
   useEffect(() => {
     fetchTickets();
   }, [fetchTickets]);
 
-  const hasActiveFilter = Boolean(debouncedSearch || filterCategory || filterSystem);
+  const hasActiveFilter = Boolean(debouncedSearch || filterCategory || filterSystem || filterStatus);
 
   function clearFilters() {
     setSearchInput("");
     setDebouncedSearch("");
     setFilterCategory("");
     setFilterSystem("");
+    setFilterStatus("");
     setSort("newest");
   }
 
@@ -170,6 +182,27 @@ export default function MyTickets({ onCreateTicket, onOpenTicket }: MyTicketsPro
                 {s.name}
               </option>
             ))}
+          </select>
+        </div>
+        <div className="col-6 col-lg-2">
+          <label htmlFor="filterStatus" className="form-label form-label-sm mb-1">
+            Status
+          </label>
+          <select
+            id="filterStatus"
+            className="form-select"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value as TicketStatus | "")}
+          >
+            <option value="">All statuses</option>
+            <option value="New">New</option>
+            <option value="Open">Open</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Waiting for Requester">Waiting for Requester</option>
+            <option value="Resolved">Resolved</option>
+            <option value="Closed">Closed</option>
+            <option value="Reopened">Reopened</option>
+            <option value="Cancelled">Cancelled</option>
           </select>
         </div>
         <div className="col-6 col-lg-2">
