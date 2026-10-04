@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { ActionFollowUpStatus } from "@prisma/client";
 import { afterAll, afterEach, describe, expect, it } from "vitest";
 import { getPrisma } from "../../src/prisma.js";
 
@@ -25,6 +26,7 @@ type ActionSnapshot = {
   result: string | null;
   followUpRequired: boolean;
   followUpNote: string | null;
+  followUpStatus: "NOT_REQUIRED" | "OUTSTANDING" | "COMPLETED";
   attachmentNotes: string | null;
   version: number;
 };
@@ -64,6 +66,7 @@ afterEach(async () => {
         result: actionRestore.result,
         followUpRequired: actionRestore.followUpRequired,
         followUpNote: actionRestore.followUpNote,
+        followUpStatus: actionRestore.followUpStatus,
         attachmentNotes: actionRestore.attachmentNotes,
         version: actionRestore.version,
       },
@@ -191,6 +194,7 @@ describe("Lab 4 seed regression", () => {
       result: action.result,
       followUpRequired: action.followUpRequired,
       followUpNote: action.followUpNote,
+      followUpStatus: action.followUpStatus,
       attachmentNotes: action.attachmentNotes,
       version: action.version,
     };
@@ -212,6 +216,7 @@ describe("Lab 4 seed regression", () => {
         result: "Preserve this in-progress diagnostic draft.",
         followUpRequired: false,
         followUpNote: null,
+        followUpStatus: ActionFollowUpStatus.NOT_REQUIRED,
         attachmentNotes: "Preserved mutable attachment note.",
         version: 7,
       },

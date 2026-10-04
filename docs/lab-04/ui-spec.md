@@ -184,6 +184,9 @@ Every Action item displays:
 - `Cancelled by` / `Cancelled at` for Cancelled rows.
 - Follow-Up Required Yes/No.
 - Follow-up Note when required.
+- Follow-up Status: `Not required`, `Outstanding`, or `Completed`.
+- When an Action is `Completed` and its follow-up is `Outstanding`, Staff/Admin sees `Mark Follow-up Complete`; Requesters see the state read-only.
+- Follow-up completion shows the recorded completion actor/time after success and does not change the Action's `Completed` status.
 - Attachment Notes when present.
 - Created by / `Recorded at` server timestamp in subdued audit metadata so it is not confused with Action Date/Time.
 - Updated timestamp where useful.
@@ -333,6 +336,9 @@ Navigation must preserve an understandable Back action (`Back to Dashboard`, `Ba
 | Complete attempted by non-assignee | Explain that the Action must be reassigned before that user can complete it. |
 | Invalid Action transition | Safe conflict; refresh current Action. |
 | Resolution gate failure | Explain required work state; no false success status. |
+| Outstanding follow-up | Show `Outstanding` and, for Staff/Admin, an explicit `Mark Follow-up Complete` action. |
+| Follow-up completion success | Refresh Action/Ticket versions and show `Completed` follow-up state plus completion actor/time. |
+| Follow-up completion conflict | Preserve current screen state and offer Refresh; do not claim completion. |
 | Stale Ticket status | Safe conflict; refresh Ticket. |
 | Duplicate click | Button disabled/busy; backend still state/version safe. |
 | Recoverable server failure | Preserve safe entered values and offer Retry/Cancel. |

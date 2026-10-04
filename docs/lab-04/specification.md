@@ -211,12 +211,31 @@ Only `IT_STAFF` and `ADMINISTRATOR` may execute formal Ticket transitions.
 | ID | Rule |
 |---|---|
 | BR-24 | Formal transition to `Resolved` requires at least one current-cycle `Completed` Action Taken whose `workflowCycle` equals the Ticket's current `workflowCycle` and whose `Result` is non-blank after trim. Completed work from a prior cycle cannot satisfy a later Reopen->Resolve cycle. |
-| BR-25 | Formal transition to `Resolved` is rejected while any current-cycle Action remains `Planned` or `In Progress`, or while any current-cycle non-cancelled Action has `followUpRequired=true`. A current-cycle `followUpRequired=true` Action is an outstanding follow-up for the resolution gate; `followUpRequired`/`followUpNote` remain Action data and do not create a separate Ticket status. Historical prior-cycle Actions remain visible but do not participate in the current resolution gate. |
+| BR-25 | Formal transition to `Resolved` is rejected while any current-cycle Action remains `Planned` or `In Progress`, or while any current-cycle non-cancelled Action has `followUpStatus=OUTSTANDING`. A current-cycle `followUpRequired=true` Action starts `OUTSTANDING` when completed and must be explicitly completed before it stops blocking resolution. Historical prior-cycle Actions remain visible but do not participate in the current resolution gate. |
 | BR-26 | The resolution gate is evaluated and the Ticket status mutation is committed atomically while the parent Ticket row is locked/revalidated and authoritative current-cycle Actions (`status`, `result`, and `followUpRequired`) are re-read in the same transaction; a client cannot bypass it by calling the API directly. Failure returns `409 RESOLUTION_GATE_NOT_MET` with no Ticket status mutation. |
 | BR-27 | Existing Tickets already `Resolved` or `Closed` at migration time remain valid even when they have zero Actions Taken; migration does not rewrite historical status. The gate applies to future transitions into `Resolved`. |
 | BR-28 | Requester `Problem Appears Resolved` remains advisory and never satisfies BR-24/BR-25 by itself. |
 | BR-29 | Any transition to `Reopened` clears `problemAppearsResolvedAt` and `resolvedAt`, increments `workflowCycle` by 1, and increments Ticket `version` atomically. Existing completed/cancelled Actions remain historical prior-cycle records; new Actions copy the new current cycle. |
 | BR-30 | Ticket workflow-affecting mutations use integer `version`. Status requests include `expectedVersion`; owner/IT Priority/Action mutations also increment the parent version. Status transition locks/re-reads the parent and authoritative child Actions, then commits only if the expected version/current state still match. A stale/concurrent loser returns `409 STALE_TICKET_STATE`. |
+
+### 7.1 Follow-Up Lifecycle
+
+The Follow-Up Lifecycle is a project design decision adopted for Issue #67 to make an outstanding required follow-up actionable after an Action reaches `Completed`. It does not replace `followUpRequired`/`followUpNote`; it makes the resolution-gate state explicit and auditable.
+
+| State | Meaning |
+|---|---|
+| `NOT_REQUIRED` | `followUpRequired=false`; no follow-up blocks resolution. |
+| `OUTSTANDING` | `followUpRequired=true` and the required follow-up has not yet been completed; this blocks Resolve. |
+| `COMPLETED` | `followUpRequired=true` and the follow-up was explicitly completed; this no longer blocks Resolve. |
+
+- A new Action with `followUpRequired=false` starts `NOT_REQUIRED`.
+- A new/active Action with `followUpRequired=true` remains `NOT_REQUIRED` until it is completed; completion moves it to `OUTSTANDING`.
+- A Completed Action with `followUpRequired=true` starts `OUTSTANDING`.
+- Only authenticated Staff/Admin may mark an outstanding follow-up complete through the dedicated endpoint.
+- Marking it complete records `followUpCompletedById` and `followUpCompletedAt`, increments Action `version`, and increments parent Ticket `version` atomically.
+- A follow-up completion request must provide current Action and parent Ticket versions; stale requests return `409` without mutation.
+- Requesters cannot mark follow-ups complete.
+- Follow-up completion is not an Action status transition; the Action remains terminal `Completed`.
 
 ## 8. Dashboard Calculation Rules
 
@@ -386,6 +405,7 @@ New capability groups:
 - `POST /api/v1/staff/tickets/:id/actions-taken` — Staff/Admin idempotent create using `clientRequestId`.
 - `PATCH /api/v1/staff/actions-taken/:id` — active Action edit/reassign with `expectedVersion`.
 - `PATCH /api/v1/staff/actions-taken/:id/status` — lifecycle transition/complete/cancel with `expectedVersion`.
+- `PATCH /api/v1/staff/actions-taken/:id/follow-up` — mark an outstanding Completed Action follow-up as completed with Action/Ticket version checks.
 - `GET /api/v1/requester/dashboard` — Requester ownership-safe summary.
 - `GET /api/v1/staff/dashboard` — IT Staff/Admin operational summary.
 - Existing workflow-affecting Staff Ticket mutations — strengthened with Ticket `expectedVersion`; status adds current-cycle resolution gate and parent-row/child-state revalidation.
@@ -426,6 +446,8 @@ All new state-changing endpoints use the existing approved-Origin/session/passwo
 | AC-26 | Administrator deactivation/demotion of a user with active assigned Actions is rejected until those Actions are reassigned/cancelled/completed, and concurrent assignee/account changes never commit an ineligible active Action assignment. |
 | AC-27 | `actionDateTime` is treated as editable business occurrence time, normalizes ISO offsets to UTC, allows backdating, rejects values later than server-now + 5 minutes, and remains distinct from server audit timestamps. |
 | AC-28 | Lost-response retry of Action create with the same Ticket/`clientRequestId` and equivalent payload is idempotent; conflicting reuse of the key returns `409 IDEMPOTENCY_KEY_REUSE`. |
+| AC-29 | A Completed Action with `followUpRequired=true` enters `OUTSTANDING`; Staff/Admin can explicitly complete that follow-up with Action/Ticket version checks, recording completion actor/time without changing the Action's terminal status. |
+| AC-30 | Resolve remains blocked while a current-cycle non-cancelled Action has `followUpStatus=OUTSTANDING`, and becomes eligible after all current-cycle gate conditions are satisfied including explicit follow-up completion. |
 
 Every AC maps to at least one planned test in `tests.md` before implementation issues are completed.
 
@@ -439,6 +461,7 @@ Sprint 4 is product-complete only when all applicable items below are true:
 - [ ] Actions Taken data model, migration, seed, idempotent create, authorization, API, UI, lifecycle, assignee-only completion, performer/cancellation provenance, concurrency, and Requester read-only behavior pass.
 - [ ] No active Action can remain assigned to an inactive user or Requester after Administrator account changes or concurrent assignment/account races.
 - [ ] Final Ticket transition matrix and current-workflow-cycle resolution gate are backend-enforced, parent-versioned, and stale-safe.
+- [ ] Follow-Up Lifecycle is explicit, auditable, server-authorized, stale-safe, and synchronized across schema/API/UI/tests; outstanding follow-ups block Resolve until explicitly completed.
 - [ ] Requester Dashboard metrics are ownership-safe and match authoritative queries.
 - [ ] IT Staff Dashboard metrics/current-user Actions/separate Recently Updated and Urgent lists match authoritative queries; Administrator behavior matches the approved matrix.
 - [ ] Labs 1–3 regression passes for authentication, Requester, Staff, Administrator, comments, notes, attachments, ownership, user management, and role navigation.
@@ -481,6 +504,7 @@ The handout fixes the required Action fields, role minimums, eight Ticket status
 | D-18 | Add explicit `resolvedAt` and do not backfill legacy resolution times. | Makes `Recently Resolved` semantically truthful and avoids treating arbitrary legacy `updatedAt` as a historical resolution event. |
 | D-19 | Staff `Recently Updated` and `Urgent Tickets` are separate lists; Urgent means active `itPriority=High`. | Avoids calling a priority-first list "recent" and gives each list one clear predicate/order. |
 | D-20 | Cancellation stores `cancelledById` and `cancelledAt`; completion stores `completedAt`. | Provides minimum lifecycle provenance without adding a separate generic audit-history product. |
+| D-21 | Add `followUpStatus` (`NOT_REQUIRED`, `OUTSTANDING`, `COMPLETED`) plus follow-up completion actor/time fields. A required follow-up becomes outstanding on Action completion and must be explicitly completed before Resolve can pass. | The existing boolean `followUpRequired` could identify that a follow-up is needed but could not represent whether that work was later completed; an explicit lifecycle closes that workflow gap without changing terminal Action status. |
 
 ## 15. Earlier-Increment Preservation Contract
 

@@ -198,6 +198,8 @@ Conflicts:
 - `409 STALE_TICKET_STATE` — parent Ticket version/state changed since the client loaded it.
 - `409 IDEMPOTENCY_KEY_REUSE` — same Ticket/create key reused with materially different normalized create input.
 
+When `followUpRequired=true`, a newly completed Action has `followUpStatus=OUTSTANDING`; otherwise it has `followUpStatus=NOT_REQUIRED`.
+
 ## 6. PATCH `/api/v1/staff/actions-taken/:id`
 
 Purpose: edit/reassign a Planned or In Progress Action without silently overwriting another user's change.
@@ -296,7 +298,41 @@ Errors:
 - `409 STALE_TICKET_STATE` parent Ticket version changed.
 - `409 ACTION_COMPLETION_REQUIRES_ASSIGNEE` authenticated actor is not the authoritative current assignee attempting Complete.
 
-## 8. Requester Dashboard API
+## 8. PATCH `/api/v1/staff/actions-taken/:id/follow-up`
+
+Purpose: explicitly complete an outstanding follow-up attached to a terminal `Completed` Action so it no longer blocks the Ticket Resolution Gate.
+
+Roles: `IT_STAFF`, `ADMINISTRATOR`. Approved Origin is required.
+
+Request:
+
+```json
+{
+  "expectedVersion": 4,
+  "expectedTicketVersion": 12
+}
+```
+
+Rules:
+
+- Both version tokens are required positive integers.
+- The Action must be `Completed`, `followUpRequired=true`, and `followUpStatus=OUTSTANDING`.
+- The authenticated Staff/Admin is recorded as `followUpCompletedById`; the server records `followUpCompletedAt`.
+- The Action remains terminal `Completed`; this endpoint changes only follow-up lifecycle state/provenance.
+- Action `version` and parent Ticket `version` each increment atomically.
+- Requesters cannot call this endpoint.
+
+Success `200`: updated Action representation with `followUpStatus=Completed` and completion provenance.
+
+Errors:
+
+- `400 VALIDATION_ERROR` missing/invalid version tokens or unexpected body keys.
+- `404` Action missing.
+- `409 FOLLOW_UP_NOT_OUTSTANDING` when the Action is not an eligible outstanding follow-up.
+- `409 STALE_ACTION_TAKEN` when Action version changed.
+- `409 STALE_TICKET_STATE` when parent Ticket version changed.
+
+## 9. Requester Dashboard API
 
 ### GET `/api/v1/requester/dashboard`
 

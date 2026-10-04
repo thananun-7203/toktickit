@@ -1,4 +1,4 @@
-import { ActionTakenStatus, Prisma, UserRole } from "@prisma/client";
+import { ActionFollowUpStatus, ActionTakenStatus, Prisma, UserRole } from "@prisma/client";
 import { Router } from "express";
 import {
   requireApprovedOrigin,
@@ -43,6 +43,9 @@ const actionSelect = Prisma.validator<Prisma.ActionTakenSelect>()({
   result: true,
   followUpRequired: true,
   followUpNote: true,
+  followUpStatus: true,
+  followUpCompletedBy: { select: { id: true, name: true, role: true } },
+  followUpCompletedAt: true,
   attachmentNotes: true,
   status: true,
   createdBy: { select: { id: true, name: true, role: true } },
@@ -287,6 +290,7 @@ actionTakenRouter.post(
             description: description!,
             followUpRequired: followUp!.followUpRequired,
             followUpNote: followUp!.followUpNote,
+            followUpStatus: ActionFollowUpStatus.NOT_REQUIRED,
             attachmentNotes,
             createdById: actor.id,
             assigneeId: assigneeId!,
@@ -411,6 +415,9 @@ actionTakenRouter.patch(
             ...(assigneeId !== undefined ? { assigneeId } : {}),
             followUpRequired: resultingFollowUpRequired,
             followUpNote: resultingFollowUpNote,
+            followUpStatus: ActionFollowUpStatus.NOT_REQUIRED,
+            followUpCompletedById: null,
+            followUpCompletedAt: null,
             ...(attachmentNotes !== undefined ? { attachmentNotes } : {}),
             version: { increment: 1 },
           },
@@ -511,6 +518,11 @@ actionTakenRouter.patch(
           data.result = result;
           data.followUpRequired = completionFollowUp.followUpRequired;
           data.followUpNote = completionFollowUp.followUpNote;
+          data.followUpStatus = completionFollowUp.followUpRequired
+            ? ActionFollowUpStatus.OUTSTANDING
+            : ActionFollowUpStatus.NOT_REQUIRED;
+          data.followUpCompletedById = null;
+          data.followUpCompletedAt = null;
           data.performedBy = { connect: { id: actor.id } };
           data.completedAt = new Date();
         } else if (targetStatus === ActionTakenStatus.CANCELLED) {
@@ -532,6 +544,92 @@ actionTakenRouter.patch(
       else if (error instanceof StaleActionError) res.status(409).json({ error: { code: "STALE_ACTION_TAKEN", message: "Action Taken changed; refresh and try again" } });
       else if (error instanceof StaleTicketStateError || isPrismaSerializationConflict(error)) res.status(409).json({ error: { code: "STALE_TICKET_STATE", message: "Ticket state changed; refresh and try again" } });
       else res.status(500).json({ error: { code: "ACTION_STATUS_UPDATE_FAILED", message: "Unable to update Action status" } });
+    }
+  },
+);
+
+actionTakenRouter.patch(
+  "/staff/actions-taken/:id/follow-up",
+  requireApprovedOrigin,
+  ...staffOnly,
+  async (req, res) => {
+    const actionId = parseResourceId(req.params.id);
+    if (!actionId) {
+      res.status(404).json({ error: { message: "Action Taken not found" } });
+      return;
+    }
+    const body = req.body && typeof req.body === "object" && !Array.isArray(req.body)
+      ? req.body as Record<string, unknown>
+      : {};
+    const fields: Record<string, string> = {};
+    assertAllowedKeys(body, ["expectedVersion", "expectedTicketVersion"], fields);
+    const expectedVersion = parsePositiveInteger(body.expectedVersion);
+    const expectedTicketVersion = parsePositiveInteger(body.expectedTicketVersion);
+    if (!expectedVersion) fields.expectedVersion = "expectedVersion must be a positive integer";
+    if (!expectedTicketVersion) fields.expectedTicketVersion = "expectedTicketVersion must be a positive integer";
+    if (Object.keys(fields).length > 0) {
+      res.status(400).json(validationError(fields));
+      return;
+    }
+
+    const actor = res.locals.authUser!;
+    try {
+      const updated = await runSerializableActionTransaction(async (tx) => {
+        const initial = await tx.actionTaken.findUnique({ where: { id: actionId }, select: { ticketId: true } });
+        if (!initial) throw new ActionMissingError();
+        const ticketRows = await tx.$queryRaw<Array<{ id: number; version: number }>>(Prisma.sql`
+          SELECT "id", "version" FROM "Ticket" WHERE "id" = ${initial.ticketId} FOR UPDATE
+        `);
+        const ticket = ticketRows[0];
+        if (!ticket) throw new ActionMissingError();
+        if (ticket.version !== expectedTicketVersion) throw new StaleTicketStateError();
+
+        const actionRows = await tx.$queryRaw<Array<{
+          id: number;
+          ticketId: number;
+          status: ActionTakenStatus;
+          version: number;
+          followUpRequired: boolean;
+          followUpStatus: ActionFollowUpStatus;
+        }>>(Prisma.sql`
+          SELECT "id", "ticketId", "status", "version", "followUpRequired", "followUpStatus"
+          FROM "ActionTaken" WHERE "id" = ${actionId} FOR UPDATE
+        `);
+        const current = actionRows[0];
+        if (!current) throw new ActionMissingError();
+        if (current.version !== expectedVersion) throw new StaleActionError();
+        if (
+          current.status !== ActionTakenStatus.COMPLETED
+          || !current.followUpRequired
+          || current.followUpStatus !== ActionFollowUpStatus.OUTSTANDING
+        ) {
+          throw new ActionValidationError({ followUpStatus: "Only a Completed Action with an outstanding follow-up can be marked complete" });
+        }
+
+        await tx.actionTaken.update({
+          where: { id: actionId },
+          data: {
+            followUpStatus: ActionFollowUpStatus.COMPLETED,
+            followUpCompletedById: actor.id,
+            followUpCompletedAt: new Date(),
+            version: { increment: 1 },
+          },
+          select: { id: true },
+        });
+        await tx.ticket.update({
+          where: { id: current.ticketId },
+          data: { version: { increment: 1 } },
+          select: { id: true },
+        });
+        return loadAction(tx, actionId);
+      });
+      res.json(serializeAction(updated));
+    } catch (error) {
+      if (error instanceof ActionMissingError) res.status(404).json({ error: { message: "Action Taken not found" } });
+      else if (error instanceof ActionValidationError) res.status(409).json({ error: { code: "FOLLOW_UP_NOT_OUTSTANDING", message: error.fields.followUpStatus } });
+      else if (error instanceof StaleActionError) res.status(409).json({ error: { code: "STALE_ACTION_TAKEN", message: "Action Taken changed; refresh and try again" } });
+      else if (error instanceof StaleTicketStateError || isPrismaSerializationConflict(error)) res.status(409).json({ error: { code: "STALE_TICKET_STATE", message: "Ticket state changed; refresh and try again" } });
+      else res.status(500).json({ error: { code: "ACTION_FOLLOW_UP_UPDATE_FAILED", message: "Unable to complete Action follow-up" } });
     }
   },
 );

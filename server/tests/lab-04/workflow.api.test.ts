@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import request from "supertest";
-import { ActionTakenStatus, UserRole } from "@prisma/client";
+import { ActionFollowUpStatus, ActionTakenStatus, UserRole } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
@@ -83,6 +83,7 @@ describe("Lab 4 Ticket workflow and resolution", () => {
         description: "Workflow test Action",
         followUpRequired,
         followUpNote: followUpRequired ? (options.followUpNote ?? "Workflow follow-up") : null,
+        followUpStatus: followUpRequired ? ActionFollowUpStatus.OUTSTANDING : ActionFollowUpStatus.NOT_REQUIRED,
         result: options.status === ActionTakenStatus.COMPLETED ? (options.result ?? "Workflow test completed") : null,
         status: options.status,
         createdById: staffId,
@@ -220,6 +221,32 @@ describe("Lab 4 Ticket workflow and resolution", () => {
     expect(result.body.error.code).toBe("RESOLUTION_GATE_NOT_MET");
     const saved = await getPrisma().ticket.findUniqueOrThrow({ where: { id: ticket.id } });
     expect(saved).toMatchObject({ status: "In Progress", version: ticket.version, resolvedAt: null });
+  });
+
+  it("FU-API-06/07: completing the outstanding follow-up allows Resolve", async () => {
+    const ticket = await createTicket();
+    const action = await addAction(ticket.id, {
+      status: ActionTakenStatus.COMPLETED,
+      result: "Completed but follow-up remains",
+      followUpRequired: true,
+      followUpNote: "Requester confirmation still required",
+    });
+
+    const blocked = await changeStatus(ticket.id, "Resolved", ticket.version);
+    expect(blocked.status).toBe(409);
+    expect(blocked.body.error.code).toBe("RESOLUTION_GATE_NOT_MET");
+
+    const completedFollowUp = await request(app)
+      .patch(`/api/v1/staff/actions-taken/${action.id}/follow-up`)
+      .set("Cookie", staffCookie)
+      .set("Origin", TEST_ORIGIN)
+      .send({ expectedVersion: action.version, expectedTicketVersion: ticket.version });
+    expect(completedFollowUp.status).toBe(200);
+    expect(completedFollowUp.body.followUpStatus).toBe("COMPLETED");
+
+    const resolved = await changeStatus(ticket.id, "Resolved", ticket.version + 1);
+    expect(resolved.status).toBe(200);
+    expect(resolved.body.status).toBe("Resolved");
   });
 
 });
