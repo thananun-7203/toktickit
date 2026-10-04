@@ -144,6 +144,8 @@ test("V-02/V-06/V-07 Requester major screens remain responsive and communicate s
   ]) {
     await page.setViewportSize(viewport);
     await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await openRequesterView(page, viewport.width, "My Tickets");
     await expect(page.getByRole("heading", { name: "My Tickets" })).toBeVisible();
     await expect(page.locator(".priority-badge:visible").filter({ hasText: "High" }).first()).toBeVisible();
     await expect(page.locator(".status-badge:visible").filter({ hasText: "New" }).first()).toBeVisible();

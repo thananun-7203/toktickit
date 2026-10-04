@@ -244,7 +244,7 @@ test("E2E-STAFF-01/02 full-stack Staff workflow and authorization boundaries", a
     users.requesterOneEmail,
     users.initialPassword,
     requesterPassword,
-    "My Tickets",
+    "Dashboard",
   );
   await page.getByRole("button", { name: "Create Ticket" }).first().click();
   await page.getByLabel(/Category/).selectOption({ label: "Software" });
@@ -339,6 +339,8 @@ test("E2E-STAFF-01/02 full-stack Staff workflow and authorization boundaries", a
 
   await logoutFromUserMenu(page, "E2E Staff One");
   await signIn(page, users.requesterOneEmail, requesterPassword);
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await page.getByRole("button", { name: "My Tickets" }).last().click();
   await expect(page.getByRole("heading", { name: "My Tickets" })).toBeVisible();
   const forbiddenNotes = await page.evaluate(async ({ apiUrl, id }) => {
     const response = await fetch(`${apiUrl}/api/v1/staff/tickets/${id}/internal-notes`, { credentials: "include" });
