@@ -20,6 +20,7 @@ describe("Lab 4 Requester Dashboard API", () => {
   let requesterCookie: string;
   let staffCookie: string;
   let adminCookie: string;
+  let mustChangeRequesterCookie: string;
   let terminalRecentlyUpdatedTicketId = -1;
 
   beforeAll(async () => {
@@ -32,20 +33,22 @@ describe("Lab 4 Requester Dashboard API", () => {
     categoryId = category.id;
     systemId = system.id;
 
-    const [requester, otherRequester, emptyRequester, staff, admin] = await Promise.all([
+    const [requester, otherRequester, emptyRequester, staff, admin, mustChangeRequester] = await Promise.all([
       createTestUser({ name: "Requester Dashboard Owner" }),
       createTestUser({ name: "Requester Dashboard Other" }),
       createTestUser({ name: "Requester Dashboard Empty" }),
       createTestUser({ name: "Requester Dashboard Staff", role: UserRole.IT_STAFF }),
       createTestUser({ name: "Requester Dashboard Admin", role: UserRole.ADMINISTRATOR }),
+      createTestUser({ name: "Requester Dashboard Must Change", mustChangePassword: true }),
     ]);
-    userIds.push(requester.id, otherRequester.id, emptyRequester.id, staff.id, admin.id);
+    userIds.push(requester.id, otherRequester.id, emptyRequester.id, staff.id, admin.id, mustChangeRequester.id);
     requesterId = requester.id;
     otherRequesterId = otherRequester.id;
     requesterCookie = (await createSessionCookie(requester.id)).cookie;
     emptyRequesterId = emptyRequester.id;
     staffCookie = (await createSessionCookie(staff.id)).cookie;
     adminCookie = (await createSessionCookie(admin.id)).cookie;
+    mustChangeRequesterCookie = (await createSessionCookie(mustChangeRequester.id)).cookie;
 
     const now = Date.now();
     const ownedFixtures = [
@@ -158,12 +161,15 @@ describe("Lab 4 Requester Dashboard API", () => {
     expect(response.body.recentlyResolvedTickets).toEqual([]);
   });
 
-  it("RD-API-06/07 and authorization: only Requesters may use the endpoint", async () => {
+  it("RD-API-06/07 and authorization: only Requesters may use the endpoint and password-change gate is enforced", async () => {
     const staffResponse = await request(app).get("/api/v1/requester/dashboard").set("Cookie", staffCookie);
     const adminResponse = await request(app).get("/api/v1/requester/dashboard").set("Cookie", adminCookie);
+    const mustChangeResponse = await request(app).get("/api/v1/requester/dashboard").set("Cookie", mustChangeRequesterCookie);
     const anonymousResponse = await request(app).get("/api/v1/requester/dashboard");
     expect(staffResponse.status).toBe(403);
     expect(adminResponse.status).toBe(403);
+    expect(mustChangeResponse.status).toBe(403);
+    expect(mustChangeResponse.body.error.code).toBe("PASSWORD_CHANGE_REQUIRED");
     expect(anonymousResponse.status).toBe(401);
     expect(staffResponse.body.metrics).toBeUndefined();
     expect(adminResponse.body.metrics).toBeUndefined();
