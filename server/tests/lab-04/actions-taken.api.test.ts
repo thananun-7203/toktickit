@@ -619,6 +619,83 @@ describe("Lab 4 Actions Taken API", () => {
     }
   });
 
+  it("E2E-AT-02: controlled integration evidence covers conflict, retry, race, cancellation, and Requester boundaries", async () => {
+    // This is the server-side/full-database equivalent for E2E-AT-02. It is
+    // intentionally one traceable gate so the verification issue can point
+    // to controlled PostgreSQL evidence without pretending these boundaries
+    // were exercised through a mocked browser.
+    const inactiveTicket = await ticket();
+    const inactiveAttempt = await createViaApi(inactiveTicket.id, staffACookie, createBody(1, { assigneeId: staffInactiveId }));
+    expect(inactiveAttempt.status).toBe(409);
+    expect(inactiveAttempt.body.error.code).toBe("ACTION_ASSIGNEE_NOT_ELIGIBLE");
+
+    const staleTicket = await ticket();
+    const staleCreated = await createViaApi(staleTicket.id, staffACookie, createBody(1, { assigneeId: staffAId }));
+    expect(staleCreated.status).toBe(201);
+    const staleEdit = await request(app)
+      .patch(`/api/v1/staff/actions-taken/${staleCreated.body.id}`)
+      .set("Cookie", staffACookie).set("Origin", TEST_ORIGIN)
+      .send({ expectedVersion: 1, expectedTicketVersion: 2, description: "First authoritative edit" });
+    expect(staleEdit.status).toBe(200);
+    const staleAction = await request(app)
+      .patch(`/api/v1/staff/actions-taken/${staleCreated.body.id}`)
+      .set("Cookie", staffACookie).set("Origin", TEST_ORIGIN)
+      .send({ expectedVersion: 1, expectedTicketVersion: 3, description: "Stale Action retry" });
+    expect(staleAction.status).toBe(409);
+    expect(staleAction.body.error.code).toBe("STALE_ACTION_TAKEN");
+    const staleParent = await createViaApi(staleTicket.id, staffACookie, createBody(2));
+    expect(staleParent.status).toBe(409);
+    expect(staleParent.body.error.code).toBe("STALE_TICKET_STATE");
+
+    const retryTicket = await ticket();
+    const retryBody = createBody(1, { assigneeId: staffAId });
+    const firstCreate = await createViaApi(retryTicket.id, staffACookie, retryBody);
+    expect(firstCreate.status).toBe(201);
+    const lostResponseRetry = await createViaApi(retryTicket.id, staffACookie, retryBody);
+    expect(lostResponseRetry.status).toBe(200);
+    expect(lostResponseRetry.body.id).toBe(firstCreate.body.id);
+    expect(await getPrisma().actionTaken.count({ where: { ticketId: retryTicket.id } })).toBe(1);
+
+    const raceTicket = await ticket();
+    const raceAction = await createViaApi(raceTicket.id, staffACookie, createBody(1, { assigneeId: staffAId }));
+    expect(raceAction.status).toBe(201);
+    const [raceReassign, raceComplete] = await Promise.all([
+      request(app)
+        .patch(`/api/v1/staff/actions-taken/${raceAction.body.id}`)
+        .set("Cookie", adminCookie).set("Origin", TEST_ORIGIN)
+        .send({ expectedVersion: 1, expectedTicketVersion: 2, assigneeId: staffBId }),
+      request(app)
+        .patch(`/api/v1/staff/actions-taken/${raceAction.body.id}/status`)
+        .set("Cookie", staffACookie).set("Origin", TEST_ORIGIN)
+        .send({ status: "Completed", expectedVersion: 1, expectedTicketVersion: 2, result: "Race completion", followUpRequired: false, followUpNote: null }),
+    ]);
+    expect([raceReassign.status, raceComplete.status].filter((status) => status === 200)).toHaveLength(1);
+    expect([raceReassign.status, raceComplete.status].filter((status) => status === 409)).toHaveLength(1);
+    expect(raceReassign.status).not.toBe(500);
+    expect(raceComplete.status).not.toBe(500);
+
+    const cancelledTicket = await ticket();
+    const cancellable = await createViaApi(cancelledTicket.id, staffACookie, createBody(1, { assigneeId: staffAId }));
+    expect(cancellable.status).toBe(201);
+    const cancelled = await request(app)
+      .patch(`/api/v1/staff/actions-taken/${cancellable.body.id}/status`)
+      .set("Cookie", adminCookie).set("Origin", TEST_ORIGIN)
+      .send({ status: "Cancelled", expectedVersion: 1, expectedTicketVersion: 2 });
+    expect(cancelled.status).toBe(200);
+    expect(cancelled.body).toMatchObject({ status: "Cancelled", cancelledBy: { id: adminId } });
+    expect(cancelled.body.cancelledAt).toEqual(expect.any(String));
+    expect((await getPrisma().actionTaken.findUniqueOrThrow({ where: { id: cancellable.body.id } })).status).toBe(ActionTakenStatus.CANCELLED);
+
+    const requesterTicket = await ticket();
+    const requesterWrite = await request(app)
+      .post(`/api/v1/staff/tickets/${requesterTicket.id}/actions-taken`)
+      .set("Cookie", requesterACookie).set("Origin", TEST_ORIGIN)
+      .send(createBody(1));
+    expect(requesterWrite.status).toBe(403);
+    expect(requesterWrite.body.error.code).toBe("FORBIDDEN");
+    expect(await getPrisma().actionTaken.count({ where: { ticketId: requesterTicket.id } })).toBe(0);
+  });
+
   it("AT-API-25/AZ4-11: Administrator cannot deactivate/demote a user with an active assigned Action", async () => {
     const actionOnlyAssignee = await createTestUser({
       name: `Action Only Assignee ${crypto.randomUUID().slice(0, 6)}`,

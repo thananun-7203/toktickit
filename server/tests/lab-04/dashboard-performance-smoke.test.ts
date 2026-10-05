@@ -68,7 +68,7 @@ describe("Lab 4 dashboard and Actions performance smoke", () => {
     return { response, elapsedMs: performance.now() - started };
   }
 
-  it("PERF-01: Staff Dashboard returns concise seeded operational data without materializing the Ticket collection", async () => {
+  it("PERF-01: Staff Dashboard returns bounded operational result lists within the smoke threshold", async () => {
     const { response, elapsedMs } = await measure("/api/v1/staff/dashboard", staffCookie);
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty("metrics");
@@ -79,7 +79,7 @@ describe("Lab 4 dashboard and Actions performance smoke", () => {
     expect(elapsedMs).toBeLessThan(1500);
   });
 
-  it("PERF-02: Requester Dashboard returns ownership-scoped top lists", async () => {
+  it("PERF-02: Requester Dashboard returns ownership-scoped bounded top lists within the smoke threshold", async () => {
     const { response, elapsedMs } = await measure("/api/v1/requester/dashboard", requesterCookie);
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty("metrics");
@@ -90,7 +90,7 @@ describe("Lab 4 dashboard and Actions performance smoke", () => {
     expect(elapsedMs).toBeLessThan(1500);
   });
 
-  it("PERF-03: Actions list returns only the Ticket-scoped ordered collection", async () => {
+  it("PERF-03: Actions list returns the Ticket-scoped ordered collection within the smoke threshold", async () => {
     const { response, elapsedMs } = await measure(`/api/v1/tickets/${actionTicketId}/actions-taken`, staffCookie);
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body.items)).toBe(true);
