@@ -41,6 +41,25 @@ const USER_ROLES = new Set<UserRole>([
   UserRole.ADMINISTRATOR,
 ]);
 
+adminUserRouter.get("/users/summary", ...adminOnly, async (_req, res) => {
+  try {
+    const groupedUsers = await getPrisma().user.groupBy({
+      by: ["role"],
+      _count: { _all: true },
+    });
+    const byRole: Record<UserRole, number> = {
+      [UserRole.ADMINISTRATOR]: 0,
+      [UserRole.IT_STAFF]: 0,
+      [UserRole.REQUESTER]: 0,
+    };
+    for (const group of groupedUsers) byRole[group.role] = group._count._all;
+    const totalUsers = Object.values(byRole).reduce((total, count) => total + count, 0);
+    res.json({ totalUsers, byRole });
+  } catch {
+    res.status(500).json({ error: { code: "USER_SUMMARY_FAILED", message: "Unable to load user summary" } });
+  }
+});
+
 // Serializes Administrator account-safety decisions with each other. Ticket
 // assignment/reassignment uses a row lock on the affected owner user, while
 // Administrator eligibility mutations below take the same user-row lock. The

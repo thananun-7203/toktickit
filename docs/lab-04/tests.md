@@ -533,3 +533,18 @@ These are the Lab 4 release-final gates and are intentionally **not** the Issue 
 | Dashboard DB-query comparison | Pending |
 | Production dependency audits | Pending |
 | Hosted CI exact reviewed release head | Pending |
+## Issue #58 — Administrator Workspace / User Summary Verification
+
+| Test ID | Area | Verification | Current result |
+|---|---|---|---|
+| I58-ADM-NAV-01 | Desktop navigation | Administrator sees Dashboard, Ticket Queue, and User Management; Ticket Queue reuses the Staff queue route | **Pass — `AuthenticatedShell.test.tsx`** |
+| I58-ADM-NAV-02 | Mobile navigation | Administrator mobile menu exposes Ticket Queue and User Management | **Pass — `AuthenticatedShell.test.tsx`** |
+| I58-ADM-SUM-API-01 | Backend Aggregate | Admin summary returns total users and all three role counts from database aggregates, including inactive accounts | **Pass — `users-admin.api.test.ts`** |
+| I58-ADM-SUM-AUTH-01 | Authorization | IT Staff and Requester receive `403 FORBIDDEN` from the summary endpoint | **Pass — `users-admin.api.test.ts`** |
+| I58-ADM-SUM-UI-01 | User Management | Role totals render from the aggregate endpoint and do not refetch/recalculate when the visible list is filtered | **Pass — `UserManagement.test.tsx`** |
+| I58-ADM-RESP-01 | Responsive | Administrator Dashboard, navigation, Ticket Queue, and User Management remain usable at 1280/820/390 widths with no page horizontal overflow | **Pass — Playwright `admin-workspace-responsive.spec.ts`** |
+| I58-ADM-A11Y-01 | Accessibility | Summary loading/error states are announced; existing labelled controls, focus-visible behavior, and modal focus handling remain intact | **Component regression passes; full keyboard/browser audit pending** |
+
+Implementation note: `GET /api/v1/admin/users/summary` is Administrator-only and uses one `User.groupBy(role)` database aggregate. `totalUsers` is derived from the three returned role buckets, so all displayed totals share the same database statement snapshot. It includes active and inactive accounts and is independent of the existing filtered `GET /api/v1/admin/users` response. No schema migration is required. The existing Lab 3 Administrator User Management API tests were extended to cover the additive endpoint; the existing list/create/edit/password-reset contract is unchanged.
+
+Issue #58 implementation verification on the feature branch: Client production build **Pass**; Client Vitest **112/112**; Server TypeScript build **Pass**; full Server suite on isolated `toktickit_issue10_test` **228/228** (single worker to avoid shared-fixture cross-file races); final aggregate-route/API authorization rerun **21/21** after consolidating totals into one group-by query; Administrator responsive Playwright **1/1** across 1280/820/390. These are local feature-branch results, not hosted CI results.

@@ -70,9 +70,9 @@ Staff Ticket Detail is reached through Dashboard/Queue drill-down and keeps the 
 
 Primary destinations:
 
-1. **User Management** — existing Admin responsibility remains available.
-2. **Dashboard** — reuses Staff operational Dashboard under the approved Staff-equivalent Ticket permission.
-3. **Ticket Queue** may be reachable from Dashboard drill-down/operational navigation where implementation exposes existing Admin Ticket permissions.
+1. **Dashboard** — reuses Staff operational Dashboard under the approved Staff-equivalent Ticket permission.
+2. **Ticket Queue** — uses the existing Staff Ticket Queue and Ticket Detail workflow; no duplicate Admin queue is created.
+3. **User Management** — existing Admin responsibility remains available.
 
 No separate advanced Administrator analytics screen is required.
 
@@ -145,6 +145,7 @@ Each actionable value/list row goes to Ticket Queue or Ticket Detail. Dashboard 
 - Administrator sees the same operational cards/lists when opening Dashboard.
 - No extra account-count cards are required for the minimum Sprint 4 UI.
 - User Management remains available separately.
+- User Management may additionally show Total Users and per-role account totals. These totals must come from an Administrator-only Backend Aggregate endpoint, include active and inactive accounts, and remain independent of Search/Role filters on the visible user list. They must never be calculated from the currently filtered list.
 
 ### Responsive
 

@@ -51,6 +51,7 @@ describe("Lab 3 authenticated application shell", () => {
       urgentTickets: [],
     });
     vi.spyOn(api, "getAdminUsers").mockResolvedValue([]);
+    vi.spyOn(api, "getAdminUserSummary").mockResolvedValue({ totalUsers: 24, byRole: { ADMINISTRATOR: 1, IT_STAFF: 5, REQUESTER: 18 } });
   });
 
   it("shows current Requester name/role and only Requester navigation", async () => {
@@ -121,16 +122,27 @@ describe("Lab 3 authenticated application shell", () => {
     expect(screen.queryByRole("button", { name: /My Tickets/i })).not.toBeInTheDocument();
   });
 
-  it("routes Administrator to the Staff Dashboard while keeping User Management navigation", async () => {
+  it("routes Administrator to the Staff Dashboard with Ticket Queue and User Management navigation", async () => {
     vi.spyOn(api, "getCurrentUser").mockResolvedValue({ ...REQUESTER, id: 303, role: "ADMINISTRATOR" });
     renderApp();
     await waitFor(() => expect(api.getStaffDashboard).toHaveBeenCalledTimes(1));
     expect(await screen.findByRole("heading", { name: /Dashboard/i })).toBeInTheDocument();
     const nav = screen.getByRole("navigation", { name: /Primary navigation/i });
     expect(within(nav).getByRole("button", { name: /Dashboard/i })).toBeInTheDocument();
+    expect(within(nav).getByRole("button", { name: /Ticket Queue/i })).toBeInTheDocument();
     expect(within(nav).getByRole("button", { name: /User Management/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Create Ticket/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /My Tickets/i })).not.toBeInTheDocument();
+  });
+
+  it("shows Administrator Ticket Queue in the mobile navigation", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, "getCurrentUser").mockResolvedValue({ ...REQUESTER, id: 304, role: "ADMINISTRATOR" });
+    renderApp();
+    await screen.findByRole("heading", { name: /Dashboard/i });
+    await user.click(screen.getByRole("button", { name: /Open navigation menu/i }));
+    expect(screen.getByRole("menuitem", { name: /Ticket Queue/i })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /User Management/i })).toBeInTheDocument();
   });
 
   it("lets Administrator drill from Dashboard to Ticket Detail and return to Dashboard", async () => {

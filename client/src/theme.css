@@ -732,6 +732,11 @@
 .admin-users-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 .admin-heading-actions { display: flex; align-items: center; gap: .75rem; }
 .admin-user-count { padding: .45rem .75rem; border-radius: 999px; background: #eef7ef; color: #286436; font-weight: 700; white-space: nowrap; }
+.admin-user-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .8rem; margin: 0 0 1.25rem; }
+.admin-user-summary-card { min-width: 0; display: flex; flex-direction: column; gap: .35rem; padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); box-shadow: var(--shadow-soft); }
+.admin-user-summary-card span { color: var(--ink-700); font-size: .8rem; font-weight: 700; }
+.admin-user-summary-card strong { color: var(--zen-green-900); font-size: 1.8rem; line-height: 1.1; }
+.admin-user-summary-state { grid-column: 1 / -1; margin: 0; padding: .8rem 1rem; border: 1px solid var(--line); border-radius: 10px; color: var(--ink-700); background: var(--surface-soft); }
 .admin-user-search { max-width: 760px; margin-bottom: 1rem; }
 .admin-user-search > label { display: block; margin-bottom: .4rem; font-weight: 700; color: #34483a; }
 .admin-user-filters { display: grid; grid-template-columns: minmax(180px, 260px) auto; gap: .85rem; align-items: end; padding: 1rem; border: 1px solid #dfe8df; border-radius: 14px; background: #f8fbf8; margin-bottom: 1.25rem; }
@@ -782,6 +787,7 @@
 .admin-danger-copy p { margin: .5rem 0 0; line-height: 1.5; }
 
 @media (max-width: 900px) {
+  .admin-user-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .admin-users-table th:nth-child(2), .admin-users-table td:nth-child(2) { display: none; }
   .admin-users-table th:nth-child(1) { width: 32%; }
   .admin-users-table th:nth-child(3) { width: 24%; }
@@ -790,6 +796,8 @@
 }
 
 @media (max-width: 700px) {
+  .admin-user-summary-card { padding: .85rem; }
+  .admin-user-summary-card strong { font-size: 1.55rem; }
   .admin-users-page { padding: 1rem; }
   .admin-users-heading { flex-direction: column; align-items: stretch; }
   .admin-heading-actions { justify-content: space-between; }
