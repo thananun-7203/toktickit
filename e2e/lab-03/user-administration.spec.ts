@@ -52,6 +52,17 @@ async function installAdminFlowApi(page: Page) {
       return;
     }
 
+    if (path === "/api/v1/admin/users/summary" && method === "GET") {
+      const byRole: Record<"ADMINISTRATOR" | "IT_STAFF" | "REQUESTER", number> = {
+        ADMINISTRATOR: 0,
+        IT_STAFF: 0,
+        REQUESTER: 0,
+      };
+      for (const user of users) byRole[user.role as keyof typeof byRole] += 1;
+      await fulfillJson(route, { totalUsers: users.length, byRole });
+      return;
+    }
+
     if (path === "/api/v1/admin/users" && method === "GET") {
       const search = (url.searchParams.get("search") ?? "").toLowerCase();
       const role = url.searchParams.get("role");
@@ -160,8 +171,9 @@ test("Administrator browser UI flow covers create, edit, initial password, and s
   await dialog.getByRole("button", { name: "Save Changes" }).click();
   const confirm = page.getByRole("dialog", { name: "Deactivate User" });
   await confirm.getByRole("button", { name: "Deactivate User", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText("Reassign this user's tickets");
-  await expect(page.getByRole("dialog", { name: "Edit User" })).toBeVisible();
+  const editDialog = page.getByRole("dialog", { name: "Edit User" });
+  await expect(editDialog.getByRole("alert")).toContainText("Reassign this user's tickets");
+  await expect(editDialog).toBeVisible();
 });
 
 test("E2E-ADMIN-01/02 full-stack Administrator workflow and safety boundaries", async ({ page }, testInfo) => {
@@ -254,7 +266,7 @@ test("E2E-ADMIN-01/02 full-stack Administrator workflow and safety boundaries", 
   await dialog.getByRole("button", { name: "Save Changes" }).click();
   const confirm = page.getByRole("dialog", { name: "Deactivate User" });
   await confirm.getByRole("button", { name: "Deactivate User", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText("Reassign this user's tickets");
+  await expect(page.getByRole("dialog", { name: "Edit User" }).getByRole("alert")).toContainText("Reassign this user's tickets");
   await captureEvidence(page, "13-admin-assigned-owner-conflict.png");
   await page.getByRole("dialog", { name: "Edit User" }).getByRole("button", { name: "Cancel" }).click();
 
