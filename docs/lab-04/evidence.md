@@ -2,7 +2,7 @@
 
 **Status:** Local integrated release-candidate verification is recorded. This index is not the final submission PDF; exact-head hosted CI/review, Project-board proof, final reflection approval, and release PR remain pending.
 
-**Integration baseline:** `lab4-staging` merge commit `4c1226246856a5df95f11984f063c9ff1a42d287` (PR #70). At the start of Issue #59, `lab4-staging` was 56 commits ahead of `main` and 0 commits behind. Issue #59 is open; its implementation PR and the separate `lab4-staging -> main` release PR have not yet been completed.
+**Integration baseline:** `lab4-staging` merge commit `4c1226246856a5df95f11984f063c9ff1a42d287` (PR #70). At the start of Issue #59, `lab4-staging` was 56 commits ahead of `main` and 0 commits behind. Issue #59 remains open; implementation PR [#71](https://github.com/thananun-7203/toktickit/pull/71) is open against `lab4-staging`, with `Tanaboonnnnn` requested for review. The separate `lab4-staging -> main` release PR has not been opened.
 
 ## Evidence rules
 
@@ -21,7 +21,7 @@
 |---|---|
 | Integration/release branch convention | `lab4-staging -> main`, with one feature branch and reviewed PR per implementation Issue |
 | Completed implementation increments | Issues #50–#58 and PRs #60–#70; Resolution Gate is Issue #67 / PR #68 |
-| Current final-evidence task | Issue #59 is open; its feature PR is not yet opened |
+| Current final-evidence task | Issue #59 is open; PR #71 is open against `lab4-staging`, with peer review and exact-head hosted CI pending |
 | Project board columns | **Pending independent verification.** Do not infer `Done` from Issue closed state. Add a genuine GitHub Project screenshot here before final PDF generation. |
 | README and ignore rules | Root `README.md` and `.gitignore` |
 

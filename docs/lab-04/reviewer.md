@@ -22,7 +22,7 @@ Issue plan prepared before implementation:
 | #67 | Resolution Gate & Follow-Up Workflow (inserted Issue 8) | PR #68 approved by `Tanaboonnnnn` and merged to `lab4-staging` as `fd6ef11`; Issue #67 closed |
 | #57 | Security, Regression & End-to-End Verification (Issue 9) | PR #69 approved by `Tanaboonnnnn` and merged to `lab4-staging` as `56a825a`; Issue #57 closed |
 | #58 | Accessibility, Responsive & Visual QA (Issue 10) | PR #70 approved by `Tanaboonnnnn` and merged to `lab4-staging` as `4c12262`; Issue #58 closed |
-| #59 | Final Evidence & Release Readiness (Issue 11) | **Open / in progress**; final evidence and release gates are being prepared |
+| #59 | Final Evidence & Release Readiness (Issue 11) | PR #71 is open against `lab4-staging`; review requested from `Tanaboonnnnn`; exact-head hosted CI and peer verdict pending |
 
 > Numbering note: #67 is the inserted Resolution Gate GitHub Issue. PR #68 implements it. #60 is PR #60, not GitHub Issue #60.
 
@@ -525,7 +525,8 @@ Current state as of `2026-11-01`:
 
 - `lab4-staging` head: `4c1226246856a5df95f11984f063c9ff1a42d287`.
 - GitHub compare: `lab4-staging` is 56 commits ahead of `main` and 0 behind.
-- Issue #59 is open; the Issue #59 feature PR is not yet opened.
+- Issue #59 remains open while PR #71 is under review: [#71 — `[Lab 4] Issue_11: Final Evidence & Release Readiness`](https://github.com/thananun-7203/toktickit/pull/71).
+- PR #71 targets `lab4-staging`; reviewer `Tanaboonnnnn` has been requested. Its current exact-head hosted CI and review verdict must be rechecked before this record is finalized.
 - The separate release PR `lab4-staging -> main` is not opened.
 - Local release-final checks are recorded in `tests.md` Section 18 (including Server/Client suites, builds, migration/seed, PostgreSQL dashboard aggregates, audits, and combined Playwright). Exact-head hosted CI and peer review remain pending until the Issue #59 PR is opened.
 
