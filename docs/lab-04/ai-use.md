@@ -3,14 +3,14 @@
 ## 1. AI Tool Used
 
 - **Model:** GPT-5.6 Sol in ChatGPT.
-- **Primary role in Sprint 4 so far:** specification agent, repository reconnaissance assistant, mockup/UI implementation assistant, and implementation/test assistant for the approved data/API/UI increments.
-- **Repository interaction:** ComGu Core was used to inspect the real `C:\toktickit` repository, create/push Lab 4 feature branches, read source/tests/docs, implement Issues #51–#53, run isolated PostgreSQL verification, and maintain evidence records. ComGu Desktop/temporary browser harnesses were used for observable visual QA without committing authentication bypasses or QA-only files.
+- **Primary role in Sprint 4:** specification agent, repository reconnaissance assistant, mockup/UI implementation assistant, implementation/test assistant, regression-evidence auditor, and peer-review correction assistant for Issues #50–#58.
+- **Repository interaction:** ComGu Core was used to inspect the real `C:\toktickit` repository, create/push Lab 4 feature branches, read source/tests/docs, implement the approved increments, run isolated PostgreSQL verification, and maintain evidence records. ComGu Desktop/temporary browser harnesses were used for observable visual QA without committing authentication bypasses or QA-only files.
 
-This record includes only assistance that actually occurred. Later coding/debugging/review prompts must be appended from real Sprint 4 work rather than predicted in advance.
+The ten prompts below are actual selected prompts preserved from Sprint planning and early implementation. Later dashboard/workflow/regression/visual-QA assistance is recorded in the observable work log below. Exact later-chat prompt wording is not reconstructed from memory or invented.
 
 ## 2. Selected Key Prompts Used So Far
 
-The final submission requires 6–10 selected key prompts. The following are real prompts from Sprint 4 planning/Issue #50 work and may be refined to the strongest 6–10 examples before release.
+The final submission requires 6–10 selected key prompts. These ten real prompts are retained as the selected set; they show the student's planning, approval checkpoints, and implementation authorization.
 
 ### Prompt 1 — Read the Lab 4 handout and plan the work
 
@@ -130,17 +130,41 @@ The UI implementation reused one `ActionsTakenPanel` for Staff interactive and R
 
 Visual QA used a temporary harness that rendered the real component and production CSS with representative Actions. That harness was intentionally removed before commit. Desktop/tablet layouts were inspected successfully; a limitation of the Windows Chrome headless runtime prevented trustworthy exact-390-CSS-pixel evidence because its inner viewport would not go below roughly 499–500 pixels. Rather than record a false pass, exact 390px browser/Playwright evidence remains assigned to the planned Issue #58 visual/accessibility gate; the `<=420px` production CSS rules themselves were implemented during Issue #53.
 
-## 5. My Reflection — Draft for Finalization
+## 4.4 Issues #55–#58 — Dashboard, Workflow, Regression, and Visual QA Use
+
+For Issue #55 (IT Staff Dashboard), the AI implemented the server-authoritative dashboard aggregate, UI summaries, deterministic ordering, and responsive checks. Peer review required stronger negative fixtures and exact Admin navigation regression. The AI added the missing tests rather than treating the first green local run as sufficient evidence.
+
+For Issue #56 (Requester Dashboard), the AI made an out-of-scope change to Resolution Gate follow-up semantics while working on the Dashboard. `Tanaboonnnnn` identified that this contradicted the approved workflow contract. The change was returned to the approved behavior and the separate follow-up design was moved to Issue #67. Further review found a mounted My Tickets component retaining stale `Waiting for Requester` filter state; the navigation synchronization and regression flow were corrected before approval.
+
+For Issue #67 (Resolution Gate & Follow-Up Workflow), the first UI implementation inferred the current workflow cycle from the maximum cycle found on Actions. Review identified that this could display a false Ready state after Reopen when only historical Actions existed. The AI changed the UI to use authoritative `Ticket.workflowCycle` and added `FU-UI-03` for the historical-cycle scenario.
+
+For Issue #57 (Security, Regression & End-to-End Verification), the initial evidence wording overstated a representative Lab 3 regression subset as a full Labs 1–3 rerun. Review required the documentation to distinguish representative evidence from deferred release-final regression, add the controlled PostgreSQL E2E-AT-02 integration scenario, and align performance claims with the assertions actually executed. The evidence wording and test traceability were corrected; deferred full release gates remained explicit.
+
+For Issue #58 (Accessibility, Responsive & Visual QA), the first browser evidence focused too narrowly on Administrator screens. Review required cross-role coverage for Requester/Staff Dashboards and Ticket Detail/Actions Taken, plus real Development DB screenshots and a final human visual review. The AI expanded the browser coverage and documented 16 fixture-backed screenshots separately from 12 live-Development-DB screenshots. The dependency lockfile changes were also explained as intentional security updates with their source commits, rather than left unexplained.
+
+### Observable limitations and verification corrections
+
+- The AI can make a plausible but incorrect scope change; the Requester Dashboard work demonstrated why the approved contract and peer review must override an unapproved generated behavior change.
+- The AI initially used the wrong source of truth for current workflow cycle; the reviewer found the Reopen edge case and a dedicated regression test was added.
+- The AI can overstate test completeness if representative and full-suite evidence are not distinguished. The PR #69 review corrected the wording and kept release-final gates pending.
+- Fixture screenshots do not prove live database state. The Issue #58 record separates the 16 deterministic responsive screenshots from 12 read-only live Development DB screenshots, and does not claim mobile live-DB verification.
+- Hosted CI is meaningful only for the exact reviewed commit. The reviewer records identify the exact head and CI run for each approved PR.
+
+## 5. My Reflection — Draft for Student Review
 
 Using the AI as a specification agent was most useful when it was constrained by two sources at the same time: the Lab 4 handout and the real Lab 3 implementation. Reading only the new handout would have made it easy to define rules that conflict with existing ownership, authentication, comments, attachments, or responsive behavior. Inspecting the repository first made the Sprint 4 contract more concrete because the proposed API, migration, and UI decisions could reuse existing patterns instead of creating a parallel design.
 
-The most important control was keeping human checkpoints around scope and Git actions. I asked the AI to stop after planning, stop after branch/Issue setup, inspect the previous baseline before drafting, and now stop before commit/PR. This reduced the risk that generated assumptions would immediately become project history. The final reflection will be updated after implementation/review with concrete examples of where coding-agent suggestions were accepted, corrected, or rejected.
+The most important lesson was that generated code and green tests were not enough by themselves. During the Requester Dashboard work, the AI changed the Resolution Gate behavior outside the approved Issue scope; the reviewer caught the contract conflict, and the behavior had to be restored and separated into its own Issue. During the follow-up work, the reviewer also found that the UI could use an old Action cycle after Reopen, so the implementation was corrected to use the Ticket's authoritative workflow cycle. These examples showed me why I needed to compare code with the specification and ask for review instead of accepting the first implementation.
+
+I also learned to describe evidence carefully. A representative regression run is not the same as a full release regression, and a screenshot made with mocked data is not proof of live database content. The final QA record separates those evidence types and keeps unfinished release gates visible. AI was useful for implementation, test design, and organizing evidence, but I still needed to make scope decisions, inspect the results, and rely on peer review before considering the work complete.
+
+**Student action required:** read this draft and change any first-person statement that does not match the student's own experience before submitting the final PDF.
 
 ## 6. Items to Add Before Final Submission
 
-- [ ] Keep only the strongest 6–10 real selected prompts after Sprint 4 is complete.
-- [ ] Add implementation/debugging prompts from Actions Taken, dashboards, workflow, regression, and visual QA only when they actually occur.
-- [ ] Add specific examples of AI mistakes/limitations and how they were verified or corrected.
+- [x] Keep only the strongest 6–10 real selected prompts after Sprint 4 is complete (10 actual prompts retained).
+- [x] Record later implementation/debugging/review work from Actions Taken, dashboards, workflow, regression, and visual QA without inventing verbatim prompt wording.
+- [x] Add specific examples of AI mistakes/limitations and how they were verified or corrected.
 - [ ] Finalize `My Reflection` in the student's own wording after peer review/release.
-- [ ] Ensure no hidden chain-of-thought or secrets are included; record observable prompts, outputs, decisions, and verification only.
+- [x] Ensure no hidden chain-of-thought or secrets are included; record observable prompts, outputs, decisions, and verification only.
 

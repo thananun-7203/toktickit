@@ -104,6 +104,17 @@ test("V4-03 Staff Ticket Detail / Actions Taken: responsive, keyboard, focus and
     await expect(page.getByRole("heading", { name: "Public Comments" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Internal Notes" })).toBeVisible();
     await expectNoHorizontalOverflow(page);
+
+    const addAction = panel.getByRole("button", { name: "Add Action" }).first();
+    await expect(addAction).toBeVisible();
+    await expect.poll(async () => {
+      const bounds = await addAction.boundingBox();
+      return bounds !== null && bounds.x >= 0 && bounds.x + bounds.width <= viewport.width + 1;
+    }).toBe(true);
+    const attachmentNote = panel.getByText(action.attachmentNotes);
+    await expect(attachmentNote).toBeVisible();
+    await expect.poll(() => attachmentNote.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
+
     if (viewport.width === 1280) {
       const add = panel.getByRole("button", { name: "Add Action" }).first();
       await add.focus();

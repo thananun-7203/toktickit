@@ -117,7 +117,8 @@ describe("Lab 3 authenticated application shell", () => {
     const nav = await screen.findByRole("navigation", { name: /Primary navigation/i });
     expect(within(nav).getByRole("button", { name: /Dashboard/i })).toBeInTheDocument();
     expect(within(nav).getByRole("button", { name: /Ticket Queue/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /Dashboard/i })).toBeInTheDocument();
+    await waitFor(() => expect(api.getStaffDashboard).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole("heading", { name: /Dashboard/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Create Ticket/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /My Tickets/i })).not.toBeInTheDocument();
   });

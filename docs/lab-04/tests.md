@@ -312,14 +312,14 @@ These tests intentionally bypass normal UI controls.
 |---|---|---|---|---|
 | AZ4-01 | AC-01/18 | Requester POST/PATCH Action endpoints directly | `403`, no mutation | **Pass — `98b5274`** |
 | AZ4-02 | AC-08 | Requester GET another user's Actions | `404`, no Action content | **Pass — `98b5274`** |
-| AZ4-03 | AC-18 | Requester GET Staff dashboard | `403` | Planned |
-| AZ4-04 | AC-18 | Staff/Admin GET Requester dashboard | `403` under role-specific endpoint contract | Planned |
+| AZ4-03 | AC-18 | Requester GET Staff dashboard | `403` | **Pass — `SD-API-09` in `staff-dashboard.api.test.ts`** |
+| AZ4-04 | AC-18 | Staff/Admin GET Requester dashboard | `403` under role-specific endpoint contract | **Pass — `RD-API-06/07` in `requester-dashboard.api.test.ts`** |
 | AZ4-05 | AC-01/18 | No session on new protected endpoint | `401` | **Pass — `98b5274`** |
 | AZ4-06 | AC-01/18 | mustChangePassword on new normal endpoint | `403 PASSWORD_CHANGE_REQUIRED` | **Pass — `98b5274`** |
 | AZ4-07 | AC-01/18 | wrong/missing/null Origin for new write endpoints | `403`, no mutation | **Pass — `98b5274`** |
 | AZ4-08 | AC-06 | client sends/spoofs creator/performer id | rejected/ignored; backend actor wins | **Pass — `98b5274`** |
 | AZ4-09 | AC-02 | assignee role/activation changes concurrently | final Action never references ineligible assignee due to mutation race | **Pass — `98b5274`** |
-| AZ4-10 | AC-21 | Existing Internal Note Requester direct access | still `403`, no note leak | Planned |
+| AZ4-10 | AC-21 | Existing Internal Note Requester direct access | still `403`, no note leak | **Pass — `NOTE-04/05/AZ-08` in `comments-notes.api.test.ts`** |
 | AZ4-11 | AC-26 | Direct Admin deactivate/demote bypass with active Action assignment | backend returns `409`; no invalid final relation | **Pass — `98b5274`** |
 | AZ4-12 | AC-06 | Non-assignee Staff directly calls Complete endpoint | `409 ACTION_COMPLETION_REQUIRES_ASSIGNEE`; no performer spoof | **Pass — `98b5274`** |
 | AZ4-13 | AC-13 | Stale `expectedTicketVersion` on owner/priority/status/problem-resolved mutation | `409 STALE_TICKET_STATE`; no partial mutation | **Pass — `1d62aa0`** |
@@ -350,7 +350,7 @@ These tests intentionally bypass normal UI controls.
 | WF-UI-02 | AC-11 | Resolved path explains **current-cycle** resolution gate; prior-cycle Completed work does not appear as qualifying | **Pass — UI-ST-10 safe Resolution Gate feedback; current-cycle qualification is server-authoritative** |
 | WF-UI-03 | AC-12 | Requester indication visually advisory, not formal Resolved | **Pass — existing UI-ST-08** |
 | WF-UI-04 | AC-13 | stale Ticket conflict offers refresh and does not show false success | **Pass — existing UI-ST-09** |
-| WF-UI-05 | AC-12 | Reopened refresh clears advisory/resolvedAt context, starts new work cycle, preserves historical prior-cycle Actions, and re-enables Add Action | **Partial — status/resolvedAt/workflowCycle state update covered by UI-ST-11; full Add Action cycle-2 browser/E2E flow remains planned** |
+| WF-UI-05 | AC-12 | Reopened refresh clears advisory/resolvedAt context, starts new work cycle, preserves historical prior-cycle Actions, and re-enables Add Action | **Pass — UI-ST-11 plus `E2E-ISSUE9-AT-WF` in `e2e/lab-04/issue9-fullstack.spec.ts` creates and completes a cycle-2 Action before the second Resolve** |
 
 ### 11.3 Requester Dashboard — `client/tests/lab-04/RequesterDashboard.test.tsx`
 
@@ -380,13 +380,14 @@ Playwright evidence widths remain 1280x900, approximately 820x1000, and approxim
 |---|---|---|---|---|
 | V4-01 | AC-23 | Requester Dashboard at 1280/820/390 | no page horizontal overflow; cards/lists readable | **Pass — Playwright `requester-dashboard-responsive.spec.ts`** |
 | V4-02 | AC-23 | Staff Dashboard at 1280/820/390 | no clipping/overlap; lists stack safely | **Pass — Playwright real-browser test `e2e/lab-04/staff-dashboard-responsive.spec.ts` verifies 1280/820/390, grid stacking, action-button width, and no horizontal overflow** |
-| V4-03 | AC-23 | Staff Ticket Detail Actions Taken at 1280/820/390 | create/edit/read-only controls usable, long text wraps | **Pass — Playwright `ticket-detail-actions-accessibility.spec.ts` verifies rendered Staff Ticket Detail/Actions Taken, Resolution Gate, communication sections, Add Action keyboard entry, Escape and focus restore at 1280/820/390; six screenshots captured** |
+| V4-03 | AC-23 | Staff Ticket Detail Actions Taken at 1280/820/390 | create/edit/read-only controls usable, long text wraps, primary action remains within the mobile viewport | **Pass — Playwright `ticket-detail-actions-accessibility.spec.ts` verifies rendered Staff Ticket Detail/Actions Taken, Resolution Gate, communication sections, mobile Add Action visibility/horizontal bounds, long attachment-note wrapping, keyboard entry, Escape and focus restore at 1280/820/390; six screenshots captured** |
 | V4-04 | AC-23 | Requester Ticket Detail Actions Taken at 1280/820/390 | read-only Action list readable | **Pass — same Playwright spec verifies keyboard-only Ticket drill-down, read-only Actions (no mutation controls), long text and no page overflow at 1280/820/390; six screenshots captured** |
 | V4-05 | AC-23 | visible keyboard focus for Dashboard links/Action controls | focus style visible | **Pass — Playwright focuses the Requester Ticket open control and Staff Add Action control, activates by Enter, and verifies focus remains usable** |
 | V4-06 | AC-23 | modal/dialog keyboard behavior if modal is used | focus enters/traps/restores; Escape safe | **Pass — Issue #53 component regression `6d60a93` plus Issue #58 browser test verifies dialog entry, Escape close, and focus restore; modal Tab-cycle remains covered by component regression** |
 | V4-07 | AC-23 | status/priority/private/shared/terminal cues | understandable without color alone | **Pass — browser assertions verify literal `Completed` and `Outstanding` labels, Resolution Gate heading/checklist, and separate Public Comments/Internal Notes/Actions Taken sections** |
 | V4-08 | AC-23 | validation placement / first-invalid focus | adjacent errors and usable focus | **Pass in Issue #53 component regression — `6d60a93` (field-adjacent validation and first-invalid focus); Issue #58 browser audit confirms the create dialog exposes labelled controls** |
-| V4-09 | AC-23/25 | final visual inspection | no placeholder/debug/obsolete controls or broken layouts | **Partial — browser responsive/overflow checks and screenshots captured; final human visual review and real-Development-DB screenshot confirmation remain pending** |
+| V4-09 | AC-23/25 | final visual inspection | no placeholder/debug/obsolete controls or broken layouts | **Pass — final human visual review is recorded below; 16 fixture-backed screenshots were reviewed at 1280/820/390 and 12 separate live-Development-DB screenshots cover Staff, Requester, and Administrator. Live-DB inspection was desktop-only; no mobile live-DB claim is made.** |
+| V4-10 | AC-23 | mobile primary action / long attachment note | Add Action remains within the 390px viewport; attachment note wraps without horizontal overflow | **Pass — `ticket-detail-actions-accessibility.spec.ts` asserts Add Action visibility and horizontal bounds plus attachment-note visibility/internal text overflow at 1280/820/390** |
 
 ## 13. Performance-Smoke Tests
 
@@ -468,7 +469,7 @@ The first browser run exposed two test-fixture problems rather than application 
 
 ## 16. Hosted CI / Release Verification
 
-Issue 8/10 must update hosted CI so Lab 4 paths are actually checked. Final evidence must include the exact reviewed head, not only an earlier green run.
+Issue #59 updates hosted CI so Lab 4 paths are actually checked. Final evidence must include the exact reviewed head, not only an earlier green run.
 
 Required release-head gates:
 
@@ -503,7 +504,7 @@ Required release-head gates:
 | AC-20 | SEED-01..04 |
 | AC-21 | REG-01..09, E2E-REG-01 |
 | AC-22 | AT-UI-03/04/07, WF-UI-02/04, Dashboard safe-failure UI tests |
-| AC-23 | V4-01..09, responsive component tests |
+| AC-23 | V4-01..10, responsive component tests |
 | AC-24 | exact-head hosted Server/Client/E2E CI evidence |
 | AC-25 | final docs/reviewer/AI/evidence audit in Issue #59 |
 | AC-26 | AT-API-25/26, AZ4-11, Administrator User Management conflict UI regression |
@@ -518,21 +519,49 @@ These are the Lab 4 release-final gates and are intentionally **not** the Issue 
 
 | Check | Final result |
 |---|---|
-| Server unit/API/integration | Pending |
-| Client Vitest | Pending |
-| Lab 3 -> Lab 4 migration preservation/recovery | Pending |
-| Lab 4 seed idempotency | Pending |
-| Prisma validate/migrate | Pending |
-| Server build | Pending |
-| Client build | Pending |
-| Actions Taken E2E | Pending |
-| Ticket Resolution E2E | Pending |
-| Dashboard E2E | Pending |
-| Labs 1–3 regression E2E | Pending |
-| Desktop/tablet/mobile accessibility/visual QA | Pending |
-| Dashboard DB-query comparison | Pending |
-| Production dependency audits | Pending |
-| Hosted CI exact reviewed release head | Pending |
+| Server unit/API/integration | **Local Pass — 228/228 tests across 30/30 files**, isolated `toktickit_test`, single worker; 2026-11-01. Includes Lab 1–4 unit/API/integration and controlled migration/seed regressions. |
+| Client Vitest | **Local Pass — 112/112 tests across 14/14 files**, 2026-11-01. The Staff Dashboard shell test now waits for the Staff Dashboard API call before asserting the landing page. |
+| Lab 3 -> Lab 4 migration preservation/recovery | **Local Pass — 3/3 `migration-regression.test.ts` tests** inside the 228-test Server run; includes Lab 3-shaped upgrade/preservation and injected pre-COMMIT rollback. |
+| Lab 4 seed idempotency | **Local Pass — 3/3 `seed-regression.test.ts` tests** inside the 228-test Server run; verifies repeat seed, mutable state preservation, and dashboard fixture coverage. |
+| Prisma validate/migrate | **Local Pass — `prisma validate` passed; `migrate deploy` applied all 9 migrations** to isolated `toktickit_lab4_e2e`; migration regression also passed. |
+| Server build | **Local Pass — `npm run build` (TypeScript)**, 2026-11-01. |
+| Client build | **Local Pass — `npm run build` (TypeScript + Vite)**, 2026-11-01. |
+| Actions Taken E2E | **Local Pass — `E2E-ISSUE9-AT-WF`** in full-stack Playwright; real API/database create/start/complete/follow-up and cycle flow. |
+| Ticket Resolution E2E | **Local Pass — `E2E-ISSUE9-AT-WF`** verifies Resolution Gate, Resolve, Reopen, old-cycle isolation, cycle-2 Action, and second Resolve. |
+| Dashboard E2E | **Local Pass — `E2E-ISSUE9-DASH`** verifies Requester and Staff dashboard data through the real API/database. Dashboard API tests also compare returned metrics/lists with authoritative Prisma database queries. |
+| Labs 1–3 regression E2E | **Local Pass — 12 Lab 3 browser tests** included in the combined run; representative flows cover authentication, Requester, Staff, Administrator, and responsive/accessibility behavior. This is not a claim that every historical Lab 1–3 test is a browser E2E. |
+| Desktop/tablet/mobile accessibility/visual QA | **Automated Local Pass — 19/19 combined Playwright tests**, including all Lab 4 responsive specs at 1280/820/390; 16 fixture screenshots and 12 live Development DB screenshots plus human visual review remain recorded under Issue #58. Live DB screenshots are desktop-only. |
+| Dashboard DB-query comparison | **Local Pass — `requester-dashboard.api.test.ts` and `staff-dashboard.api.test.ts` compare API metrics with direct PostgreSQL `COUNT(*) FILTER` aggregates, in addition to Prisma count/findMany comparisons for metrics and ordered lists. Both SQL-backed dashboard tests passed 9/9 together on the isolated test database.** |
+| Production dependency audits | **Local Pass — `npm audit --omit=dev`: 0 vulnerabilities (Server and Client)**, 2026-11-01. |
+| Hosted CI exact reviewed release head | **Pending — run after Issue #59 PR is opened; approval/CI must match the exact final PR head.** |
+
+### Issue #59 integrated local verification — 1 November 2026
+
+The Issue #59 worktree is based on `lab4-staging` commit `4c1226246856a5df95f11984f063c9ff1a42d287`. Local verification used Node.js 20.20.2 and isolated Docker Compose project `toktickit-issue59-test`, with PostgreSQL exposed on `127.0.0.1:5433`. The normal Development PostgreSQL container on port `5432` was not used as a test target.
+
+| Command / gate | Result |
+|---|---|
+| `server`: `npm test -- --maxWorkers=1 --minWorkers=1` with `TEST_DATABASE_URL=toktickit_test` | **Pass — 228/228 tests, 30/30 files** |
+| `server`: `npm run build` | **Pass** |
+| `server`: `npx prisma validate` with isolated test URL | **Pass** |
+| `server`: `npx prisma migrate deploy` on `toktickit_lab4_e2e` | **Pass — all 9 migrations applied** |
+| `server`: `npx prisma db seed` on `toktickit_lab4_e2e` | **Pass — 4 active/1 inactive Requesters, 3 active/1 inactive Staff, 2 Admins, 8 Tickets, 7 Actions, 2 Public Comments, 1 Internal Note** |
+| `client`: `npm test` | **Pass — 112/112 tests, 14/14 files** |
+| `client`: `npm run build` | **Pass** |
+| `e2e`: `npm run test:lab4` with `E2E_DATABASE_URL=toktickit_lab4_e2e` and SeaweedFS filer | **Pass — 19/19 tests** (12 Lab 3 regression + 7 Lab 4 full-stack/responsive) |
+| E2E database guard negative path | **Pass — rejected both a non-test Development database name and an E2E URL resolving to the configured Development database** |
+| `server` and `client`: `npm audit --omit=dev` | **Pass — 0 vulnerabilities in each production dependency tree** |
+| `git diff --check` | **Pass** at the Issue #59 audit checkpoint |
+
+The first Client full-suite run exposed a timing-sensitive assertion in `AuthenticatedShell.test.tsx`: the IT Staff test checked the Dashboard heading immediately after navigation appeared, before the Staff Dashboard request was observed. The test was aligned with the Administrator test by waiting for `getStaffDashboard` before asserting the heading. The focused shell suite then passed 8/8 and the full Client suite passed 112/112. No application runtime behavior was changed for this test correction.
+
+The CI Server test step now uses the same single-worker arguments as the verified local run (`--maxWorkers=1 --minWorkers=1`) because the integration suite shares database fixtures across files. This avoids the parallel cross-file fixture races seen in local verification and keeps hosted CI aligned with the passing command.
+
+The dashboard metric verification was strengthened with parameterized PostgreSQL aggregate queries (`COUNT(*) FILTER`) in the Requester and Staff Dashboard API tests. The API responses are compared directly to these SQL results, while the same tests also compare ordered top lists against independent Prisma `findMany` queries. The focused SQL-backed dashboard suite passed 9/9 tests.
+
+The combined Playwright run exercised the Lab 3 regression specs and Lab 4 Actions/Resolution Gate/Dashboard/responsive specs against the dedicated E2E database. Playwright created test users and Tickets only in that disposable database. The run did not use the Development database.
+
+**Still pending:** exact-head hosted GitHub Actions CI and peer review after the Issue #59 PR is opened; final Project-board evidence; and the separate reviewed `lab4-staging -> main` Release PR. These items must remain pending until their own evidence exists.
 ## Issue #58 — Administrator Workspace / User Summary Verification
 
 | Test ID | Area | Verification | Current result |
@@ -560,7 +589,7 @@ $env:CAPTURE_EVIDENCE='1'
 npx playwright test --config playwright.lab4-ui.config.ts lab-04/admin-workspace-responsive.spec.ts lab-04/requester-dashboard-responsive.spec.ts lab-04/staff-dashboard-responsive.spec.ts lab-04/ticket-detail-actions-accessibility.spec.ts
 ```
 
-Result: **5 passed (11.4s)** on local feature branch `feature/issue-58-accessibility-responsive-visual-qa`. The screenshots are real browser renders of the current React application using deterministic Playwright API fixtures. They are valid for layout/interaction regression, but **they are not live-Development-DB evidence and must not be represented as real database records**. Final human visual review and confirmation against real seeded Development data remain separate checks.
+Result: **5 passed (11.4s)** on local feature branch `feature/issue-58-accessibility-responsive-visual-qa`. The screenshots are real browser renders of the current React application using deterministic Playwright API fixtures. They are valid for layout/interaction regression, but **they are not live-Development-DB evidence and must not be represented as real database records**. The separate final human visual review and live-Development-DB confirmation are recorded in the later Issue #58 QA sections.
 
 Captured files under `artifacts/lab-04/issue-58/`:
 

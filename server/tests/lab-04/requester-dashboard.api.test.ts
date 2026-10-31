@@ -121,6 +121,21 @@ describe("Lab 4 Requester Dashboard API", () => {
     const expectedWaiting = await prisma.ticket.count({ where: { requesterId, status: "Waiting for Requester" } });
     expect(response.body.metrics).toEqual({ openTickets: expectedOpen, waitingForYou: expectedWaiting });
 
+    // Independently verify the public API metrics against PostgreSQL aggregates,
+    // rather than relying only on another Prisma model query.
+    const [sqlMetrics] = await prisma.$queryRaw<Array<{ openTickets: number; waitingForYou: number }>>`
+      SELECT
+        COUNT(*) FILTER (
+          WHERE "requesterId" = ${requesterId}
+            AND status IN ('New', 'Open', 'In Progress', 'Waiting for Requester', 'Reopened')
+        )::int AS "openTickets",
+        COUNT(*) FILTER (
+          WHERE "requesterId" = ${requesterId} AND status = 'Waiting for Requester'
+        )::int AS "waitingForYou"
+      FROM "Ticket"
+    `;
+    expect(response.body.metrics).toEqual(sqlMetrics);
+
     const expectedUpdated = await prisma.ticket.findMany({
       where: { requesterId },
       select: { id: true },
