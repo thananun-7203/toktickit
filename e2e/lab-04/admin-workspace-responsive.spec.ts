@@ -1,4 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
+import { mkdir } from "node:fs/promises";
+import path from "node:path";
+
+const CAPTURE_EVIDENCE = process.env.CAPTURE_EVIDENCE === "1";
+const EVIDENCE_DIR = path.resolve("../artifacts/lab-04/issue-58");
 
 const adminUser = {
   id: 401,
@@ -43,6 +48,12 @@ async function expectNoHorizontalOverflow(page: Page) {
   )).toBe(true);
 }
 
+async function capture(page: Page, name: string) {
+  if (!CAPTURE_EVIDENCE) return;
+  await mkdir(EVIDENCE_DIR, { recursive: true });
+  await page.screenshot({ path: path.join(EVIDENCE_DIR, name), fullPage: true });
+}
+
 test("Issue 58 Administrator workspace navigation and dashboard remain usable at 1280/820/390", async ({ page }) => {
   await mockAdminApis(page);
 
@@ -57,10 +68,12 @@ test("Issue 58 Administrator workspace navigation and dashboard remain usable at
   await expect(page.getByRole("heading", { name: "Urgent Tickets" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Recently Updated" })).toBeVisible();
   await expectNoHorizontalOverflow(page);
+  await capture(page, "administrator-dashboard-1280.png");
 
   await page.setViewportSize({ width: 820, height: 1000 });
   await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
   await expectNoHorizontalOverflow(page);
+  await capture(page, "administrator-dashboard-820.png");
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
@@ -70,6 +83,7 @@ test("Issue 58 Administrator workspace navigation and dashboard remain usable at
   await page.getByRole("menuitem", { name: "Ticket Queue" }).click();
   await expect(page.getByRole("heading", { name: /Ticket Queue/i })).toBeVisible();
   await expectNoHorizontalOverflow(page);
+  await capture(page, "administrator-ticket-queue-390.png");
 
   await page.getByRole("button", { name: "Open navigation menu" }).click();
   await page.getByRole("menuitem", { name: "User Management" }).click();
@@ -77,4 +91,21 @@ test("Issue 58 Administrator workspace navigation and dashboard remain usable at
   await expect(page.getByText("Total Users")).toBeVisible();
   await expect(page.getByText("24", { exact: true })).toBeVisible();
   await expectNoHorizontalOverflow(page);
+  await capture(page, "administrator-user-management-390.png");
+
+  const createUser = page.getByRole("button", { name: /Create User/i });
+  await createUser.focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog", { name: "Create User" });
+  const nameInput = dialog.locator("input[data-autofocus]");
+  await expect(nameInput).toBeFocused();
+  const submit = dialog.getByRole("button", { name: "Create User", exact: true });
+  await submit.focus();
+  await page.keyboard.press("Tab");
+  await expect(dialog.getByRole("button", { name: "Close Create User" })).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(submit).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(createUser).toBeFocused();
 });

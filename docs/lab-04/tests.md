@@ -380,13 +380,13 @@ Playwright evidence widths remain 1280x900, approximately 820x1000, and approxim
 |---|---|---|---|---|
 | V4-01 | AC-23 | Requester Dashboard at 1280/820/390 | no page horizontal overflow; cards/lists readable | **Pass — Playwright `requester-dashboard-responsive.spec.ts`** |
 | V4-02 | AC-23 | Staff Dashboard at 1280/820/390 | no clipping/overlap; lists stack safely | **Pass — Playwright real-browser test `e2e/lab-04/staff-dashboard-responsive.spec.ts` verifies 1280/820/390, grid stacking, action-button width, and no horizontal overflow** |
-| V4-03 | AC-23 | Staff Ticket Detail Actions Taken at 1280/820/390 | create/edit/read-only controls usable, long text wraps | **Partial — desktop/tablet manual QA passed; <=420px rules implemented; exact 390 evidence deferred to Issue #58** |
-| V4-04 | AC-23 | Requester Ticket Detail Actions Taken at 1280/820/390 | read-only Action list readable | **Partial — read-only component behavior passes; final multi-width browser evidence deferred to Issue #58** |
-| V4-05 | AC-23 | visible keyboard focus for Dashboard links/Action controls | focus style visible | Planned |
-| V4-06 | AC-23 | modal/dialog keyboard behavior if modal is used | focus enters/traps/restores; Escape safe | **Pass in Issue #53 component regression — `6d60a93`** |
-| V4-07 | AC-23 | status/priority/private/shared/terminal cues | understandable without color alone | Planned |
-| V4-08 | AC-23 | validation placement / first-invalid focus | adjacent errors and usable focus | **Pass in Issue #53 component regression — `6d60a93`** |
-| V4-09 | AC-23/25 | final visual inspection | no placeholder/debug/obsolete controls or broken layouts | Planned |
+| V4-03 | AC-23 | Staff Ticket Detail Actions Taken at 1280/820/390 | create/edit/read-only controls usable, long text wraps | **Pass — Playwright `ticket-detail-actions-accessibility.spec.ts` verifies rendered Staff Ticket Detail/Actions Taken, Resolution Gate, communication sections, Add Action keyboard entry, Escape and focus restore at 1280/820/390; six screenshots captured** |
+| V4-04 | AC-23 | Requester Ticket Detail Actions Taken at 1280/820/390 | read-only Action list readable | **Pass — same Playwright spec verifies keyboard-only Ticket drill-down, read-only Actions (no mutation controls), long text and no page overflow at 1280/820/390; six screenshots captured** |
+| V4-05 | AC-23 | visible keyboard focus for Dashboard links/Action controls | focus style visible | **Pass — Playwright focuses the Requester Ticket open control and Staff Add Action control, activates by Enter, and verifies focus remains usable** |
+| V4-06 | AC-23 | modal/dialog keyboard behavior if modal is used | focus enters/traps/restores; Escape safe | **Pass — Issue #53 component regression `6d60a93` plus Issue #58 browser test verifies dialog entry, Escape close, and focus restore; modal Tab-cycle remains covered by component regression** |
+| V4-07 | AC-23 | status/priority/private/shared/terminal cues | understandable without color alone | **Pass — browser assertions verify literal `Completed` and `Outstanding` labels, Resolution Gate heading/checklist, and separate Public Comments/Internal Notes/Actions Taken sections** |
+| V4-08 | AC-23 | validation placement / first-invalid focus | adjacent errors and usable focus | **Pass in Issue #53 component regression — `6d60a93` (field-adjacent validation and first-invalid focus); Issue #58 browser audit confirms the create dialog exposes labelled controls** |
+| V4-09 | AC-23/25 | final visual inspection | no placeholder/debug/obsolete controls or broken layouts | **Partial — browser responsive/overflow checks and screenshots captured; final human visual review and real-Development-DB screenshot confirmation remain pending** |
 
 ## 13. Performance-Smoke Tests
 
@@ -543,8 +543,29 @@ These are the Lab 4 release-final gates and are intentionally **not** the Issue 
 | I58-ADM-SUM-AUTH-01 | Authorization | IT Staff and Requester receive `403 FORBIDDEN` from the summary endpoint | **Pass — `users-admin.api.test.ts`** |
 | I58-ADM-SUM-UI-01 | User Management | Role totals render from the aggregate endpoint and do not refetch/recalculate when the visible list is filtered | **Pass — `UserManagement.test.tsx`** |
 | I58-ADM-RESP-01 | Responsive | Administrator Dashboard, navigation, Ticket Queue, and User Management remain usable at 1280/820/390 widths with no page horizontal overflow | **Pass — Playwright `admin-workspace-responsive.spec.ts`** |
-| I58-ADM-A11Y-01 | Accessibility | Summary loading/error states are announced; existing labelled controls, focus-visible behavior, and modal focus handling remain intact | **Component regression passes; full keyboard/browser audit pending** |
+| I58-ADM-A11Y-01 | Accessibility | Summary loading/error states are announced; existing labelled controls, focus-visible behavior, and modal focus handling remain intact | **Pass — component regression plus browser verification of Create User dialog initial focus, Tab/Shift+Tab wrapping, Escape, and focus restore** |
 
 Implementation note: `GET /api/v1/admin/users/summary` is Administrator-only and uses one `User.groupBy(role)` database aggregate. `totalUsers` is derived from the three returned role buckets, so all displayed totals share the same database statement snapshot. It includes active and inactive accounts and is independent of the existing filtered `GET /api/v1/admin/users` response. No schema migration is required. The existing Lab 3 Administrator User Management API tests were extended to cover the additive endpoint; the existing list/create/edit/password-reset contract is unchanged.
 
-Issue #58 implementation verification on the feature branch: Client production build **Pass**; Client Vitest **112/112**; Server TypeScript build **Pass**; full Server suite on isolated `toktickit_issue10_test` **228/228** (single worker to avoid shared-fixture cross-file races); final aggregate-route/API authorization rerun **21/21** after consolidating totals into one group-by query; Administrator responsive Playwright **1/1** across 1280/820/390. These are local feature-branch results, not hosted CI results.
+Issue #58 implementation verification on the feature branch: Client production build **Pass**; Client Vitest **112/112**; Server TypeScript build **Pass**; full Server suite on isolated `toktickit_issue10_test` **228/228** (single worker to avoid shared-fixture cross-file races); final aggregate-route/API authorization rerun **21/21** after consolidating totals into one group-by query; Issue #58 responsive/accessibility Playwright **5/5** across the Requester Dashboard, Staff Dashboard, Administrator workspace, Staff Ticket Detail/Actions Taken, and Requester Ticket Detail/Actions Taken. These are local feature-branch results, not hosted CI results.
+
+### Issue #58 — Expanded cross-role browser QA and screenshot evidence
+
+The review-fix adds `e2e/lab-04/ticket-detail-actions-accessibility.spec.ts` rather than treating the Administrator workspace as the whole Issue #58 scope. Together with the existing Requester Dashboard, Staff Dashboard, and Administrator workspace specs, the focused UI-only Playwright run passed **5/5 tests** at the required 1280/820/390 CSS-pixel viewports. It verifies no page-level horizontal overflow, responsive dashboard/card layouts, Staff Actions Taken and Resolution Gate labels, separation of Actions Taken/Public Comments/Internal Notes, Requester read-only controls, keyboard activation of Ticket/Action controls, dialog entry, Escape close, and focus restoration. The Administrator workspace spec additionally verifies Create User dialog initial focus, Tab/Shift+Tab wrapping, Escape close, and focus restoration.
+
+Command (run from `e2e/`):
+
+```powershell
+$env:CAPTURE_EVIDENCE='1'
+npx playwright test --config playwright.lab4-ui.config.ts lab-04/admin-workspace-responsive.spec.ts lab-04/requester-dashboard-responsive.spec.ts lab-04/staff-dashboard-responsive.spec.ts lab-04/ticket-detail-actions-accessibility.spec.ts
+```
+
+Result: **5 passed (10.2s)** on local feature branch `feature/issue-58-accessibility-responsive-visual-qa`. The screenshots are real browser renders of the current React application using deterministic Playwright API fixtures. They are valid for layout/interaction regression, but **they are not live-Development-DB evidence and must not be represented as real database records**. Final human visual review and confirmation against real seeded Development data remain separate checks.
+
+Captured files under `artifacts/lab-04/issue-58/`:
+
+- `administrator-dashboard-1280.png`, `administrator-dashboard-820.png`, `administrator-ticket-queue-390.png`, `administrator-user-management-390.png`
+- `requester-dashboard-1280.png`, `requester-dashboard-820.png`, `requester-dashboard-390.png`
+- `staff-dashboard-1280.png`, `staff-dashboard-820.png`, `staff-dashboard-390.png`
+- `requester-ticket-actions-1280.png`, `requester-ticket-actions-820.png`, `requester-ticket-actions-390.png`
+- `staff-ticket-actions-1280.png`, `staff-ticket-actions-820.png`, `staff-ticket-actions-390.png`

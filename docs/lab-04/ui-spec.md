@@ -357,16 +357,16 @@ The final evidence for all major Lab 4 screens must verify:
 - [ ] Tablet ~820 layout uses compact shell navigation and no horizontal page overflow.
 - [ ] Mobile ~390 layout stacks cards/forms/controls without clipping or overlap.
 - [ ] Dashboard metric labels/values remain readable at all widths.
-- [ ] Actions Taken active/terminal/read-only meaning is not color-only.
-- [ ] Public Comments vs Internal Notes vs Actions Taken remain structurally and textually distinct.
+- [x] Actions Taken active/terminal/read-only meaning is not color-only. (Literal status/follow-up labels verified in Issue #58 browser QA.)
+- [x] Public Comments vs Internal Notes vs Actions Taken remain structurally and textually distinct. (Separate headings/sections verified in Staff Ticket Detail browser QA.)
 - [ ] All form inputs have labels/accessibility names.
 - [ ] Keyboard focus is visibly rendered.
 - [ ] Keyboard-only user can reach Dashboard drill-down and Action controls.
-- [ ] Modal/dialog focus is contained/restored where a modal is used.
-- [ ] Validation is adjacent to the relevant field.
-- [ ] Busy controls are disabled and communicate progress.
+- [x] Modal/dialog focus is contained/restored where a modal is used. (Issue #53 component regression and Issue #58 browser keyboard checks.)
+- [x] Validation is adjacent to the relevant field. (Issue #53 component regression.)
+- [x] Busy controls are disabled and communicate progress. (Issue #53 component regression.)
 - [ ] Long summary/description/attachment-note text wraps safely.
-- [ ] No page-level horizontal overflow.
+- [x] No page-level horizontal overflow. (Requester/Staff/Admin and Ticket Detail browser checks at 1280/820/390.)
 - [ ] No off-screen primary action at mobile width.
 - [ ] No placeholder/debug/obsolete Lab 2/3 UI remains in final evidence.
 
