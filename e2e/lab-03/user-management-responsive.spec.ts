@@ -25,6 +25,17 @@ async function mockAdminApis(page: Page) {
   await page.route("**/api/v1/staff/dashboard", async (route) => route.fulfill({ json: { metrics: { unassignedActiveTickets: 0, myActiveTickets: 0, byStatus: {}, activeByItPriority: {} }, myActiveActions: [], recentlyUpdatedTickets: [], urgentTickets: [] } }));
   await page.route("**/api/v1/admin/users**", async (route) => {
     if (route.request().method() === "GET") {
+      const url = new URL(route.request().url());
+      if (url.pathname === "/api/v1/admin/users/summary") {
+        const byRole: Record<"ADMINISTRATOR" | "IT_STAFF" | "REQUESTER", number> = {
+          ADMINISTRATOR: 0,
+          IT_STAFF: 0,
+          REQUESTER: 0,
+        };
+        for (const user of users) byRole[user.role as keyof typeof byRole] += 1;
+        await route.fulfill({ json: { totalUsers: users.length, byRole } });
+        return;
+      }
       await route.fulfill({ json: { items: users } });
       return;
     }
@@ -43,6 +54,8 @@ async function capture(page: Page, name: string, fullPage = true) {
 }
 
 test("V-05/V-06 User Management stays usable and modal focus stays contained", async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
   await mockAdminApis(page);
 
   await page.setViewportSize({ width: 1280, height: 900 });
@@ -87,4 +100,5 @@ test("V-05/V-06 User Management stays usable and modal focus stays contained", a
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   await expect(opener).toBeFocused();
+  expect(pageErrors).toEqual([]);
 });

@@ -70,9 +70,9 @@ Staff Ticket Detail is reached through Dashboard/Queue drill-down and keeps the 
 
 Primary destinations:
 
-1. **User Management** — existing Admin responsibility remains available.
-2. **Dashboard** — reuses Staff operational Dashboard under the approved Staff-equivalent Ticket permission.
-3. **Ticket Queue** may be reachable from Dashboard drill-down/operational navigation where implementation exposes existing Admin Ticket permissions.
+1. **Dashboard** — reuses Staff operational Dashboard under the approved Staff-equivalent Ticket permission.
+2. **Ticket Queue** — uses the existing Staff Ticket Queue and Ticket Detail workflow; no duplicate Admin queue is created.
+3. **User Management** — existing Admin responsibility remains available.
 
 No separate advanced Administrator analytics screen is required.
 
@@ -145,6 +145,7 @@ Each actionable value/list row goes to Ticket Queue or Ticket Detail. Dashboard 
 - Administrator sees the same operational cards/lists when opening Dashboard.
 - No extra account-count cards are required for the minimum Sprint 4 UI.
 - User Management remains available separately.
+- User Management may additionally show Total Users and per-role account totals. These totals must come from an Administrator-only Backend Aggregate endpoint, include active and inactive accounts, and remain independent of Search/Role filters on the visible user list. They must never be calculated from the currently filtered list.
 
 ### Responsive
 
@@ -356,16 +357,16 @@ The final evidence for all major Lab 4 screens must verify:
 - [ ] Tablet ~820 layout uses compact shell navigation and no horizontal page overflow.
 - [ ] Mobile ~390 layout stacks cards/forms/controls without clipping or overlap.
 - [ ] Dashboard metric labels/values remain readable at all widths.
-- [ ] Actions Taken active/terminal/read-only meaning is not color-only.
-- [ ] Public Comments vs Internal Notes vs Actions Taken remain structurally and textually distinct.
+- [x] Actions Taken active/terminal/read-only meaning is not color-only. (Literal status/follow-up labels verified in Issue #58 browser QA.)
+- [x] Public Comments vs Internal Notes vs Actions Taken remain structurally and textually distinct. (Separate headings/sections verified in Staff Ticket Detail browser QA.)
 - [ ] All form inputs have labels/accessibility names.
 - [ ] Keyboard focus is visibly rendered.
 - [ ] Keyboard-only user can reach Dashboard drill-down and Action controls.
-- [ ] Modal/dialog focus is contained/restored where a modal is used.
-- [ ] Validation is adjacent to the relevant field.
-- [ ] Busy controls are disabled and communicate progress.
+- [x] Modal/dialog focus is contained/restored where a modal is used. (Issue #53 component regression and Issue #58 browser keyboard checks.)
+- [x] Validation is adjacent to the relevant field. (Issue #53 component regression.)
+- [x] Busy controls are disabled and communicate progress. (Issue #53 component regression.)
 - [ ] Long summary/description/attachment-note text wraps safely.
-- [ ] No page-level horizontal overflow.
+- [x] No page-level horizontal overflow. (Requester/Staff/Admin and Ticket Detail browser checks at 1280/820/390.)
 - [ ] No off-screen primary action at mobile width.
 - [ ] No placeholder/debug/obsolete Lab 2/3 UI remains in final evidence.
 

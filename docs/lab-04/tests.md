@@ -380,13 +380,13 @@ Playwright evidence widths remain 1280x900, approximately 820x1000, and approxim
 |---|---|---|---|---|
 | V4-01 | AC-23 | Requester Dashboard at 1280/820/390 | no page horizontal overflow; cards/lists readable | **Pass — Playwright `requester-dashboard-responsive.spec.ts`** |
 | V4-02 | AC-23 | Staff Dashboard at 1280/820/390 | no clipping/overlap; lists stack safely | **Pass — Playwright real-browser test `e2e/lab-04/staff-dashboard-responsive.spec.ts` verifies 1280/820/390, grid stacking, action-button width, and no horizontal overflow** |
-| V4-03 | AC-23 | Staff Ticket Detail Actions Taken at 1280/820/390 | create/edit/read-only controls usable, long text wraps | **Partial — desktop/tablet manual QA passed; <=420px rules implemented; exact 390 evidence deferred to Issue #58** |
-| V4-04 | AC-23 | Requester Ticket Detail Actions Taken at 1280/820/390 | read-only Action list readable | **Partial — read-only component behavior passes; final multi-width browser evidence deferred to Issue #58** |
-| V4-05 | AC-23 | visible keyboard focus for Dashboard links/Action controls | focus style visible | Planned |
-| V4-06 | AC-23 | modal/dialog keyboard behavior if modal is used | focus enters/traps/restores; Escape safe | **Pass in Issue #53 component regression — `6d60a93`** |
-| V4-07 | AC-23 | status/priority/private/shared/terminal cues | understandable without color alone | Planned |
-| V4-08 | AC-23 | validation placement / first-invalid focus | adjacent errors and usable focus | **Pass in Issue #53 component regression — `6d60a93`** |
-| V4-09 | AC-23/25 | final visual inspection | no placeholder/debug/obsolete controls or broken layouts | Planned |
+| V4-03 | AC-23 | Staff Ticket Detail Actions Taken at 1280/820/390 | create/edit/read-only controls usable, long text wraps | **Pass — Playwright `ticket-detail-actions-accessibility.spec.ts` verifies rendered Staff Ticket Detail/Actions Taken, Resolution Gate, communication sections, Add Action keyboard entry, Escape and focus restore at 1280/820/390; six screenshots captured** |
+| V4-04 | AC-23 | Requester Ticket Detail Actions Taken at 1280/820/390 | read-only Action list readable | **Pass — same Playwright spec verifies keyboard-only Ticket drill-down, read-only Actions (no mutation controls), long text and no page overflow at 1280/820/390; six screenshots captured** |
+| V4-05 | AC-23 | visible keyboard focus for Dashboard links/Action controls | focus style visible | **Pass — Playwright focuses the Requester Ticket open control and Staff Add Action control, activates by Enter, and verifies focus remains usable** |
+| V4-06 | AC-23 | modal/dialog keyboard behavior if modal is used | focus enters/traps/restores; Escape safe | **Pass — Issue #53 component regression `6d60a93` plus Issue #58 browser test verifies dialog entry, Escape close, and focus restore; modal Tab-cycle remains covered by component regression** |
+| V4-07 | AC-23 | status/priority/private/shared/terminal cues | understandable without color alone | **Pass — browser assertions verify literal `Completed` and `Outstanding` labels, Resolution Gate heading/checklist, and separate Public Comments/Internal Notes/Actions Taken sections** |
+| V4-08 | AC-23 | validation placement / first-invalid focus | adjacent errors and usable focus | **Pass in Issue #53 component regression — `6d60a93` (field-adjacent validation and first-invalid focus); Issue #58 browser audit confirms the create dialog exposes labelled controls** |
+| V4-09 | AC-23/25 | final visual inspection | no placeholder/debug/obsolete controls or broken layouts | **Partial — browser responsive/overflow checks and screenshots captured; final human visual review and real-Development-DB screenshot confirmation remain pending** |
 
 ## 13. Performance-Smoke Tests
 
@@ -533,3 +533,89 @@ These are the Lab 4 release-final gates and are intentionally **not** the Issue 
 | Dashboard DB-query comparison | Pending |
 | Production dependency audits | Pending |
 | Hosted CI exact reviewed release head | Pending |
+## Issue #58 — Administrator Workspace / User Summary Verification
+
+| Test ID | Area | Verification | Current result |
+|---|---|---|---|
+| I58-ADM-NAV-01 | Desktop navigation | Administrator sees Dashboard, Ticket Queue, and User Management; Ticket Queue reuses the Staff queue route | **Pass — `AuthenticatedShell.test.tsx`** |
+| I58-ADM-NAV-02 | Mobile navigation | Administrator mobile menu exposes Ticket Queue and User Management | **Pass — `AuthenticatedShell.test.tsx`** |
+| I58-ADM-SUM-API-01 | Backend Aggregate | Admin summary returns total users and all three role counts from database aggregates, including inactive accounts | **Pass — `users-admin.api.test.ts`** |
+| I58-ADM-SUM-AUTH-01 | Authorization | IT Staff and Requester receive `403 FORBIDDEN` from the summary endpoint | **Pass — `users-admin.api.test.ts`** |
+| I58-ADM-SUM-UI-01 | User Management | Role totals render from the aggregate endpoint and do not refetch/recalculate when the visible list is filtered | **Pass — `UserManagement.test.tsx`** |
+| I58-ADM-RESP-01 | Responsive | Administrator Dashboard, navigation, Ticket Queue, and User Management remain usable at 1280/820/390 widths with no page horizontal overflow | **Pass — Playwright `admin-workspace-responsive.spec.ts`** |
+| I58-ADM-A11Y-01 | Accessibility | Summary loading/error states are announced; existing labelled controls, focus-visible behavior, and modal focus handling remain intact | **Pass — component regression plus browser verification of Create User dialog initial focus, Tab/Shift+Tab wrapping, Escape, and focus restore** |
+
+Implementation note: `GET /api/v1/admin/users/summary` is Administrator-only and uses one `User.groupBy(role)` database aggregate. `totalUsers` is derived from the three returned role buckets, so all displayed totals share the same database statement snapshot. It includes active and inactive accounts and is independent of the existing filtered `GET /api/v1/admin/users` response. No schema migration is required. The existing Lab 3 Administrator User Management API tests were extended to cover the additive endpoint; the existing list/create/edit/password-reset contract is unchanged.
+
+Issue #58 implementation verification on the feature branch: Client production build **Pass**; Client Vitest **112/112**; Server TypeScript build **Pass**; full Server suite on isolated `toktickit_issue10_test` **228/228** (single worker to avoid shared-fixture cross-file races); final aggregate-route/API authorization rerun **21/21** after consolidating totals into one group-by query; Issue #58 responsive/accessibility Playwright **5/5** across the Requester Dashboard, Staff Dashboard, Administrator workspace, Staff Ticket Detail/Actions Taken, and Requester Ticket Detail/Actions Taken. These are local feature-branch results, not hosted CI results.
+
+### Issue #58 — Expanded cross-role browser QA and screenshot evidence
+
+The review-fix adds `e2e/lab-04/ticket-detail-actions-accessibility.spec.ts` rather than treating the Administrator workspace as the whole Issue #58 scope. Together with the existing Requester Dashboard, Staff Dashboard, and Administrator workspace specs, the focused UI-only Playwright run passed **5/5 tests** at the required 1280/820/390 CSS-pixel viewports. It verifies no page-level horizontal overflow, responsive dashboard/card layouts, Staff Actions Taken and Resolution Gate labels, separation of Actions Taken/Public Comments/Internal Notes, Requester read-only controls, keyboard activation of Ticket/Action controls, dialog entry, Escape close, and focus restoration. The Administrator workspace spec additionally verifies Create User dialog initial focus, Tab/Shift+Tab wrapping, Escape close, and focus restoration.
+
+Command (run from `e2e/`):
+
+```powershell
+$env:CAPTURE_EVIDENCE='1'
+npx playwright test --config playwright.lab4-ui.config.ts lab-04/admin-workspace-responsive.spec.ts lab-04/requester-dashboard-responsive.spec.ts lab-04/staff-dashboard-responsive.spec.ts lab-04/ticket-detail-actions-accessibility.spec.ts
+```
+
+Result: **5 passed (11.4s)** on local feature branch `feature/issue-58-accessibility-responsive-visual-qa`. The screenshots are real browser renders of the current React application using deterministic Playwright API fixtures. They are valid for layout/interaction regression, but **they are not live-Development-DB evidence and must not be represented as real database records**. Final human visual review and confirmation against real seeded Development data remain separate checks.
+
+Captured files under `artifacts/lab-04/issue-58/`:
+
+- `administrator-dashboard-1280.png`, `administrator-dashboard-820.png`, `administrator-ticket-queue-390.png`, `administrator-user-management-390.png`
+- `requester-dashboard-1280.png`, `requester-dashboard-820.png`, `requester-dashboard-390.png`
+- `staff-dashboard-1280.png`, `staff-dashboard-820.png`, `staff-dashboard-390.png`
+- `requester-ticket-actions-1280.png`, `requester-ticket-actions-820.png`, `requester-ticket-actions-390.png`
+- `staff-ticket-actions-1280.png`, `staff-ticket-actions-820.png`, `staff-ticket-actions-390.png`
+
+### Live Development DB manual verification — 1 November 2026
+
+The existing Development PostgreSQL container was restarted without recreating its volume. The application was opened at `http://localhost:5173/` against the existing backend at `http://localhost:3000/`. The signed-in account was **Narin Support (IT STAFF)**. The screenshots below are captured from the live application session and reflect the existing Development DB; they are separate from the deterministic Playwright fixture screenshots above.
+
+| Area | Observed live state | Evidence |
+|---|---|---|
+| Staff Dashboard | Unassigned Active Tickets 11; My Active Tickets 4; status counts New 12, Open 0, In Progress 1, Waiting for Requester 3, Resolved 7, Closed 1, Reopened 0, Cancelled 0; active priority counts High 7, Medium 1, Low 1, Not recorded 7. My Active Actions displayed one assigned Planned Action. | `staff-live-devdb-dashboard.png` |
+| Staff Ticket Detail | Opened `TKT-2026-00001`; requester/ticket information is read-only; operational controls are available to Staff; current owner is Unassigned; IT Priority is Medium; Ticket status is New. | `staff-live-devdb-ticket-detail.png` |
+| Staff Actions Taken / communications | One Planned Action assigned to Narin Support; Result is not recorded yet; Follow-Up Required is No. Resolution Gate is displayed with unmet current-cycle completion/active-action conditions. Public Comments and Internal Notes are separate, with Internal Notes explicitly marked not visible to Requester. | `staff-live-devdb-actions-comments.png` |
+
+The live session was read-only: no Claim, Assign, Save, Change, Add Action, Complete, Add Comment, or Add Note operation was submitted. The Development DB was not reset, seeded, migrated, or otherwise written during this verification. Backend health returned `status: ok`; Prisma migration status reported the schema up to date. The database row counts checked read-only before browser verification were Users 13, Tickets 24, Actions Taken 24, Public Comments 5, and Internal Notes 2.
+
+**Still pending at this point in the Staff session:** live Development DB screenshots and visual review under Requester and Administrator accounts, plus a final human review at desktop/tablet/mobile widths. The existing Playwright fixture screenshots remain the automated responsive evidence and must not be confused with live DB screenshots. The later Requester and Administrator sections record the follow-up sessions.
+
+### Live Development DB manual verification — Requester — 1 November 2026
+
+The same existing Development DB was inspected using the manually authenticated **Somchai Jaidee (REQUESTER)** session. The session used the live app at `http://localhost:5173/`; no write operation was submitted.
+
+| Area | Observed live state | Evidence |
+|---|---|---|
+| Requester Dashboard | Open Tickets 9; Waiting for You 2; Recently Updated includes `TKT-2026-00014` (`Waiting for Requester`); Recently Resolved displays the user's resolved Tickets. | `requester-live-devdb-dashboard.png` |
+| Requester Ticket Detail | Opened owned Ticket `TKT-2026-00014`; status `Waiting for Requester`; Requested Priority and IT Priority both High; Problem Appears Resolved advisory is displayed separately from formal Ticket status. | `requester-live-devdb-ticket-detail.png` |
+| Requester Actions Taken | Two Completed Actions are displayed read-only. Their Result, assignee, Follow-Up Required, Follow-up Note, Follow-Up Status, performer, and audit metadata are visible. Both records show Follow-Up Required = Yes and Follow-Up Status = Outstanding. No Add/Edit/Reassign/Start/Complete/Cancel Action controls are exposed to Requester. | `requester-live-devdb-actions-comments.png`, `requester-live-devdb-actions-followups.png` |
+| Requester communications | Public Comments are visible with the Add a public comment form. Internal Notes are not displayed anywhere in the Requester Ticket Detail. No comment was submitted. | `requester-live-devdb-public-comments.png` |
+
+The browser session was used for visual/read-only inspection only. No attachment was selected or uploaded; no public comment, Ticket mutation, or Action mutation was submitted. The live Development DB remains unchanged by this verification.
+
+**Still pending after the Requester session:** live Development DB screenshots and visual review under an Administrator account, plus final human visual review at desktop/tablet/mobile widths. Automated Playwright fixture screenshots remain separate from these live DB screenshots.
+
+### Live Development DB manual verification — Administrator — 1 November 2026
+
+The existing Development DB was inspected using the manually authenticated **Admin One (ADMINISTRATOR)** session at `http://localhost:5173/`. The screenshots below are live application screenshots, separate from the deterministic Playwright fixture screenshots.
+
+| Area | Observed live state | Evidence |
+|---|---|---|
+| Administrator Dashboard | Unassigned Active Tickets 11; My Active Tickets 0. Status counts: New 12, Open 0, In Progress 1, Waiting for Requester 3, Resolved 7, Closed 1, Reopened 0, Cancelled 0. Active priority counts: High 7, Medium 1, Low 1, Not recorded 7. | `administrator-live-devdb-dashboard.png` |
+| Ticket Queue | 24 queue results. Search and filters for Status, Requested Priority, IT Priority, Owner, Category, Related System, and Sort are visible. Example row `TKT-2025-90005`: Reporting worker intermittently stops processing; Software / Report Portal; requested and IT Priority High; status In Progress; owner Narin Support (IT STAFF). No search, filter, or ticket-opening operation was submitted. | `administrator-live-devdb-ticket-queue.png` |
+| User Management | Total Users 13; Administrators 3; IT Staff 5; Requesters 5. Visible rows include active Administrator accounts, active Requester with password-change-required state, and Inactive Support (IT Staff) with Inactive status. The full user list was visually inspected by scrolling; no Edit action was opened. | `administrator-live-devdb-user-management.png` |
+| Create User dialog | Dialog opens and initial focus is on Name. Name, Email, Role (default Requester), Status (default Active), and Initial Password fields are present. Password guidance states at least 10 characters, a letter and digit, maximum 72 UTF-8 bytes. Escape closes the dialog. No values were entered and Create User was not submitted. | `administrator-live-devdb-create-user-dialog.png` |
+
+The Administrator session was read-only. No user was created, edited, activated, deactivated, or otherwise changed; no Ticket search/filter/open action was submitted. The Development DB was not reset, seeded, migrated, or written during this verification.
+
+### Issue #58 final human visual review — 1 November 2026
+
+The deterministic Playwright screenshots were manually inspected at the required viewport sizes. The Administrator Dashboard at 1280px keeps the primary navigation and dashboard cards in a two-column layout; at 820px navigation collapses to the menu control and dashboard sections stack into a readable single column. The Administrator User Management screenshot at 390px uses the compact navigation, stacks the summary cards and search/filter controls, and presents users as readable cards instead of a wide table. The Requester and Staff dashboard/ticket-action screenshots at the same required widths were also captured by the focused Playwright suite and remain separate from live Development DB evidence.
+
+Visual inspection found no obvious clipping, overlapping cards, or page-level horizontal overflow in the reviewed fixture screenshots. The Administrator live Development DB screenshots confirm the live role-specific pages and data separately; they were captured in the current desktop browser session and are not evidence of mobile live-DB behavior. Keyboard behavior for the Create User dialog is covered by the existing automated component/browser regression (initial focus, Tab/Shift+Tab wrapping, Escape, and focus restoration); the live manual check in this session independently confirmed initial focus and Escape close.
+
+**QA status:** Staff, Requester, and Administrator live Development DB inspections are complete; responsive and cross-role keyboard regression evidence is present. This closes the Issue #58 QA evidence collection for the reviewed scope, subject to the final repository/diff audit and exact-head hosted CI/reviewer verification. No claim is made that live Development DB sessions were manually repeated at tablet/mobile widths.

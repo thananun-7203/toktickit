@@ -45,6 +45,7 @@ describe("Lab 3 Administrator User Management", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.spyOn(api, "getAdminUsers").mockResolvedValue([ADMIN, STAFF, REQUESTER]);
+    vi.spyOn(api, "getAdminUserSummary").mockResolvedValue({ totalUsers: 24, byRole: { ADMINISTRATOR: 1, IT_STAFF: 5, REQUESTER: 18 } });
     vi.spyOn(api, "createAdminUser").mockResolvedValue({ ...REQUESTER, id: 53, isActive: true });
     vi.spyOn(api, "updateAdminUser").mockImplementation(async (id, input) => ({
       ...(id === STAFF.id ? STAFF : ADMIN),
@@ -62,6 +63,19 @@ describe("Lab 3 Administrator User Management", () => {
     expect(screen.getAllByText("Active").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: `Edit ${STAFF.name}` })).toBeInTheDocument();
     expect(screen.queryByText(/passwordHash/i)).not.toBeInTheDocument();
+  });
+
+  it("UI-ADM-SUM-01: shows role totals from the aggregate endpoint, independent of list filters", async () => {
+    const user = userEvent.setup();
+    renderUsers();
+    expect(await screen.findByText("Total Users")).toBeInTheDocument();
+    expect(screen.getByText("24")).toBeInTheDocument();
+    expect(screen.getByText("Administrators")).toBeInTheDocument();
+    expect(screen.getByText("5")).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText("Role filter"), "IT_STAFF");
+    await waitFor(() => expect(api.getAdminUsers).toHaveBeenCalledWith({ search: undefined, role: "IT_STAFF" }));
+    expect(api.getAdminUserSummary).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("24")).toBeInTheDocument();
   });
 
   it("UI-ADM-02: search and role filter request the documented list parameters", async () => {
@@ -196,7 +210,7 @@ describe("Lab 3 Administrator User Management", () => {
     let resolveUsers!: (value: api.AdminUser[]) => void;
     vi.mocked(api.getAdminUsers).mockReturnValueOnce(new Promise((resolve) => { resolveUsers = resolve; }));
     const { unmount } = renderUsers();
-    expect(screen.getByRole("status")).toHaveTextContent(/Loading users/i);
+    expect(screen.getByText(/Loading users/i)).toBeInTheDocument();
     resolveUsers([]);
     expect(await screen.findByRole("heading", { name: "No users" })).toBeInTheDocument();
     unmount();

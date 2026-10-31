@@ -1,4 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
+import { mkdir } from "node:fs/promises";
+import path from "node:path";
+
+const CAPTURE_EVIDENCE = process.env.CAPTURE_EVIDENCE === "1";
+const EVIDENCE_DIR = path.resolve("../artifacts/lab-04/issue-58");
 
 const requesterUser = {
   id: 301,
@@ -51,6 +56,12 @@ async function expectButtonsStack(page: Page) {
   })).toBeGreaterThan(0.9);
 }
 
+async function capture(page: Page, name: string) {
+  if (!CAPTURE_EVIDENCE) return;
+  await mkdir(EVIDENCE_DIR, { recursive: true });
+  await page.screenshot({ path: path.join(EVIDENCE_DIR, name), fullPage: true });
+}
+
 test("V4-01 Requester Dashboard is usable at 1280, 820, and 390 CSS pixels", async ({ page }) => {
   await mockDashboardApis(page);
 
@@ -59,15 +70,18 @@ test("V4-01 Requester Dashboard is usable at 1280, 820, and 390 CSS pixels", asy
   await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
   await expect.poll(async () => page.locator(".requester-dashboard-metrics").evaluate((element) => getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/).length)).toBe(2);
   await expectNoHorizontalOverflow(page);
+  await capture(page, "requester-dashboard-1280.png");
 
   await page.setViewportSize({ width: 820, height: 1000 });
   await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
   await expect.poll(async () => page.locator(".requester-dashboard-list-grid").evaluate((element) => getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/).length)).toBe(1);
   await expectNoHorizontalOverflow(page);
+  await capture(page, "requester-dashboard-820.png");
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
   await expect.poll(async () => page.locator(".requester-dashboard-metrics").evaluate((element) => getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/).length)).toBe(1);
   await expectButtonsStack(page);
   await expectNoHorizontalOverflow(page);
+  await capture(page, "requester-dashboard-390.png");
 });

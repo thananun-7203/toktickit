@@ -303,6 +303,11 @@ export interface AdminUserListParams {
   role?: UserRole;
 }
 
+export interface AdminUserSummary {
+  totalUsers: number;
+  byRole: Record<UserRole, number>;
+}
+
 export interface CreateAdminUserInput {
   name: string;
   email: string;
@@ -726,6 +731,12 @@ export async function getAdminUsers(params: AdminUserListParams = {}): Promise<A
   if (!res.ok) throw await responseError(res, "Unable to load users");
   const data = await res.json();
   return data.items as AdminUser[];
+}
+
+export async function getAdminUserSummary(): Promise<AdminUserSummary> {
+  const res = await apiFetch("/api/v1/admin/users/summary");
+  if (!res.ok) throw await responseError(res, "Unable to load user summary");
+  return res.json() as Promise<AdminUserSummary>;
 }
 
 export async function createAdminUser(input: CreateAdminUserInput): Promise<AdminUser> {

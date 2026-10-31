@@ -216,6 +216,11 @@ export default function App() {
                   </button>
                 )}
                 {isAdmin && (
+                  <button type="button" role="menuitem" onClick={() => showStaffQueue()}>
+                    <span aria-hidden="true">&#8250;</span> Ticket Queue
+                  </button>
+                )}
+                {isAdmin && (
                   <button type="button" role="menuitem" onClick={() => { setView("admin-users"); setSelectedTicketId(null); setMobileMenuOpen(false); }}>
                     <span aria-hidden="true">◎</span> User Management
                   </button>
@@ -266,6 +271,9 @@ export default function App() {
             <nav className="app-nav-links" aria-label="Primary navigation">
               <button className={`app-nav-button ${view === "staff-dashboard" ? "active" : ""}`} onClick={showStaffDashboard}>
                 <span className="nav-icon" aria-hidden="true">⌂</span> Dashboard
+              </button>
+              <button className={`app-nav-button ${view === "staff-queue" || view === "staff-ticket-detail" ? "active" : ""}`} onClick={() => showStaffQueue()}>
+                <span className="nav-icon" aria-hidden="true">&#8250;</span> Ticket Queue
               </button>
               <button className={`app-nav-button ${view === "admin-users" ? "active" : ""}`} onClick={() => { setView("admin-users"); setSelectedTicketId(null); }}>
                 <span className="nav-icon" aria-hidden="true">◎</span> User Management
