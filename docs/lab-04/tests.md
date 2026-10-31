@@ -560,7 +560,7 @@ $env:CAPTURE_EVIDENCE='1'
 npx playwright test --config playwright.lab4-ui.config.ts lab-04/admin-workspace-responsive.spec.ts lab-04/requester-dashboard-responsive.spec.ts lab-04/staff-dashboard-responsive.spec.ts lab-04/ticket-detail-actions-accessibility.spec.ts
 ```
 
-Result: **5 passed (10.2s)** on local feature branch `feature/issue-58-accessibility-responsive-visual-qa`. The screenshots are real browser renders of the current React application using deterministic Playwright API fixtures. They are valid for layout/interaction regression, but **they are not live-Development-DB evidence and must not be represented as real database records**. Final human visual review and confirmation against real seeded Development data remain separate checks.
+Result: **5 passed (11.4s)** on local feature branch `feature/issue-58-accessibility-responsive-visual-qa`. The screenshots are real browser renders of the current React application using deterministic Playwright API fixtures. They are valid for layout/interaction regression, but **they are not live-Development-DB evidence and must not be represented as real database records**. Final human visual review and confirmation against real seeded Development data remain separate checks.
 
 Captured files under `artifacts/lab-04/issue-58/`:
 

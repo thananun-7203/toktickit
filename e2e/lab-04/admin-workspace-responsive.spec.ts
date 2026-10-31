@@ -13,6 +13,11 @@ const adminUser = {
   role: "ADMINISTRATOR",
   mustChangePassword: false,
 };
+const adminUsers = [
+  { id: 401, name: "Issue 58 Administrator", email: "issue58.admin@toktick.it", role: "ADMINISTRATOR", isActive: true, mustChangePassword: false, createdAt: "2026-09-01T08:00:00.000Z", updatedAt: "2026-10-29T08:00:00.000Z" },
+  { id: 402, name: "Narin Support", email: "narin.staff@toktick.it", role: "IT_STAFF", isActive: true, mustChangePassword: false, createdAt: "2026-09-02T08:00:00.000Z", updatedAt: "2026-10-29T08:00:00.000Z" },
+  { id: 403, name: "Somchai Jaidee", email: "somchai@toktick.it", role: "REQUESTER", isActive: false, mustChangePassword: true, createdAt: "2026-09-03T08:00:00.000Z", updatedAt: "2026-10-29T08:00:00.000Z" },
+];
 
 const dashboard = {
   metrics: {
@@ -39,7 +44,9 @@ async function mockAdminApis(page: Page) {
   await page.route("**/api/v1/admin/users/summary", (route) => route.fulfill({
     json: { totalUsers: 24, byRole: { ADMINISTRATOR: 2, IT_STAFF: 4, REQUESTER: 18 } },
   }));
-  await page.route("**/api/v1/admin/users", (route) => route.fulfill({ json: { items: [] } }));
+  await page.route("**/api/v1/admin/users", (route) => route.fulfill({ json: {
+    items: adminUsers, page: 1, pageSize: 10, totalItems: 24, totalPages: 3,
+  } }));
 }
 
 async function expectNoHorizontalOverflow(page: Page) {
