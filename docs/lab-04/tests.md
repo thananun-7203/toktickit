@@ -569,3 +569,53 @@ Captured files under `artifacts/lab-04/issue-58/`:
 - `staff-dashboard-1280.png`, `staff-dashboard-820.png`, `staff-dashboard-390.png`
 - `requester-ticket-actions-1280.png`, `requester-ticket-actions-820.png`, `requester-ticket-actions-390.png`
 - `staff-ticket-actions-1280.png`, `staff-ticket-actions-820.png`, `staff-ticket-actions-390.png`
+
+### Live Development DB manual verification — 1 November 2026
+
+The existing Development PostgreSQL container was restarted without recreating its volume. The application was opened at `http://localhost:5173/` against the existing backend at `http://localhost:3000/`. The signed-in account was **Narin Support (IT STAFF)**. The screenshots below are captured from the live application session and reflect the existing Development DB; they are separate from the deterministic Playwright fixture screenshots above.
+
+| Area | Observed live state | Evidence |
+|---|---|---|
+| Staff Dashboard | Unassigned Active Tickets 11; My Active Tickets 4; status counts New 12, Open 0, In Progress 1, Waiting for Requester 3, Resolved 7, Closed 1, Reopened 0, Cancelled 0; active priority counts High 7, Medium 1, Low 1, Not recorded 7. My Active Actions displayed one assigned Planned Action. | `staff-live-devdb-dashboard.png` |
+| Staff Ticket Detail | Opened `TKT-2026-00001`; requester/ticket information is read-only; operational controls are available to Staff; current owner is Unassigned; IT Priority is Medium; Ticket status is New. | `staff-live-devdb-ticket-detail.png` |
+| Staff Actions Taken / communications | One Planned Action assigned to Narin Support; Result is not recorded yet; Follow-Up Required is No. Resolution Gate is displayed with unmet current-cycle completion/active-action conditions. Public Comments and Internal Notes are separate, with Internal Notes explicitly marked not visible to Requester. | `staff-live-devdb-actions-comments.png` |
+
+The live session was read-only: no Claim, Assign, Save, Change, Add Action, Complete, Add Comment, or Add Note operation was submitted. The Development DB was not reset, seeded, migrated, or otherwise written during this verification. Backend health returned `status: ok`; Prisma migration status reported the schema up to date. The database row counts checked read-only before browser verification were Users 13, Tickets 24, Actions Taken 24, Public Comments 5, and Internal Notes 2.
+
+**Still pending at this point in the Staff session:** live Development DB screenshots and visual review under Requester and Administrator accounts, plus a final human review at desktop/tablet/mobile widths. The existing Playwright fixture screenshots remain the automated responsive evidence and must not be confused with live DB screenshots. The later Requester and Administrator sections record the follow-up sessions.
+
+### Live Development DB manual verification — Requester — 1 November 2026
+
+The same existing Development DB was inspected using the manually authenticated **Somchai Jaidee (REQUESTER)** session. The session used the live app at `http://localhost:5173/`; no write operation was submitted.
+
+| Area | Observed live state | Evidence |
+|---|---|---|
+| Requester Dashboard | Open Tickets 9; Waiting for You 2; Recently Updated includes `TKT-2026-00014` (`Waiting for Requester`); Recently Resolved displays the user's resolved Tickets. | `requester-live-devdb-dashboard.png` |
+| Requester Ticket Detail | Opened owned Ticket `TKT-2026-00014`; status `Waiting for Requester`; Requested Priority and IT Priority both High; Problem Appears Resolved advisory is displayed separately from formal Ticket status. | `requester-live-devdb-ticket-detail.png` |
+| Requester Actions Taken | Two Completed Actions are displayed read-only. Their Result, assignee, Follow-Up Required, Follow-up Note, Follow-Up Status, performer, and audit metadata are visible. Both records show Follow-Up Required = Yes and Follow-Up Status = Outstanding. No Add/Edit/Reassign/Start/Complete/Cancel Action controls are exposed to Requester. | `requester-live-devdb-actions-comments.png`, `requester-live-devdb-actions-followups.png` |
+| Requester communications | Public Comments are visible with the Add a public comment form. Internal Notes are not displayed anywhere in the Requester Ticket Detail. No comment was submitted. | `requester-live-devdb-public-comments.png` |
+
+The browser session was used for visual/read-only inspection only. No attachment was selected or uploaded; no public comment, Ticket mutation, or Action mutation was submitted. The live Development DB remains unchanged by this verification.
+
+**Still pending after the Requester session:** live Development DB screenshots and visual review under an Administrator account, plus final human visual review at desktop/tablet/mobile widths. Automated Playwright fixture screenshots remain separate from these live DB screenshots.
+
+### Live Development DB manual verification — Administrator — 1 November 2026
+
+The existing Development DB was inspected using the manually authenticated **Admin One (ADMINISTRATOR)** session at `http://localhost:5173/`. The screenshots below are live application screenshots, separate from the deterministic Playwright fixture screenshots.
+
+| Area | Observed live state | Evidence |
+|---|---|---|
+| Administrator Dashboard | Unassigned Active Tickets 11; My Active Tickets 0. Status counts: New 12, Open 0, In Progress 1, Waiting for Requester 3, Resolved 7, Closed 1, Reopened 0, Cancelled 0. Active priority counts: High 7, Medium 1, Low 1, Not recorded 7. | `administrator-live-devdb-dashboard.png` |
+| Ticket Queue | 24 queue results. Search and filters for Status, Requested Priority, IT Priority, Owner, Category, Related System, and Sort are visible. Example row `TKT-2025-90005`: Reporting worker intermittently stops processing; Software / Report Portal; requested and IT Priority High; status In Progress; owner Narin Support (IT STAFF). No search, filter, or ticket-opening operation was submitted. | `administrator-live-devdb-ticket-queue.png` |
+| User Management | Total Users 13; Administrators 3; IT Staff 5; Requesters 5. Visible rows include active Administrator accounts, active Requester with password-change-required state, and Inactive Support (IT Staff) with Inactive status. The full user list was visually inspected by scrolling; no Edit action was opened. | `administrator-live-devdb-user-management.png` |
+| Create User dialog | Dialog opens and initial focus is on Name. Name, Email, Role (default Requester), Status (default Active), and Initial Password fields are present. Password guidance states at least 10 characters, a letter and digit, maximum 72 UTF-8 bytes. Escape closes the dialog. No values were entered and Create User was not submitted. | `administrator-live-devdb-create-user-dialog.png` |
+
+The Administrator session was read-only. No user was created, edited, activated, deactivated, or otherwise changed; no Ticket search/filter/open action was submitted. The Development DB was not reset, seeded, migrated, or written during this verification.
+
+### Issue #58 final human visual review — 1 November 2026
+
+The deterministic Playwright screenshots were manually inspected at the required viewport sizes. The Administrator Dashboard at 1280px keeps the primary navigation and dashboard cards in a two-column layout; at 820px navigation collapses to the menu control and dashboard sections stack into a readable single column. The Administrator User Management screenshot at 390px uses the compact navigation, stacks the summary cards and search/filter controls, and presents users as readable cards instead of a wide table. The Requester and Staff dashboard/ticket-action screenshots at the same required widths were also captured by the focused Playwright suite and remain separate from live Development DB evidence.
+
+Visual inspection found no obvious clipping, overlapping cards, or page-level horizontal overflow in the reviewed fixture screenshots. The Administrator live Development DB screenshots confirm the live role-specific pages and data separately; they were captured in the current desktop browser session and are not evidence of mobile live-DB behavior. Keyboard behavior for the Create User dialog is covered by the existing automated component/browser regression (initial focus, Tab/Shift+Tab wrapping, Escape, and focus restoration); the live manual check in this session independently confirmed initial focus and Escape close.
+
+**QA status:** Staff, Requester, and Administrator live Development DB inspections are complete; responsive and cross-role keyboard regression evidence is present. This closes the Issue #58 QA evidence collection for the reviewed scope, subject to the final repository/diff audit and exact-head hosted CI/reviewer verification. No claim is made that live Development DB sessions were manually repeated at tablet/mobile widths.
