@@ -530,7 +530,7 @@ These are the Lab 4 release-final gates and are intentionally **not** the Issue 
 | Ticket Resolution E2E | **Local Pass — `E2E-ISSUE9-AT-WF`** verifies Resolution Gate, Resolve, Reopen, old-cycle isolation, cycle-2 Action, and second Resolve. |
 | Dashboard E2E | **Local Pass — `E2E-ISSUE9-DASH`** verifies Requester and Staff dashboard data through the real API/database. Dashboard API tests also compare returned metrics/lists with authoritative Prisma database queries. |
 | Labs 1–3 regression E2E | **Local Pass — 12 Lab 3 browser tests** included in the combined run; representative flows cover authentication, Requester, Staff, Administrator, and responsive/accessibility behavior. This is not a claim that every historical Lab 1–3 test is a browser E2E. |
-| Desktop/tablet/mobile accessibility/visual QA | **Automated Local Pass — 19/19 combined Playwright tests**, including all Lab 4 responsive specs at 1280/820/390; 16 fixture screenshots and 12 live Development DB screenshots plus human visual review remain recorded under Issue #58. Live DB screenshots are desktop-only. |
+| Desktop/tablet/mobile accessibility/visual QA | **Automated Local Pass — 23/23 combined Playwright tests**, including all Lab 4 responsive specs at 1280/820/390; 16 responsive fixture screenshots, 12 live Development DB screenshots, and 4 new empty/error boundary screenshots are consolidated under `artifacts/lab-04/screenshots/`. Human visual review remains recorded under Issue #58. Live DB screenshots are desktop-only. |
 | Dashboard DB-query comparison | **Local Pass — `requester-dashboard.api.test.ts` and `staff-dashboard.api.test.ts` compare API metrics with direct PostgreSQL `COUNT(*) FILTER` aggregates, in addition to Prisma count/findMany comparisons for metrics and ordered lists. Both SQL-backed dashboard tests passed 9/9 together on the isolated test database.** |
 | Production dependency audits | **Local Pass — `npm audit --omit=dev`: 0 vulnerabilities (Server and Client)**, 2026-11-01. |
 | Hosted CI exact reviewed release head | **Pending — require a green run on the latest pushed PR #71 head after all test/documentation commits; peer approval is also pending.** |
@@ -548,7 +548,7 @@ The Issue #59 worktree is based on `lab4-staging` commit `4c1226246856a5df95f119
 | `server`: `npx prisma db seed` on `toktickit_lab4_e2e` | **Pass — 4 active/1 inactive Requesters, 3 active/1 inactive Staff, 2 Admins, 8 Tickets, 7 Actions, 2 Public Comments, 1 Internal Note** |
 | `client`: `npm test` | **Pass — 112/112 tests, 14/14 files** |
 | `client`: `npm run build` | **Pass** |
-| `e2e`: `npm run test:lab4` with `E2E_DATABASE_URL=toktickit_lab4_e2e` and SeaweedFS filer | **Pass — 19/19 tests** (12 Lab 3 regression + 7 Lab 4 full-stack/responsive) |
+| `e2e`: `CAPTURE_EVIDENCE=1 npm run test:lab4` with `E2E_DATABASE_URL=toktickit_lab4_e2e` and SeaweedFS filer | **Pass — 23/23 tests** (12 Lab 3 regression + 11 Lab 4 full-stack/responsive/boundary); generated 16 responsive fixture and 4 empty/error screenshots |
 | E2E database guard negative path | **Pass — rejected both a non-test Development database name and an E2E URL resolving to the configured Development database** |
 | `server` and `client`: `npm audit --omit=dev` | **Pass — 0 vulnerabilities in each production dependency tree** |
 | `git diff --check` | **Pass** at the Issue #59 audit checkpoint |
@@ -563,7 +563,19 @@ The Issue #59 traceability audit also found several rows still marked Planned ev
 
 The combined Playwright run exercised the Lab 3 regression specs and Lab 4 Actions/Resolution Gate/Dashboard/responsive specs against the dedicated E2E database. Playwright created test users and Tickets only in that disposable database. The run did not use the Development database.
 
-**Still pending:** exact-head hosted GitHub Actions CI and peer review after the Issue #59 PR is opened; final Project-board evidence; and the separate reviewed `lab4-staging -> main` Release PR. These items must remain pending until their own evidence exists.
+### Issue #59 final screenshot collection
+
+The original 28 Issue #58 screenshots were copied into the Issue #59 submission folder without changing or deleting the originals. The four role-specific Dashboard boundary screenshots were newly captured by the browser during the 23-test combined run with `CAPTURE_EVIDENCE=1`.
+
+All 32 final evidence images are under `artifacts/lab-04/screenshots/`:
+
+- 16 responsive fixture screenshots: Administrator workspace (4), Requester Dashboard (3), Staff Dashboard (3), Requester Ticket Detail/Actions Taken (3), Staff Ticket Detail/Actions Taken (3).
+- 12 live Development DB screenshots: Staff (3), Requester (5), Administrator (4). These are read-only desktop captures and remain distinct from fixture screenshots.
+- 4 boundary screenshots: Requester Dashboard empty/error and Staff Dashboard empty/error states (`EV-01`–`EV-04`).
+
+The original Issue #58 evidence remains unchanged under `artifacts/lab-04/issue-58/` for PR #70 traceability.
+
+**Still pending:** exact-head hosted GitHub Actions CI and peer review on the latest Issue #59 PR head; final Project-board evidence; and the separate reviewed `lab4-staging -> main` Release PR. These items must remain pending until their own evidence exists.
 ## Issue #58 — Administrator Workspace / User Summary Verification
 
 | Test ID | Area | Verification | Current result |

@@ -8,14 +8,16 @@
 
 - Keep deterministic Playwright fixture screenshots separate from live Development DB screenshots.
 - The 16 fixture-backed responsive screenshots are suitable for layout/interaction evidence at 1280/820/390 CSS pixels.
+- Four additional browser screenshots document Requester/Staff Dashboard empty and API-failure recovery states; these are deterministic UI fixtures, not live database records.
 - The 12 live Development DB screenshots document real role-specific records and UI states. They were captured in a desktop browser session only; they are not mobile/tablet live-DB evidence.
+- Issue #59 consolidates the 16 responsive fixture screenshots, 12 live Development DB screenshots, and 4 new boundary-state screenshots under `artifacts/lab-04/screenshots/`; the original Issue #58 evidence remains preserved under `artifacts/lab-04/issue-58/`.
 - The live Development DB verification was read-only. It was not reset, seeded, migrated, or written during the recorded sessions.
 - Historical local test results and merged feature-PR CI results are not substitutes for a fresh exact-release-head test run and hosted CI.
 - A closed GitHub Issue does not prove its Project-board column. Record a Project screenshot or verified Project field value before claiming every Issue is in `Done`.
 
 ## Answer Part 1 — Project workflow and GitHub management
 
-**Sources:** `README.md` (Git Workflow), `reviewer.md` (Sprint 4 Workflow, PR history, Kanban / Project Evidence), GitHub Issues #50–#59, and PRs #60–#70.
+**Sources:** `README.md` (Git Workflow), `reviewer.md` (Sprint 4 Workflow, PR history, Kanban / Project Evidence), GitHub Issues #50–#59, and PRs #60–#71.
 
 | Work item | Evidence |
 |---|---|
@@ -42,11 +44,11 @@
 
 Feature-level evidence is recorded there with test IDs, acceptance-criteria traceability, exact historical commands/results, issue/PR scope, and explicit distinctions between representative regression and full release regression.
 
-**Release-final local verification (1 November 2026):** Server 230/230 tests (30 files), Client 112/112 tests (14 files), Server and Client builds, Prisma validation, all 9 E2E migrations, migration/seed regression, production dependency audits (0 vulnerabilities in each tree), and combined Lab 3/Lab 4 full-stack Playwright 19/19 passed against isolated test databases. Exact commands/results are recorded in `tests.md` Section 18.
+**Release-final local verification (1 November 2026):** Server 230/230 tests (30 files), Client 112/112 tests (14 files), Server and Client builds, Prisma validation, all 9 E2E migrations, migration/seed regression, production dependency audits (0 vulnerabilities in each tree), and combined Lab 3/Lab 4 full-stack Playwright 23/23 passed against isolated test databases. Exact commands/results are recorded in `tests.md` Section 18.
 
 **Still pending:** exact-head hosted CI and peer approval for the Issue #59 PR; actual GitHub Project-board evidence; the student's final review of the AI reflection; and the separate reviewed `lab4-staging -> main` Release PR. Do not mark these complete based only on local test results.
 
-The CI workflow now runs the Lab 3 regression specs plus the Lab 4 full-stack E2E configuration against a dedicated `toktickit_lab4_e2e` database. Local execution passed 19/19 tests; hosted CI on the exact Issue #59 PR head remains pending.
+The CI workflow now runs the Lab 3 regression specs plus the Lab 4 full-stack E2E configuration against a dedicated `toktickit_lab4_e2e` database. Local execution passed 23/23 tests, including four new Dashboard empty/error-state checks; hosted CI on the latest Issue #59 PR head remains pending.
 
 ## Answer Part 4 — AI use and reflection
 
@@ -60,11 +62,11 @@ The CI workflow now runs the Lab 3 regression specs plus the Lab 4 full-stack E2
 
 **Fixture-backed responsive screenshots:**
 
-- `artifacts/lab-04/issue-58/staff-dashboard-1280.png`
-- `artifacts/lab-04/issue-58/staff-dashboard-820.png`
-- `artifacts/lab-04/issue-58/staff-dashboard-390.png`
+- `artifacts/lab-04/screenshots/staff-dashboard-1280.png`
+- `artifacts/lab-04/screenshots/staff-dashboard-820.png`
+- `artifacts/lab-04/screenshots/staff-dashboard-390.png`
 
-**Live Development DB evidence:** `artifacts/lab-04/issue-58/staff-live-devdb-dashboard.png` and `staff-live-devdb-ticket-detail.png`.
+**Live Development DB evidence:** `artifacts/lab-04/screenshots/staff-live-devdb-dashboard.png` and `staff-live-devdb-ticket-detail.png`.
 
 **Tests:** Staff Dashboard API/UI tests, responsive Playwright, E2E dashboard flow, and the live DB observations in `tests.md`.
 
@@ -77,18 +79,18 @@ The CI workflow now runs the Lab 3 regression specs plus the Lab 4 full-stack E2
 - `staff-ticket-actions-1280.png`, `staff-ticket-actions-820.png`, `staff-ticket-actions-390.png`
 - `requester-ticket-actions-1280.png`, `requester-ticket-actions-820.png`, `requester-ticket-actions-390.png`
 
-All six paths are under `artifacts/lab-04/issue-58/`.
+All six paths are under `artifacts/lab-04/screenshots/`.
 
 **Live Development DB evidence:**
 
-- Staff: `staff-live-devdb-actions-comments.png`
-- Requester: `requester-live-devdb-actions-comments.png`, `requester-live-devdb-actions-followups.png`, `requester-live-devdb-public-comments.png`
+- Staff: `artifacts/lab-04/screenshots/staff-live-devdb-actions-comments.png`
+- Requester: `artifacts/lab-04/screenshots/requester-live-devdb-actions-comments.png`, `requester-live-devdb-actions-followups.png`, `requester-live-devdb-public-comments.png`
 
 **Tests:** Actions Taken API/authorization/component tests, Requester read-only behavior, assignee/follow-up conflict tests, and `E2E-ISSUE9-AT-WF`.
 
 ## Answer Part 7 — Ticket workflow and Resolution Gate
 
-**Evidence:** `staff-ticket-actions-390.png` (fixture-backed Resolution Gate / Follow-up UI), `tests.md` workflow API/UI traceability, and `e2e/lab-04/issue9-fullstack.spec.ts` (`E2E-ISSUE9-AT-WF`).
+**Evidence:** `artifacts/lab-04/screenshots/staff-ticket-actions-390.png` (fixture-backed Resolution Gate / Follow-up UI), `tests.md` workflow API/UI traceability, and `e2e/lab-04/issue9-fullstack.spec.ts` (`E2E-ISSUE9-AT-WF`).
 
 The full-stack E2E covers create Ticket, Staff claim/status changes, Action create/start/complete, follow-up completion, Resolve, Reopen, current-cycle isolation, and a second-cycle Resolve. Repeat this flow on the dedicated release E2E database and exact release head before finalization.
 
@@ -96,11 +98,11 @@ The full-stack E2E covers create Ticket, Staff claim/status changes, Action crea
 
 **Fixture-backed responsive screenshots:**
 
-- `artifacts/lab-04/issue-58/requester-dashboard-1280.png`
-- `artifacts/lab-04/issue-58/requester-dashboard-820.png`
-- `artifacts/lab-04/issue-58/requester-dashboard-390.png`
+- `artifacts/lab-04/screenshots/requester-dashboard-1280.png`
+- `artifacts/lab-04/screenshots/requester-dashboard-820.png`
+- `artifacts/lab-04/screenshots/requester-dashboard-390.png`
 
-**Live Development DB evidence:** `requester-live-devdb-dashboard.png`, `requester-live-devdb-ticket-detail.png`, and the Requester Action/communications screenshots listed in Part 6.
+**Live Development DB evidence:** `artifacts/lab-04/screenshots/requester-live-devdb-dashboard.png`, `requester-live-devdb-ticket-detail.png`, and the Requester Action/communications screenshots listed in Part 6.
 
 **Tests:** Requester Dashboard API/UI tests, ownership/authorization regressions, waiting-for-requester drill-down, and `E2E-ISSUE9-DASH`.
 
@@ -120,7 +122,16 @@ The full-stack E2E covers create Ticket, Staff claim/status changes, Action crea
 - Requester (5): `requester-live-devdb-dashboard.png`, `requester-live-devdb-ticket-detail.png`, `requester-live-devdb-actions-comments.png`, `requester-live-devdb-actions-followups.png`, `requester-live-devdb-public-comments.png`.
 - Administrator (4): `administrator-live-devdb-dashboard.png`, `administrator-live-devdb-ticket-queue.png`, `administrator-live-devdb-user-management.png`, `administrator-live-devdb-create-user-dialog.png`.
 
-All screenshot paths are under `artifacts/lab-04/issue-58/`. `tests.md` records the manual visual review and the distinction between fixture and live DB evidence. The live DB screenshots are desktop-only.
+All 16 responsive fixture and 12 live Development DB screenshots are under `artifacts/lab-04/screenshots/`. `tests.md` records the manual visual review and the distinction between fixture and live DB evidence. The live DB screenshots are desktop-only.
+
+**Failure/boundary screenshots (4):**
+
+- `requester-dashboard-empty-1280.png` — zero Tickets and both empty dashboard lists.
+- `staff-dashboard-empty-1280.png` — zero active work, My Active Actions, Urgent Tickets, and Recently Updated Tickets.
+- `requester-dashboard-error-1280.png` — safe API-failure message and Retry control.
+- `staff-dashboard-error-1280.png` — safe Staff Dashboard API-failure state.
+
+These four browser-rendered fixture screenshots are also under `artifacts/lab-04/screenshots/`; their automated checks are `EV-01` through `EV-04` in `e2e/lab-04/dashboard-boundary-evidence.spec.ts`.
 
 ## Final PDF release gate
 

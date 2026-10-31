@@ -31,6 +31,7 @@ toktickit/
 ├── docs/lab-04/                    # Lab 4 spec, API/UI/test/review/AI/evidence docs
 ├── artifacts/lab-02/screenshots/   # historical Lab 2 visual evidence
 ├── artifacts/lab-03/screenshots/   # final Lab 3 visual evidence
+├── artifacts/lab-04/screenshots/   # consolidated Lab 4 final evidence: responsive, live DB, empty/error states
 ├── artifacts/lab-04/issue-58/      # Lab 4 responsive fixture + live-DB QA screenshots
 ├── .github/workflows/ci.yml        # server/client/Lab 3 regression + Lab 4 full-stack E2E CI
 ├── compose.lab2.yml                # PostgreSQL + SeaweedFS
@@ -139,7 +140,7 @@ The database stores only bcrypt hashes, never these plaintext values. Additional
 - **Follow-up and Resolution Gate:** current-workflow-cycle Action and follow-up requirements are enforced by the backend and reflected in Ticket Detail.
 - **Dashboards:** IT Staff/Administrator use the operational Staff Dashboard; Requesters receive an ownership-protected Requester Dashboard.
 - **Administrator summary:** User Management displays database-derived total/per-role counts independently of visible list filters.
-- **Evidence:** responsive fixture screenshots and live-Development-DB screenshots are kept separate under `artifacts/lab-04/issue-58/` and described in `docs/lab-04/tests.md`.
+- **Evidence:** final submission screenshots are consolidated under `artifacts/lab-04/screenshots/`; the original Issue #58 source screenshots remain preserved under `artifacts/lab-04/issue-58/`. Fixture, live Development DB, and empty/error boundary screenshots are distinguished in `docs/lab-04/tests.md` and `docs/lab-04/evidence.md`.
 
 ## Running Tests
 
@@ -271,4 +272,4 @@ Playwright intentionally has no database fallback. The E2E guard requires a data
 
 Lab 3 feature branches are peer-reviewed through PRs into `lab3-staging`. Issues #33–#39 and PRs #41–#47 contain the implemented Sprint 3 increment; Issue #40 performs its final evidence/release-readiness audit.
 
-Lab 4 feature branches are peer-reviewed through PRs into `lab4-staging`. The implemented Lab 4 increment is tracked by Issues #50–#58 and PRs #60–#70. Issue #67 is the inserted Resolution Gate issue and is implemented by PR #68; PR numbers must not be mistaken for Issue numbers. Issue #59 performs the final evidence/release-readiness audit. The final release is a separate reviewed PR from `lab4-staging` to `main`; it must not be merged until release evidence and exact-head CI/review gates are complete.
+Lab 4 feature branches are peer-reviewed through PRs into `lab4-staging`. The implemented feature increments are tracked by Issues #50–#58 and PRs #60–#70. Issue #67 is the inserted Resolution Gate issue and is implemented by PR #68; PR numbers must not be mistaken for Issue numbers. Issue #59 performs the final evidence/release-readiness audit through PR #71, which is currently open for peer review. The final release is a separate reviewed PR from `lab4-staging` to `main`; it must not be merged until release evidence and exact-head CI/review gates are complete.

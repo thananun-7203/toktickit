@@ -488,6 +488,7 @@ The table below records actual Lab 4 feature PRs and excludes GitHub Issue #67, 
 | [#68](https://github.com/thananun-7203/toktickit/pull/68) | `feature/8-resolution-gate-follow-up` | `lab4-staging` | Approved at `3424a2c`; CI #48 | Merged (`fd6ef11`) |
 | [#69](https://github.com/thananun-7203/toktickit/pull/69) | `feature/9-security-regression-e2e` | `lab4-staging` | Approved at `63e1e51`; CI #51 | Merged (`56a825a`) |
 | [#70](https://github.com/thananun-7203/toktickit/pull/70) | `feature/issue-58-accessibility-responsive-visual-qa` | `lab4-staging` | Approved at `34b30f1`; CI #58 | Merged (`4c12262`) |
+| [#71](https://github.com/thananun-7203/toktickit/pull/71) | `feature/11-final-evidence-release-readiness` | `lab4-staging` | `Tanaboonnnnn` requested; hosted CI must pass on latest head | **Open / not merged** |
 
 
 ## 13. Review Standard
