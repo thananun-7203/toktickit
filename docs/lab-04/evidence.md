@@ -42,7 +42,7 @@
 
 Feature-level evidence is recorded there with test IDs, acceptance-criteria traceability, exact historical commands/results, issue/PR scope, and explicit distinctions between representative regression and full release regression.
 
-**Release-final local verification (1 November 2026):** Server 228/228 tests (30 files), Client 112/112 tests (14 files), Server and Client builds, Prisma validation, all 9 E2E migrations, migration/seed regression, production dependency audits (0 vulnerabilities in each tree), and combined Lab 3/Lab 4 full-stack Playwright 19/19 passed against isolated test databases. Exact commands/results are recorded in `tests.md` Section 18.
+**Release-final local verification (1 November 2026):** Server 230/230 tests (30 files), Client 112/112 tests (14 files), Server and Client builds, Prisma validation, all 9 E2E migrations, migration/seed regression, production dependency audits (0 vulnerabilities in each tree), and combined Lab 3/Lab 4 full-stack Playwright 19/19 passed against isolated test databases. Exact commands/results are recorded in `tests.md` Section 18.
 
 **Still pending:** exact-head hosted CI and peer approval for the Issue #59 PR; actual GitHub Project-board evidence; the student's final review of the AI reflection; and the separate reviewed `lab4-staging -> main` Release PR. Do not mark these complete based only on local test results.
 

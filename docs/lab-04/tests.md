@@ -178,7 +178,7 @@ The Issue #54 frontend was implemented only after the student approved the final
 | Disposable PostgreSQL test database | **Pass** — `toktickit_lab4_test`; migrations + seed applied; development DB was not used as the test target |
 | `git diff --check` | **Pass** |
 
-The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + active Action blocking; Completed without a non-blank Result; Completed with an outstanding follow-up; current-cycle qualification; prior-cycle rejection after Reopen; server-owned `resolvedAt`; Resolved -> Closed preservation; Reopen timestamp/cycle/version changes; stale workflow conflicts; Requester authorization; and Cancelled Actions not blocking a valid Resolve. Client tests cover safe Resolution Gate feedback and authoritative Reopen state updates. Full cycle-2 Add Action browser/E2E verification remains part of the later E2E/accessibility gates.
+The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + active Action blocking; Completed without a non-blank Result; Completed with an outstanding follow-up; current-cycle qualification; prior-cycle rejection after Reopen; server-owned `resolvedAt`; Resolved -> Closed preservation; Reopen timestamp/cycle/version changes; stale workflow conflicts; Requester authorization; and Cancelled Actions not blocking a valid Resolve. The later full-stack E2E also verifies Reopen -> cycle-2 Add Action -> Complete -> Resolve. Client tests cover safe Resolution Gate feedback and authoritative Reopen state updates.
 
 ## 4. Unit Tests
 
@@ -191,7 +191,7 @@ The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + act
 | AT-U-05 | AC-28 | Immutable original-create fingerprint | same normalized create intent hashes identically; materially changed intent differs | `actions-taken.unit.test.ts` | **Pass — `1d62aa0`** |
 | WF-U-01 | Section 7 / AC-10 | Final Ticket transition matrix | Existing eight-status helper plus Staff Detail API coverage matches approved matrix; Resolve is additionally gate-protected | existing Staff operations + `workflow.api.test.ts` | **Pass — 25/25 targeted Server workflow/detail run** |
 | WF-U-02 | BR-24–BR-30 / AC-11 | Resolution-gate decision | Requires >=1 current-cycle Completed with non-blank Result, zero current-cycle Planned/In Progress, and zero current-cycle non-cancelled outstanding follow-ups | `workflow.api.test.ts` | **Pass — 10/10 workflow tests** |
-| DASH-U-01 | BR-35–BR-41 / AC-16/17 | Staff Dashboard list predicates/order | Recently Updated uses updated-desc; Urgent is High IT Priority + updated-desc | `staff-dashboard.api.test.ts` or helper test | Planned |
+| DASH-U-01 | BR-35–BR-41 / AC-16/17 | Staff Dashboard list predicates/order | Recently Updated uses updated-desc; Urgent is High IT Priority + updated-desc | `staff-dashboard.api.test.ts` | **Pass — `SD-API-01..07/10` and `SD-API-11` verify exact predicates, top-5 limit, and deterministic order** |
 | TIME-U-01 | BR-08 / AC-27 | Action business-time parser/bounds | ISO offsets normalize to same UTC instant; backdate allowed; > server-now+5m rejected | `actions-taken.unit.test.ts` | **Pass — `98b5274`** |
 
 ## 5. Actions Taken API / Integration Tests
@@ -232,13 +232,13 @@ The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + act
 | AT-API-27R | AC-28 | **Create -> edit/reassign mutable Action -> retry original POST with same key/original payload** | `200` same id/current row; no duplicate; no second parent-version increment; changed original intent still conflicts | same | **Pass — `1d62aa0`** |
 | AT-API-32 | AC-13 | Owner or IT Priority changes after Action client loaded parent version | workflow mutation increments Ticket version; later Action write using old token -> `409 STALE_TICKET_STATE` | same | **Pass — `1d62aa0`** |
 | AT-API-33 | AC-13 | Concurrent Owner mutation vs Action edit on same Ticket version | exactly one commits; stale loser `409`; parent version increments once; no `500` | same | **Pass — `1d62aa0`** |
-| FU-API-01 | AC-29 | Complete Action with `followUpRequired=true` | Action completes with `followUpStatus=OUTSTANDING`; completion provenance is recorded | `actions-taken.api.test.ts` | Planned |
-| FU-API-02 | AC-29 | Mark outstanding follow-up complete | `200`; followUpStatus becomes `COMPLETED`; actor/time recorded; Action remains `Completed`; Action/Ticket versions each increment once | same | Planned |
-| FU-API-03 | AC-29 | Requester attempts follow-up completion | `403`; no mutation | `authorization.api.test.ts` / `actions-taken.api.test.ts` | Planned |
-| FU-API-04 | AC-29 | Follow-up completion with stale Action version | `409 STALE_ACTION_TAKEN`; no mutation | `actions-taken.api.test.ts` | Planned |
-| FU-API-05 | AC-29 | Follow-up completion with stale Ticket version | `409 STALE_TICKET_STATE`; no mutation | `actions-taken.api.test.ts` | Planned |
-| FU-API-06 | AC-30 | Resolve with outstanding follow-up | `409 RESOLUTION_GATE_NOT_MET`; Ticket unchanged | `workflow.api.test.ts` | Planned |
-| FU-API-07 | AC-30 | Complete all required follow-ups then Resolve | `Resolved` succeeds with current-cycle Completed work and no outstanding follow-up | `workflow.api.test.ts` | Planned |
+| FU-API-01 | AC-29 | Complete Action with `followUpRequired=true` | Action completes with `followUpStatus=OUTSTANDING`; completion provenance is recorded | `actions-taken.api.test.ts` | **Pass — `FU-API-01/02/04/05` combined integration test** |
+| FU-API-02 | AC-29 | Mark outstanding follow-up complete | `200`; followUpStatus becomes `COMPLETED`; actor/time recorded; Action remains `Completed`; Action/Ticket versions each increment once | same | **Pass — `FU-API-01/02/04/05` combined integration test** |
+| FU-API-03 | AC-29 | Requester attempts follow-up completion | `403`; no mutation | `authorization.api.test.ts` / `actions-taken.api.test.ts` | **Pass — `FU-API-03` authorization test** |
+| FU-API-04 | AC-29 | Follow-up completion with stale Action version | `409 STALE_ACTION_TAKEN`; no mutation | `actions-taken.api.test.ts` | **Pass — `FU-API-01/02/04/05` combined integration test** |
+| FU-API-05 | AC-29 | Follow-up completion with stale Ticket version | `409 STALE_TICKET_STATE`; no mutation | `actions-taken.api.test.ts` | **Pass — `FU-API-01/02/04/05` combined integration test** |
+| FU-API-06 | AC-30 | Resolve with outstanding follow-up | `409 RESOLUTION_GATE_NOT_MET`; Ticket unchanged | `workflow.api.test.ts` | **Pass — `WF-10` and `FU-API-06/07`** |
+| FU-API-07 | AC-30 | Complete all required follow-ups then Resolve | `Resolved` succeeds with current-cycle Completed work and no outstanding follow-up | `workflow.api.test.ts` | **Pass — `FU-API-06/07`** |
 
 ## 6. Final Ticket Workflow API Tests
 
@@ -253,11 +253,11 @@ The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + act
 | WF-API-15 | AC-11 | Resolve with current-cycle Completed + non-blank Result but outstanding follow-up | `409 RESOLUTION_GATE_NOT_MET`; unchanged | `workflow.api.test.ts` | **Pass — WF-10** |
 | WF-API-07 | AC-11 | Requester directly calls Staff status endpoint | `403`; gate cannot be bypassed | `workflow.api.test.ts` | **Pass — WF-08** |
 | WF-API-08 | AC-12 | Requester advisory indication then formal Reopened | indication remains advisory; Reopened clears resolution timestamps and preserves historical Actions | `staff-ticket-detail.api.test.ts` + `workflow.api.test.ts` | **Pass — existing ST-13 + WF-06** |
-| WF-API-09 | AC-13 | Two concurrent valid transitions from same Ticket version | at most one commits; stale loser `409 STALE_TICKET_STATE` | same | Planned |
-| WF-API-10 | AC-11/13 | Action/owner/priority aggregate changes while Resolve is evaluated | parent version/row lock + child re-read prevent stale Resolve | same | Planned |
-| WF-API-11 | AC-19 | Pre-Lab-4 already Resolved/Closed zero-Action Ticket | remains readable/valid after migration; no retroactive mutation | `migration-regression.test.ts` | Planned |
+| WF-API-09 | AC-13 | Two concurrent valid transitions from same Ticket version | at most one commits; stale loser `409 STALE_TICKET_STATE` | `workflow.api.test.ts` | **Pass — `WF-API-09` concurrent Resolve vs Waiting-for-Requester test; one winner, one stale conflict, one parent-version increment** |
+| WF-API-10 | AC-11/13 | Action/owner/priority aggregate changes while Resolve is evaluated | parent version/row lock + child re-read prevent stale Resolve | `workflow.api.test.ts` | **Pass — `WF-API-10` races Resolve against Action create, Owner change, and IT Priority change; exactly one aggregate write wins in each scenario** |
+| WF-API-11 | AC-19 | Pre-Lab-4 already Resolved/Closed zero-Action Ticket | remains readable/valid after migration; no retroactive mutation | `migration-regression.test.ts` | **Pass — `MIG-01/02/03/05` Lab 3-shaped migration preservation test** |
 | WF-API-12 | AC-11/12 | **Resolve cycle 1 -> Reopen -> attempt Resolve cycle 2 with only cycle-1 Completed Action** | rejected `409 RESOLUTION_GATE_NOT_MET`; old Action remains historical but does not qualify cycle 2 | `workflow.api.test.ts` | **Pass — WF-03** |
-| WF-API-13 | AC-11/12 | Reopened cycle 2 creates/completes current-cycle Action then Resolve | succeeds; resolvedAt reset to new server time | `workflow.api.test.ts` | Planned — covered by future end-to-end cycle test |
+| WF-API-13 | AC-11/12 | Reopened cycle 2 creates/completes current-cycle Action then Resolve | succeeds; resolvedAt reset to new server time | `workflow.api.test.ts` + `e2e/lab-04/issue9-fullstack.spec.ts` | **Pass — `E2E-ISSUE9-AT-WF` full-stack cycle-2 Action and second Resolve** |
 | WF-API-14 | AC-14 | Resolved -> Closed | resolvedAt preserved so recently-resolved metric can still include it | `workflow.api.test.ts` | **Pass — WF-05** |
 
 ## 7. Requester Dashboard API Tests
@@ -533,7 +533,7 @@ These are the Lab 4 release-final gates and are intentionally **not** the Issue 
 | Desktop/tablet/mobile accessibility/visual QA | **Automated Local Pass — 19/19 combined Playwright tests**, including all Lab 4 responsive specs at 1280/820/390; 16 fixture screenshots and 12 live Development DB screenshots plus human visual review remain recorded under Issue #58. Live DB screenshots are desktop-only. |
 | Dashboard DB-query comparison | **Local Pass — `requester-dashboard.api.test.ts` and `staff-dashboard.api.test.ts` compare API metrics with direct PostgreSQL `COUNT(*) FILTER` aggregates, in addition to Prisma count/findMany comparisons for metrics and ordered lists. Both SQL-backed dashboard tests passed 9/9 together on the isolated test database.** |
 | Production dependency audits | **Local Pass — `npm audit --omit=dev`: 0 vulnerabilities (Server and Client)**, 2026-11-01. |
-| Hosted CI exact reviewed release head | **Pending — run after Issue #59 PR is opened; approval/CI must match the exact final PR head.** |
+| Hosted CI exact reviewed release head | **Pending — require a green run on the latest pushed PR #71 head after all test/documentation commits; peer approval is also pending.** |
 
 ### Issue #59 integrated local verification — 1 November 2026
 
@@ -541,7 +541,7 @@ The Issue #59 worktree is based on `lab4-staging` commit `4c1226246856a5df95f119
 
 | Command / gate | Result |
 |---|---|
-| `server`: `npm test -- --maxWorkers=1 --minWorkers=1` with `TEST_DATABASE_URL=toktickit_test` | **Pass — 228/228 tests, 30/30 files** |
+| `server`: `npm test -- --maxWorkers=1 --minWorkers=1` with `TEST_DATABASE_URL=toktickit_test` | **Pass — 230/230 tests, 30/30 files** |
 | `server`: `npm run build` | **Pass** |
 | `server`: `npx prisma validate` with isolated test URL | **Pass** |
 | `server`: `npx prisma migrate deploy` on `toktickit_lab4_e2e` | **Pass — all 9 migrations applied** |
@@ -558,6 +558,8 @@ The first Client full-suite run exposed a timing-sensitive assertion in `Authent
 The CI Server test step now uses the same single-worker arguments as the verified local run (`--maxWorkers=1 --minWorkers=1`) because the integration suite shares database fixtures across files. This avoids the parallel cross-file fixture races seen in local verification and keeps hosted CI aligned with the passing command.
 
 The dashboard metric verification was strengthened with parameterized PostgreSQL aggregate queries (`COUNT(*) FILTER`) in the Requester and Staff Dashboard API tests. The API responses are compared directly to these SQL results, while the same tests also compare ordered top lists against independent Prisma `findMany` queries. The focused SQL-backed dashboard suite passed 9/9 tests.
+
+The Issue #59 traceability audit also found several rows still marked Planned even though the corresponding follow-up lifecycle, migration, dashboard, and cycle-2 E2E tests already existed. Those rows are now linked to their actual test names. Two genuinely missing workflow race cases were added: concurrent valid Ticket transitions from one version, and Resolve racing with Action creation, Owner change, or IT Priority change. The focused workflow suite passed 13/13, and the complete Server suite was rerun successfully at 230/230 tests across 30/30 files.
 
 The combined Playwright run exercised the Lab 3 regression specs and Lab 4 Actions/Resolution Gate/Dashboard/responsive specs against the dedicated E2E database. Playwright created test users and Tickets only in that disposable database. The run did not use the Development database.
 

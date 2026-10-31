@@ -455,26 +455,26 @@ Every AC maps to at least one planned test in `tests.md` before implementation i
 
 Sprint 4 is product-complete only when all applicable items below are true:
 
-- [ ] `specification.md`, `tests.md`, `ui-spec.md`, and `api-spec.md` agree on Actions Taken, workflow, dashboards, API, UI, migration, security, and concurrency decisions.
-- [ ] Every AC maps to planned automated/manual evidence and final paths/statuses are synchronized truthfully.
-- [ ] Lab 3 release baseline is preserved through a tested additive migration; no earlier data is discarded.
-- [ ] Actions Taken data model, migration, seed, idempotent create, authorization, API, UI, lifecycle, assignee-only completion, performer/cancellation provenance, concurrency, and Requester read-only behavior pass.
-- [ ] No active Action can remain assigned to an inactive user or Requester after Administrator account changes or concurrent assignment/account races.
-- [ ] Final Ticket transition matrix and current-workflow-cycle resolution gate are backend-enforced, parent-versioned, and stale-safe.
-- [ ] Follow-Up Lifecycle is explicit, auditable, server-authorized, stale-safe, and synchronized across schema/API/UI/tests; outstanding follow-ups block Resolve until explicitly completed.
-- [ ] Requester Dashboard metrics are ownership-safe and match authoritative queries.
-- [ ] IT Staff Dashboard metrics/current-user Actions/separate Recently Updated and Urgent lists match authoritative queries; Administrator behavior matches the approved matrix.
-- [ ] Labs 1–3 regression passes for authentication, Requester, Staff, Administrator, comments, notes, attachments, ownership, user management, and role navigation.
-- [ ] Server unit/API/integration/authorization/migration tests pass from the integrated release candidate.
-- [ ] Client component/UI tests pass from the integrated release candidate.
-- [ ] Lab 4 project-owned Playwright E2E covers Actions Taken, Ticket resolution, Dashboards, and representative earlier-lab journeys on a dedicated test database.
+- [x] `specification.md`, `tests.md`, `ui-spec.md`, and `api-spec.md` agree on Actions Taken, workflow, dashboards, API, UI, migration, security, and concurrency decisions.
+- [x] Every AC maps to planned automated/manual evidence and final paths/statuses are synchronized truthfully.
+- [x] Lab 3 release baseline is preserved through a tested additive migration; no earlier data is discarded.
+- [x] Actions Taken data model, migration, seed, idempotent create, authorization, API, UI, lifecycle, assignee-only completion, performer/cancellation provenance, concurrency, and Requester read-only behavior pass.
+- [x] No active Action can remain assigned to an inactive user or Requester after Administrator account changes or concurrent assignment/account races.
+- [x] Final Ticket transition matrix and current-workflow-cycle resolution gate are backend-enforced, parent-versioned, and stale-safe, including concurrent transition/aggregate-write tests.
+- [x] Follow-Up Lifecycle is explicit, auditable, server-authorized, stale-safe, and synchronized across schema/API/UI/tests; outstanding follow-ups block Resolve until explicitly completed.
+- [x] Requester Dashboard metrics are ownership-safe and match authoritative PostgreSQL aggregates.
+- [x] IT Staff Dashboard metrics/current-user Actions/separate Recently Updated and Urgent lists match authoritative queries; Administrator behavior matches the approved matrix.
+- [x] Labs 1–3 regression passes for authentication, Requester, Staff, Administrator, comments, notes, attachments, ownership, user management, and role navigation in the recorded Server/Client/Playwright suites.
+- [x] Server unit/API/integration/authorization/migration tests pass locally from the Issue #59 integrated worktree.
+- [x] Client component/UI tests pass locally from the Issue #59 integrated worktree.
+- [x] Lab 4 project-owned Playwright E2E covers Actions Taken, Ticket resolution, Dashboards, and representative earlier-lab journeys on a dedicated test database.
 - [ ] Server build, Client production build, Prisma validate/migrate/seed, dependency audits, and hosted CI pass on the exact reviewed release head.
-- [ ] Desktop 1280 / tablet ~820 / mobile ~390 visual-accessibility checks pass with no clipping, overlap, or page-level horizontal overflow.
+- [x] Desktop 1280 / tablet ~820 / mobile ~390 visual-accessibility checks pass with no clipping, overlap, or page-level horizontal overflow in the Issue #58 evidence and integrated Playwright suite.
 - [ ] No critical console errors, broken links, placeholder text, duplicate/obsolete controls, or unfinished Lab 4 UI remain.
-- [ ] `.github/workflows/ci.yml` includes the Lab 4 staging/PR path before final integration so Lab 4 is covered by hosted checks.
-- [ ] `reviewer.md` records only real PR/reviewer/comment/response/re-review/approval evidence.
+- [x] `.github/workflows/ci.yml` includes the Lab 4 staging/PR path before final integration so Lab 4 is covered by hosted checks.
+- [x] `reviewer.md` records only real PR/reviewer/comment/response/re-review/approval evidence.
 - [ ] `ai-use.md` contains the actual model, 6–10 selected real prompts, and final personal reflection.
-- [ ] README setup/seed/migration/test/E2E/demo instructions are current.
+- [x] README setup/seed/migration/test/E2E/demo instructions are current.
 - [ ] Issues #50–#59 are completed through the approved feature-branch/peer-review workflow; Project/Kanban evidence is captured truthfully.
 - [ ] Final `lab4-staging` regression is green, Release PR to `main` is approved, and final submission evidence is taken from released `main`.
 

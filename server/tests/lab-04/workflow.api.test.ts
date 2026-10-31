@@ -13,6 +13,7 @@ describe("Lab 4 Ticket workflow and resolution", () => {
   let systemId: number;
   let requesterId: number;
   let staffId: number;
+  let otherStaffId: number;
   let staffCookie: string;
   let requesterCookie: string;
 
@@ -24,13 +25,15 @@ describe("Lab 4 Ticket workflow and resolution", () => {
     categoryId = category.id;
     systemId = system.id;
 
-    const [requester, staff] = await Promise.all([
+    const [requester, staff, otherStaff] = await Promise.all([
       createTestUser({ name: "Workflow Requester" }),
       createTestUser({ name: "Workflow Staff", role: UserRole.IT_STAFF }),
+      createTestUser({ name: "Workflow Other Staff", role: UserRole.IT_STAFF }),
     ]);
-    userIds.push(requester.id, staff.id);
+    userIds.push(requester.id, staff.id, otherStaff.id);
     requesterId = requester.id;
     staffId = staff.id;
+    otherStaffId = otherStaff.id;
     requesterCookie = (await createSessionCookie(requester.id)).cookie;
     staffCookie = (await createSessionCookie(staff.id)).cookie;
   });
@@ -188,6 +191,83 @@ describe("Lab 4 Ticket workflow and resolution", () => {
     expect(result.status).toBe(409);
     expect(result.body.error.code).toBe("STALE_TICKET_STATE");
     expect((await getPrisma().ticket.findUniqueOrThrow({ where: { id: ticket.id } })).status).toBe("In Progress");
+  });
+
+  it("WF-API-09: concurrent valid transitions from one Ticket version have exactly one winner", async () => {
+    const ticket = await createTicket();
+    await addAction(ticket.id, { status: ActionTakenStatus.COMPLETED, result: "Resolution gate satisfied" });
+
+    const [resolve, waitForRequester] = await Promise.all([
+      changeStatus(ticket.id, "Resolved", ticket.version),
+      changeStatus(ticket.id, "Waiting for Requester", ticket.version),
+    ]);
+
+    expect([resolve.status, waitForRequester.status].filter((status) => status === 200)).toHaveLength(1);
+    expect([resolve.status, waitForRequester.status].filter((status) => status === 409)).toHaveLength(1);
+    expect(resolve.status).not.toBe(500);
+    expect(waitForRequester.status).not.toBe(500);
+    const saved = await getPrisma().ticket.findUniqueOrThrow({ where: { id: ticket.id } });
+    expect(saved.version).toBe(ticket.version + 1);
+    expect(["Resolved", "Waiting for Requester"]).toContain(saved.status);
+    expect(saved.status === "Resolved").toBe(resolve.status === 200);
+  });
+
+  it("WF-API-10: concurrent Action/Owner/IT Priority writes cannot invalidate a resolving snapshot", async () => {
+    const scenarios = ["action", "owner", "priority"] as const;
+
+    for (const scenario of scenarios) {
+      const ticket = await createTicket();
+      await addAction(ticket.id, { status: ActionTakenStatus.COMPLETED, result: "Resolution gate satisfied" });
+
+      let aggregateMutation: Promise<request.Response>;
+      if (scenario === "action") {
+        aggregateMutation = request(app)
+          .post(`/api/v1/staff/tickets/${ticket.id}/actions-taken`)
+          .set("Cookie", staffCookie)
+          .set("Origin", TEST_ORIGIN)
+          .send({
+            clientRequestId: crypto.randomUUID(),
+            expectedTicketVersion: ticket.version,
+            actionDateTime: new Date(Date.now() - 60_000).toISOString(),
+            description: "Concurrent Action create",
+            assigneeId: staffId,
+            followUpRequired: false,
+            followUpNote: null,
+            attachmentNotes: null,
+          });
+      } else if (scenario === "owner") {
+        aggregateMutation = request(app)
+          .patch(`/api/v1/staff/tickets/${ticket.id}/owner`)
+          .set("Cookie", staffCookie)
+          .set("Origin", TEST_ORIGIN)
+          .send({ action: "assign", ownerId: otherStaffId, expectedVersion: ticket.version });
+      } else {
+        aggregateMutation = request(app)
+          .patch(`/api/v1/staff/tickets/${ticket.id}/it-priority`)
+          .set("Cookie", staffCookie)
+          .set("Origin", TEST_ORIGIN)
+          .send({ itPriority: "High", expectedVersion: ticket.version });
+      }
+
+      const [resolve, mutation] = await Promise.all([
+        changeStatus(ticket.id, "Resolved", ticket.version),
+        aggregateMutation,
+      ]);
+      const mutationSuccess = scenario === "action" ? mutation.status === 201 : mutation.status === 200;
+
+      expect([resolve.status, mutation.status].filter((status) => status === 200 || status === 201)).toHaveLength(1);
+      expect(resolve.status).not.toBe(500);
+      expect(mutation.status).not.toBe(500);
+      expect(resolve.status === 200).not.toBe(mutationSuccess);
+      const saved = await getPrisma().ticket.findUniqueOrThrow({ where: { id: ticket.id } });
+      expect(saved.version).toBe(ticket.version + 1);
+      expect(saved.status === "Resolved").toBe(resolve.status === 200);
+      if (scenario === "owner" && mutationSuccess) expect(saved.ownerId).toBe(otherStaffId);
+      if (scenario === "priority" && mutationSuccess) expect(saved.itPriority).toBe("High");
+      if (scenario === "action" && mutationSuccess) {
+        expect(await getPrisma().actionTaken.count({ where: { ticketId: ticket.id } })).toBe(2);
+      }
+    }
   });
 
   it("WF-08: Requester cannot change Staff workflow status", async () => {
