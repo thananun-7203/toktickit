@@ -2,9 +2,9 @@
 
 This index maps the Lab 4 repository evidence to the requested Answer Part 1–9 submission areas. It records repository artifacts and observed results only.
 
-**Current status:** Local integrated verification is recorded. PR #71 has exact-head hosted CI success and peer approval, but remains open/unmerged. Project-board proof, student-finalized AI reflection, reviewer-controlled staging merge, and the separate release PR remain pending.
+**Current status:** PR #71 was approved by `Tanaboonnnnn` at exact head `bb22818b8b593ebdd1b067d932987e0519136c80` and merged into `lab4-staging` as merge commit `a8c94002bee0dc73d7dcfc48eb4cedbba16c5c15`. Exact-head hosted CI Run #65 passed (client/server/e2e). The student supplied a GitHub Project screenshot showing the visible Lab 4 Issues #53–#59 in `Done` and confirmed the AI Reflection and Gemini Pro entry are accurate. The separate `lab4-staging -> main` Release PR and its exact-head CI/review remain pending.
 
-**Integration baseline:** `lab4-staging` merge commit `4c1226246856a5df95f11984f063c9ff1a42d287` (PR #70). At the start of Issue #59, `lab4-staging` was 56 commits ahead of `main` and 0 commits behind. Issue #59 remains open; implementation PR [#71](https://github.com/thananun-7203/toktickit/pull/71) is open against `lab4-staging`. `Tanaboonnnnn` approved exact head `7105286f4c957fd231a5d781a2f1cb693a18d6ee`, and hosted CI Run #63 passed on that head. The separate `lab4-staging -> main` release PR has not been opened.
+**Integration baseline:** `lab4-staging` now includes PR #71 merge commit `a8c94002bee0dc73d7dcfc48eb4cedbba16c5c15`. The latest compare reports `lab4-staging` 63 commits ahead of `main` and 0 behind. Issue #59 is closed; [PR #71](https://github.com/thananun-7203/toktickit/pull/71) was approved at exact head `bb22818b8b593ebdd1b067d932987e0519136c80`, passed hosted CI Run #65, and was merged by `Tanaboonnnnn`. The separate `lab4-staging -> main` release PR has not yet been opened.
 
 ## Evidence rules
 
@@ -117,8 +117,8 @@ These captures show the real application connected to the Development DB. The re
 |---|---|
 | Integration/release branch convention | `lab4-staging -> main`, with one feature branch and reviewed PR per implementation Issue |
 | Completed implementation increments | Issues #50–#58 and PRs #60–#70; Resolution Gate is Issue #67 / PR #68 |
-| Current final-evidence task | Issue #59 is open; PR #71 is open against `lab4-staging`; exact-head peer approval and hosted CI Run #63 have passed |
-| Project board columns | **Pending independent verification.** Do not infer `Done` from Issue closed state. Add a genuine GitHub Project screenshot here before final PDF generation. |
+| Current final-evidence task | Issue #59 is closed; PR #71 is merged into `lab4-staging` by `Tanaboonnnnn` after exact-head approval and hosted CI Run #65 |
+| Project board columns | Student-provided screenshot of **Tok TickIT Individual Sprints** shows the visible Lab 4 issue cards #53, #54, #55, #56, #67, #57, #58, and #59 in the `Done` column. Preserve the original screenshot in the final submission evidence bundle. |
 | README and ignore rules | Root `README.md` and `.gitignore` |
 
 ## Answer Part 2 — Requirements and specification
@@ -130,7 +130,7 @@ These captures show the real application connected to the Development DB. The re
 - `docs/lab-04/ui-spec.md` — role-specific screens, states, responsive behavior, and accessibility.
 - PR #60 — approved Engineering Contract and Test Plan baseline.
 
-**Status:** The specification baseline is approved and implemented through the merged feature PRs. Local integrated tests/builds pass as recorded in `tests.md`; PR #71 exact-head hosted CI and peer review are complete; reviewer-controlled staging merge, the separate release PR, and final PDF remain pending.
+**Status:** The specification baseline is approved and implemented through the merged feature PRs. Local integrated tests/builds pass as recorded in `tests.md`; PR #71 exact-head hosted CI, peer review, and reviewer-controlled merge into `lab4-staging` are complete. The separate release PR and final PDF remain pending.
 
 ## Answer Part 3 — Test plan, execution, and results
 
@@ -140,9 +140,9 @@ Feature-level evidence is recorded there with test IDs, acceptance-criteria trac
 
 **Release-final local verification (1 November 2026):** Server 230/230 tests (30 files), Client 112/112 tests (14 files), Server and Client builds, Prisma validation, all 9 E2E migrations, migration/seed regression, production dependency audits (0 vulnerabilities in each tree), and combined Lab 3/Lab 4 full-stack Playwright 23/23 passed against isolated test databases. Exact commands/results are recorded in `tests.md` Section 18.
 
-**Still pending:** reviewer-controlled merge of PR #71 into lab4-staging; actual GitHub Project-board evidence; the student's final review of the AI reflection; and the separate reviewed `lab4-staging -> main` Release PR. Do not mark these complete based only on local test results.
+**Still pending:** a fresh exact-release-head hosted CI run and independent review on the separate `lab4-staging -> main` Release PR, followed by reviewer-controlled merge and final PDF generation. The Project-board screenshot and student AI Reflection confirmation have been supplied.
 
-The CI workflow now runs the Lab 3 regression specs plus the Lab 4 full-stack E2E configuration against a dedicated `toktickit_lab4_e2e` database. Local execution passed 23/23 tests, including four new Dashboard empty/error-state checks; hosted CI Run #63 passed on PR #71 exact reviewed head, and Tanaboonnnnn approved that head.
+The CI workflow now runs the Lab 3 regression specs plus the Lab 4 full-stack E2E configuration against a dedicated `toktickit_lab4_e2e` database. Local execution passed 23/23 tests, including four new Dashboard empty/error-state checks; hosted CI Run #65 passed on PR #71 exact re-reviewed head `bb22818`, and `Tanaboonnnnn` approved and merged that head into `lab4-staging`.
 
 ## Answer Part 4 — AI use and reflection
 
@@ -150,7 +150,7 @@ The CI workflow now runs the Lab 3 regression specs plus the Lab 4 full-stack E2
 
 - Ten selected prompt summaries are recorded in ai-use.md; they are summaries rather than verbatim transcripts.
 - Later implementation and peer-review corrections are summarized as observable assistance/verification events; no prompt wording is invented.
-- The reflection is a draft and requires the student's own review/edit before final submission.
+- The student confirmed that both first-person reflection paragraphs and the Gemini Pro model entry accurately describe their actual work. A minor typographical correction was made without changing the reflection's meaning.
 
 ## Answer Part 5 — IT Staff Dashboard
 
@@ -234,7 +234,7 @@ Do not generate or label the Answer Part 1–9 PDF as final until all of the fol
 1. Issue #59 documentation, README, CI, and evidence changes are reviewed and merged into `lab4-staging` by the reviewer.
 2. Release-final local gates remain passing, exact-head hosted CI passes, and any remaining gates are either passed or explicitly documented as not applicable with justification.
 3. Dashboard aggregate/query comparison remains passing through the PostgreSQL-backed API test assertions in `tests.md`; preserve that evidence on the final release head.
-4. The GitHub Project board screenshot/columns are verified from the actual Project.
-5. The student has reviewed and finalized the AI reflection wording.
+4. The student-provided GitHub Project screenshot verifies the visible Lab 4 issue cards in the `Done` column; preserve the screenshot in the final PDF evidence.
+5. The student confirmed the AI reflection wording and Gemini Pro entry; the typo correction is included in the release branch.
 6. The separate `lab4-staging -> main` release PR receives exact-head hosted CI and peer approval, and is merged by the reviewer.
 7. The final PDF is generated from the final `main` state and its evidence paths are checked.

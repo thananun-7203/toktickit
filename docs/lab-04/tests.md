@@ -533,11 +533,12 @@ These are the Lab 4 release-final gates and are intentionally **not** the Issue 
 | Desktop/tablet/mobile accessibility/visual QA | **Automated Local Pass — 23/23 combined Playwright tests**, including all Lab 4 responsive specs at 1280/820/390; 16 responsive fixture screenshots, 12 live Development DB screenshots, and 4 new empty/error boundary screenshots are consolidated under `artifacts/lab-04/screenshots/`. Human visual review remains recorded under Issue #58. Live DB screenshots are desktop-only. |
 | Dashboard DB-query comparison | **Local Pass — `requester-dashboard.api.test.ts` and `staff-dashboard.api.test.ts` compare API metrics with direct PostgreSQL `COUNT(*) FILTER` aggregates, in addition to Prisma count/findMany comparisons for metrics and ordered lists. Both SQL-backed dashboard tests passed 9/9 together on the isolated test database.** |
 | Production dependency audits | **Local Pass — `npm audit --omit=dev`: 0 vulnerabilities (Server and Client)**, 2026-11-01. |
-| Hosted CI exact reviewed release head | **Pending — require a green run on the latest pushed PR #71 head after all test/documentation commits; peer approval is also pending.** |
+| Hosted CI exact reviewed Issue #59 head | **Pass — GitHub Actions Run #65 (`41303962915`) completed successfully for exact PR #71 head `bb22818b8b593ebdd1b067d932987e0519136c80` (client/server/e2e); `Tanaboonnnnn` approved and merged PR #71 into `lab4-staging`.** |
+| Separate `lab4-staging -> main` Release PR exact-head CI | **Pending — run after the release branch is pushed and the Release PR is opened; this is a distinct release gate and is not covered by PR #71's CI.** |
 
 ### Issue #59 integrated local verification — 1 November 2026
 
-The Issue #59 worktree is based on `lab4-staging` commit `4c1226246856a5df95f11984f063c9ff1a42d287`. Local verification used Node.js 20.20.2 and isolated Docker Compose project `toktickit-issue59-test`, with PostgreSQL exposed on `127.0.0.1:5433`. The normal Development PostgreSQL container on port `5432` was not used as a test target.
+The Issue #59 worktree was based on `lab4-staging` commit `4c1226246856a5df95f11984f063c9ff1a42d287`. Local verification used Node.js 20.20.2 and isolated Docker Compose project `toktickit-issue59-test`, with PostgreSQL exposed on `127.0.0.1:5433`. The normal Development PostgreSQL container on port `5432` was not used as a test target. PR #71 was subsequently approved and merged into `lab4-staging`; the separate `lab4-staging -> main` release head still requires its own hosted CI run.
 
 | Command / gate | Result |
 |---|---|
