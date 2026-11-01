@@ -27,6 +27,9 @@ const TICKET: api.StaffTicketDetail = {
   itPriority: "Medium",
   status: "In Progress",
   problemAppearsResolvedAt: "2026-09-17T08:15:00.000Z",
+  version: 1,
+  workflowCycle: 1,
+  resolvedAt: null,
   createdAt: "2026-09-15T08:00:00.000Z",
   updatedAt: "2026-09-16T09:30:00.000Z",
   requester: { id: 10, name: "Somsri Rakdee", email: "somsri@toktick.it" },
@@ -63,6 +66,7 @@ describe("Lab 3 IT Staff Ticket Detail", () => {
     vi.restoreAllMocks();
     vi.spyOn(api, "getStaffAssignees").mockResolvedValue([STAFF, OTHER_STAFF]);
     vi.spyOn(api, "getPublicComments").mockResolvedValue([PUBLIC_COMMENT]);
+    vi.spyOn(api, "getActionsTaken").mockResolvedValue([]);
     vi.spyOn(api, "getInternalNotes").mockResolvedValue({
       items: [INTERNAL_NOTE],
       page: 1,
@@ -72,17 +76,21 @@ describe("Lab 3 IT Staff Ticket Detail", () => {
     });
     vi.spyOn(api, "postPublicComment").mockResolvedValue(PUBLIC_COMMENT);
     vi.spyOn(api, "postInternalNote").mockResolvedValue(INTERNAL_NOTE);
-    vi.spyOn(api, "updateStaffTicketOwner").mockResolvedValue({ id: TICKET.id, owner: STAFF, updatedAt: TICKET.updatedAt });
+    vi.spyOn(api, "updateStaffTicketOwner").mockResolvedValue({ id: TICKET.id, owner: STAFF, version: 2, updatedAt: TICKET.updatedAt });
     vi.spyOn(api, "updateStaffTicketItPriority").mockResolvedValue({
       id: TICKET.id,
       requestedPriority: TICKET.requestedPriority,
       itPriority: "High",
+      version: 2,
       updatedAt: TICKET.updatedAt,
     });
     vi.spyOn(api, "updateStaffTicketStatus").mockResolvedValue({
       id: TICKET.id,
       status: "Resolved",
       problemAppearsResolvedAt: TICKET.problemAppearsResolvedAt,
+      resolvedAt: "2026-09-17T09:00:00.000Z",
+      workflowCycle: 1,
+      version: 2,
       updatedAt: TICKET.updatedAt,
     });
   });
@@ -104,12 +112,12 @@ describe("Lab 3 IT Staff Ticket Detail", () => {
     await screen.findByRole("heading", { name: TICKET.ticketNumber });
 
     await user.click(screen.getByRole("button", { name: "Claim" }));
-    await waitFor(() => expect(updateOwner).toHaveBeenCalledWith(TICKET.id, { action: "claim" }));
+    await waitFor(() => expect(updateOwner).toHaveBeenCalledWith(TICKET.id, { action: "claim", expectedVersion: 1 }));
 
-    vi.mocked(api.updateStaffTicketOwner).mockResolvedValueOnce({ id: TICKET.id, owner: OTHER_STAFF, updatedAt: TICKET.updatedAt });
+    vi.mocked(api.updateStaffTicketOwner).mockResolvedValueOnce({ id: TICKET.id, owner: OTHER_STAFF, version: 3, updatedAt: TICKET.updatedAt });
     await user.selectOptions(screen.getByLabelText("Assign / Reassign"), String(OTHER_STAFF.id));
     await user.click(screen.getByRole("button", { name: "Reassign" }));
-    await waitFor(() => expect(updateOwner).toHaveBeenLastCalledWith(TICKET.id, { action: "assign", ownerId: OTHER_STAFF.id }));
+    await waitFor(() => expect(updateOwner).toHaveBeenLastCalledWith(TICKET.id, { action: "assign", ownerId: OTHER_STAFF.id, expectedVersion: 2 }));
   });
 
   it("UI-ST-03: Requested Priority stays read-only while IT Priority can be edited", async () => {
@@ -122,7 +130,7 @@ describe("Lab 3 IT Staff Ticket Detail", () => {
     expect(screen.queryByLabelText("Requested Priority")).not.toBeInTheDocument();
     await user.selectOptions(screen.getByLabelText("IT Priority"), "High");
     await user.click(screen.getByRole("button", { name: "Save" }));
-    await waitFor(() => expect(updatePriority).toHaveBeenCalledWith(TICKET.id, "High"));
+    await waitFor(() => expect(updatePriority).toHaveBeenCalledWith(TICKET.id, "High", TICKET.version));
   });
 
   it("UI-ST-04: Status control offers only allowed next transitions", async () => {
@@ -231,5 +239,47 @@ describe("Lab 3 IT Staff Ticket Detail", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/changed while you were editing/i);
     await user.click(screen.getByRole("button", { name: "Refresh" }));
     await waitFor(() => expect(getDetail).toHaveBeenCalledTimes(2));
+  });
+
+  it("UI-ST-10: Resolution Gate shows safe feedback when Resolve is rejected", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.mocked(api.updateStaffTicketStatus).mockRejectedValueOnce(new api.ApiError(
+      "resolution gate",
+      409,
+      "RESOLUTION_GATE_NOT_MET",
+    ));
+    const user = userEvent.setup();
+    renderDetail();
+    await screen.findByRole("heading", { name: TICKET.ticketNumber });
+
+    await user.selectOptions(screen.getByLabelText("Status"), "Resolved");
+    await user.click(screen.getByRole("button", { name: "Change" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/cannot be resolved yet/i);
+    expect(api.updateStaffTicketStatus).toHaveBeenCalledWith(TICKET.id, "Resolved", TICKET.version);
+  });
+
+  it("UI-ST-11: successful Reopen updates status, resolvedAt, and workflow cycle", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const updateStatus = vi.mocked(api.updateStaffTicketStatus);
+    updateStatus.mockResolvedValueOnce({
+      id: TICKET.id,
+      status: "Reopened",
+      problemAppearsResolvedAt: null,
+      resolvedAt: null,
+      workflowCycle: 2,
+      version: 2,
+      updatedAt: "2026-09-17T09:30:00.000Z",
+    });
+    const user = userEvent.setup();
+    renderDetail({ ...TICKET, status: "Resolved", resolvedAt: "2026-09-17T09:00:00.000Z" });
+    await screen.findByRole("heading", { name: TICKET.ticketNumber });
+
+    await user.selectOptions(screen.getByLabelText("Status"), "Reopened");
+    await user.click(screen.getByRole("button", { name: "Change" }));
+
+    await waitFor(() => expect(updateStatus).toHaveBeenCalledWith(TICKET.id, "Reopened", 1));
+    expect(await screen.findByRole("status")).toHaveTextContent(/Status changed to Reopened/i);
+    expect(screen.getByText(/Allowed next status: In Progress/i)).toBeInTheDocument();
   });
 });

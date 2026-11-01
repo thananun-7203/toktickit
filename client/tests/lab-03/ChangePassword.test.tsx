@@ -31,6 +31,11 @@ describe("Lab 3 Change Password UI", () => {
     vi.spyOn(api, "getTickets").mockResolvedValue({
       items: [], page: 1, pageSize: 10, totalItems: 0, totalPages: 0,
     });
+    vi.spyOn(api, "getRequesterDashboard").mockResolvedValue({
+      metrics: { openTickets: 0, waitingForYou: 0 },
+      recentlyUpdatedTickets: [],
+      recentlyResolvedTickets: [],
+    });
   });
 
   it("shows mandatory mode with exact password rules, Continue, Logout, and no normal navigation", async () => {
@@ -125,7 +130,7 @@ describe("Lab 3 Change Password UI", () => {
     await user.type(screen.getByLabelText(/^Confirm new password$/i), "Replacement2");
     await user.click(screen.getByRole("button", { name: /^Continue$/i }));
 
-    expect(await screen.findByRole("heading", { name: /My Tickets/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /Dashboard/i })).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByText(/must change your initial password/i)).not.toBeInTheDocument());
   });
 

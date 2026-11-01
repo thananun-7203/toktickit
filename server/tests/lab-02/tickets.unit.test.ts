@@ -135,6 +135,20 @@ describe("validateTicketQuery (U-5/U-6)", () => {
     expect(errors.categoryId).toMatch(/positive integer/);
   });
 
+  it("accepts a supported Ticket status query filter", async () => {
+    const { validateTicketQuery } = await import("../../src/ticketQuery.js");
+    const { errors, parsed } = validateTicketQuery({ status: "Waiting for Requester" });
+    expect(errors).toEqual({});
+    expect(parsed?.status).toBe("Waiting for Requester");
+  });
+
+  it("rejects an unsupported Ticket status query filter", async () => {
+    const { validateTicketQuery } = await import("../../src/ticketQuery.js");
+    const { errors, parsed } = validateTicketQuery({ status: "Waiting" });
+    expect(parsed).toBeNull();
+    expect(errors.status).toMatch(/status must be one of/);
+  });
+
   it("treats blank search as no filter", async () => {
     const { validateTicketQuery } = await import("../../src/ticketQuery.js");
     const { errors, parsed } = validateTicketQuery({ search: "   " });

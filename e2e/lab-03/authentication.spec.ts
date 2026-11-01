@@ -26,7 +26,7 @@ test("E2E-AUTH-01 invalid login, mandatory first change, logout, and direct acce
 
   await signIn(page, users.requesterOneEmail, users.initialPassword);
   const replacementPassword = `AuthE2E${Date.now()}9A`;
-  await completeMandatoryPasswordChange(page, users.initialPassword, replacementPassword, "My Tickets");
+  await completeMandatoryPasswordChange(page, users.initialPassword, replacementPassword, "Dashboard");
 
   const authenticatedStatus = await page.evaluate(async (apiUrl) => {
     const response = await fetch(`${apiUrl}/api/v1/categories`, { credentials: "include" });

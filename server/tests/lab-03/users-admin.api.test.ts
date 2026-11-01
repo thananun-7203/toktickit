@@ -124,6 +124,39 @@ describe("Lab 3 Administrator User Management", () => {
     expect(JSON.stringify(res.body)).not.toContain(sharedPasswordHash);
   });
 
+  it("ADM-SUM-01: Administrator receives unfiltered account totals grouped by role", async () => {
+    await fixtureUser({ role: UserRole.ADMINISTRATOR, isActive: false });
+    await fixtureUser({ role: UserRole.IT_STAFF });
+    await fixtureUser({ role: UserRole.REQUESTER });
+
+    const res = await request(app)
+      .get("/api/v1/admin/users/summary")
+      .set("Cookie", adminCookie);
+    expect(res.status).toBe(200);
+
+    const prisma = getPrisma();
+    const groupedUsers = await prisma.user.groupBy({ by: ["role"], _count: { _all: true } });
+    const expectedByRole: Record<UserRole, number> = {
+      ADMINISTRATOR: 0,
+      IT_STAFF: 0,
+      REQUESTER: 0,
+    };
+    for (const group of groupedUsers) expectedByRole[group.role] = group._count._all;
+    const totalUsers = Object.values(expectedByRole).reduce((total, count) => total + count, 0);
+    expect(res.body).toEqual({ totalUsers, byRole: expectedByRole });
+    expect(res.body.totalUsers).toBeGreaterThan(0);
+  });
+
+  it("ADM-SUM-02: account summary is restricted to Administrators", async () => {
+    for (const cookie of [staffCookie, requesterCookie]) {
+      const res = await request(app)
+        .get("/api/v1/admin/users/summary")
+        .set("Cookie", cookie);
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe("FORBIDDEN");
+    }
+  });
+
   it("ADM-02/ADM-03: searches users by name or email case-insensitively", async () => {
     const marker = crypto.randomUUID().slice(0, 8);
     const target = await fixtureUser({
@@ -436,7 +469,7 @@ describe("Lab 3 Administrator User Management", () => {
         .patch(`/api/v1/staff/tickets/${ticket.id}/owner`)
         .set("Origin", TEST_ORIGIN)
         .set("Cookie", staffCookie)
-        .send({ action: "assign", ownerId: target.id }),
+        .send({ action: "assign", ownerId: target.id, expectedVersion: ticket.version }),
       request(app)
         .patch(`/api/v1/admin/users/${target.id}`)
         .set("Origin", TEST_ORIGIN)
@@ -460,7 +493,7 @@ describe("Lab 3 Administrator User Management", () => {
         .patch(`/api/v1/staff/tickets/${ticket.id}/owner`)
         .set("Origin", TEST_ORIGIN)
         .set("Cookie", staffCookie)
-        .send({ action: "assign", ownerId: target.id }),
+        .send({ action: "assign", ownerId: target.id, expectedVersion: ticket.version }),
       request(app)
         .patch(`/api/v1/admin/users/${target.id}`)
         .set("Origin", TEST_ORIGIN)
@@ -490,7 +523,7 @@ describe("Lab 3 Administrator User Management", () => {
         .patch(`/api/v1/staff/tickets/${ticket.id}/owner`)
         .set("Origin", TEST_ORIGIN)
         .set("Cookie", staffCookie)
-        .send({ action: "assign", ownerId: target.id }),
+        .send({ action: "assign", ownerId: target.id, expectedVersion: ticket.version }),
       request(app)
         .patch(`/api/v1/admin/users/${target.id}`)
         .set("Origin", TEST_ORIGIN)

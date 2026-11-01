@@ -17,6 +17,7 @@ import {
 
 interface Props {
   onOpenTicket: (ticketId: number) => void;
+  initialParams?: Partial<StaffQueueParams>;
 }
 
 const DEFAULT_PARAMS: StaffQueueParams = { sort: "updated_desc", page: 1, pageSize: 10 };
@@ -59,8 +60,8 @@ function QueueCard({ ticket, onOpenTicket }: { ticket: StaffQueueTicket; onOpenT
   );
 }
 
-export default function StaffTicketQueue({ onOpenTicket }: Props) {
-  const [params, setParams] = useState<StaffQueueParams>(DEFAULT_PARAMS);
+export default function StaffTicketQueue({ onOpenTicket, initialParams }: Props) {
+  const [params, setParams] = useState<StaffQueueParams>({ ...DEFAULT_PARAMS, ...initialParams, page: 1 });
   const [searchDraft, setSearchDraft] = useState("");
   const [data, setData] = useState<StaffQueueResponse | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -155,7 +156,7 @@ export default function StaffTicketQueue({ onOpenTicket }: Props) {
       </form>
 
       <div className="staff-queue-filters" aria-label="Ticket Queue filters">
-        <label>Status<select aria-label="Status" className="form-select" value={params.status ?? ""} onChange={(e) => update("status", (e.target.value || undefined) as StaffQueueParams["status"])}><option value="">All statuses</option>{TICKET_STATUSES.map((value) => <option key={value}>{value}</option>)}</select></label>
+        <label>Status<select aria-label="Status" className="form-select" value={params.status ?? ""} onChange={(e) => update("status", (e.target.value || undefined) as StaffQueueParams["status"])}><option value="">All statuses</option><option value="active">All active statuses</option>{TICKET_STATUSES.map((value) => <option key={value}>{value}</option>)}</select></label>
         <label>Requested Priority<select aria-label="Requested Priority" className="form-select" value={params.requestedPriority ?? ""} onChange={(e) => update("requestedPriority", (e.target.value || undefined) as StaffQueueParams["requestedPriority"])}><option value="">All</option>{REQUESTED_PRIORITIES.map((value) => <option key={value}>{value}</option>)}</select></label>
         <label>IT Priority<select aria-label="IT Priority" className="form-select" value={params.itPriority ?? ""} onChange={(e) => update("itPriority", (e.target.value || undefined) as StaffQueueParams["itPriority"])}><option value="">All</option>{REQUESTED_PRIORITIES.map((value) => <option key={value}>{value}</option>)}<option value="not_recorded">Not recorded</option></select></label>
         <label>Owner<select aria-label="Owner" className="form-select" value={params.owner ?? ""} onChange={(e) => update("owner", e.target.value === "" ? undefined : e.target.value === "unassigned" || e.target.value === "mine" ? e.target.value : Number(e.target.value))}><option value="">All owners</option><option value="unassigned">Unassigned</option><option value="mine">Mine</option>{assignees.map((person) => <option key={person.id} value={person.id}>{person.name}</option>)}</select></label>

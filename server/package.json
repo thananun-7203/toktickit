@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts",
+    "seed:my-active-actions": "tsx scripts/seed-my-active-actions.ts",
     "test": "tsx scripts/run-tests.ts"
   },
   "prisma": {
@@ -19,7 +20,7 @@
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
-    "multer": "^2.3.0"
+    "multer": "^2.4.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

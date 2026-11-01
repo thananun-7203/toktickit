@@ -67,6 +67,8 @@ async function loginAndCompleteMandatoryChange(page: Page, email: string, replac
   await page.getByLabel(/^New password$/).fill(replacementPassword);
   await page.getByLabel(/^Confirm new password$/).fill(replacementPassword);
   await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await page.getByRole("button", { name: "My Tickets" }).last().click();
   await expect(page.getByRole("heading", { name: "My Tickets" })).toBeVisible();
 }
 

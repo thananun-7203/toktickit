@@ -163,6 +163,25 @@ describe("GET /api/v1/tickets", () => {
     expect(newest.body.items.map((t: { id: number }) => t.id)).toEqual([newer.id, older.id]);
   });
 
+  it("A-8: filters by Ticket status without leaking other statuses", async () => {
+    const uniq = `status-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const waiting = await createTicket(R1, { summary: `${uniq} waiting` });
+    const open = await createTicket(R1, { summary: `${uniq} open` });
+    await getPrisma().ticket.update({ where: { id: waiting.id }, data: { status: "Waiting for Requester" } });
+    await getPrisma().ticket.update({ where: { id: open.id }, data: { status: "Open" } });
+    const cookie = await sessionFor(R1);
+
+    const filtered = await request(app)
+      .get(`/api/v1/tickets?search=${encodeURIComponent(uniq)}&status=Waiting%20for%20Requester&pageSize=50`)
+      .set("Cookie", cookie);
+
+    expect(filtered.status).toBe(200);
+    const ids = filtered.body.items.map((t: { id: number }) => t.id);
+    expect(ids).toEqual([waiting.id]);
+    expect(ids).not.toContain(open.id);
+    expect(filtered.body.items.every((t: { status: string }) => t.status === "Waiting for Requester")).toBe(true);
+  });
+
   it("A-9: pagination returns consistent page/pageSize/totalItems/totalPages", async () => {
     // Scope this test to its own unique search marker. Other API test files run
     // concurrently and may create/delete R1 tickets, so relying on a shared

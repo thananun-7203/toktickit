@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import ActionsTakenPanel from "./ActionsTakenPanel.js";
 import {
   ApiError,
   downloadAttachment,
@@ -80,6 +81,9 @@ function errorMessage(error: unknown, fallback: string): string {
   if (error instanceof ApiError && error.code === "INVALID_STATUS_TRANSITION") {
     return "That status transition is no longer allowed because the Ticket state changed.";
   }
+  if (error instanceof ApiError && error.code === "RESOLUTION_GATE_NOT_MET") {
+    return "This Ticket cannot be resolved yet. Complete at least one Action in the current workflow cycle and complete or cancel all active Actions first.";
+  }
   return error instanceof Error ? error.message : fallback;
 }
 
@@ -139,6 +143,19 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
     }
   }, [ticketId]);
 
+  const refreshDetailSilently = useCallback(async () => {
+    const [detail, nextAssignees] = await Promise.all([
+      getStaffTicketDetail(ticketId),
+      getStaffAssignees(),
+    ]);
+    setTicket(detail);
+    setAssignees(nextAssignees);
+    setOwnerDraft(detail.owner ? String(detail.owner.id) : "");
+    setPriorityDraft(detail.itPriority ?? "Medium");
+    setStatusDraft("");
+    return detail.version;
+  }, [ticketId]);
+
   const loadComments = useCallback(async () => {
     setCommentsState("loading");
     try {
@@ -189,8 +206,8 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
     beginOperation();
     setOwnerBusy(true);
     try {
-      const updated = await updateStaffTicketOwner(ticket.id, { action: "claim" });
-      setTicket((current) => current ? { ...current, owner: updated.owner, updatedAt: updated.updatedAt } : current);
+      const updated = await updateStaffTicketOwner(ticket.id, { action: "claim", expectedVersion: ticket.version });
+      setTicket((current) => current ? { ...current, owner: updated.owner, version: updated.version, updatedAt: updated.updatedAt } : current);
       setOwnerDraft(updated.owner ? String(updated.owner.id) : "");
       setOperationNotice("Ticket ownership updated.");
     } catch (error) {
@@ -207,8 +224,8 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
     beginOperation();
     setOwnerBusy(true);
     try {
-      const updated = await updateStaffTicketOwner(ticket.id, { action: "assign", ownerId });
-      setTicket((current) => current ? { ...current, owner: updated.owner, updatedAt: updated.updatedAt } : current);
+      const updated = await updateStaffTicketOwner(ticket.id, { action: "assign", ownerId, expectedVersion: ticket.version });
+      setTicket((current) => current ? { ...current, owner: updated.owner, version: updated.version, updatedAt: updated.updatedAt } : current);
       setOperationNotice(ticket.owner ? "Ticket reassigned successfully." : "Ticket assigned successfully.");
     } catch (error) {
       setOperationError(errorMessage(error, "Unable to assign Ticket"));
@@ -222,11 +239,12 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
     beginOperation();
     setPriorityBusy(true);
     try {
-      const updated = await updateStaffTicketItPriority(ticket.id, priorityDraft);
+      const updated = await updateStaffTicketItPriority(ticket.id, priorityDraft, ticket.version);
       setTicket((current) => current ? {
         ...current,
         requestedPriority: updated.requestedPriority,
         itPriority: updated.itPriority,
+        version: updated.version,
         updatedAt: updated.updatedAt,
       } : current);
       setOperationNotice("IT Priority saved.");
@@ -246,11 +264,14 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
     beginOperation();
     setStatusBusy(true);
     try {
-      const updated = await updateStaffTicketStatus(ticket.id, statusDraft);
+      const updated = await updateStaffTicketStatus(ticket.id, statusDraft, ticket.version);
       setTicket((current) => current ? {
         ...current,
         status: updated.status,
         problemAppearsResolvedAt: updated.problemAppearsResolvedAt,
+        resolvedAt: updated.resolvedAt,
+        workflowCycle: updated.workflowCycle,
+        version: updated.version,
         updatedAt: updated.updatedAt,
       } : current);
       setStatusDraft("");
@@ -514,7 +535,22 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
               </div>
             )}
           </section>
+        </div>
+      </div>
 
+      <ActionsTakenPanel
+        ticketId={ticket.id}
+        ticketStatus={ticket.status}
+        ticketVersion={ticket.version}
+        workflowCycle={ticket.workflowCycle}
+        currentUserId={currentUserId}
+        assignees={assignees}
+        onTicketVersionChange={(version) => setTicket((current) => current ? { ...current, version } : current)}
+        onRefreshTicket={refreshDetailSilently}
+      />
+
+      <div className="staff-detail-grid staff-communications-grid">
+        <div className="staff-detail-column">
           <section className="staff-detail-section communication-section public-section" aria-labelledby="staff-public-comments-title">
             <div className="staff-detail-section-title-row">
               <h2 id="staff-public-comments-title" className="staff-detail-section-title mb-0"><span aria-hidden="true">●</span> Public Comments</h2>
@@ -537,7 +573,9 @@ export default function StaffTicketDetail({ ticketId, currentUserId, onBack }: P
             </div>
             <MessageList state={commentsState} items={comments} empty="No public comments yet." onRetry={() => void loadComments()} />
           </section>
+        </div>
 
+        <div className="staff-detail-column">
           <section className="staff-detail-section communication-section private-section" aria-labelledby="staff-internal-notes-title">
             <div className="staff-detail-section-title-row">
               <h2 id="staff-internal-notes-title" className="staff-detail-section-title mb-0"><span aria-hidden="true">▣</span> Internal Notes</h2>

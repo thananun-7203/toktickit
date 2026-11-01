@@ -1,0 +1,570 @@
+# Lab 4 — Peer Review Record
+
+**Author:** ธนนันท์ ครังตุ้ย — 67070507203 — GitHub: `@thananun-7203`
+
+**Peer reviewer:** แทนบุญ เตียวสวัสดิ์ — 67070507211 — GitHub: [@Tanaboonnnnn](https://github.com/Tanaboonnnnn)
+
+> This is a living Sprint 4 review record. It lists the single peer reviewer for Lab 4 and records only review, CI, and merge activity supported by the available evidence. PR #71 was approved at exact head `bb22818`, passed hosted CI Run #65, and was merged by `Tanaboonnnnn` into `lab4-staging`. The student-provided Project screenshot verifies the visible Lab 4 cards #53, #54, #55, #56, #67, #57, #58, and #59 in `Done`.
+
+## 1. Sprint 4 Workflow
+
+Integration branch: `lab4-staging`
+
+Issue plan prepared before implementation:
+
+| Issue | Scope | Current review record |
+|---|---|---|
+| #50 | Sprint 4 Engineering Contract & Test Plan | PR #60 approved and merged to `lab4-staging`; Issue #50 closed |
+| #51 | Actions Taken Data Model, Migration & Seed | PR #61 approved and merged to `lab4-staging`; Issue #51 closed |
+| #52 | Actions Taken API & Authorization | PR #62 approved and merged to `lab4-staging`; Issue #52 closed |
+| #53 | Actions Taken Ticket Detail UI | PR #63 approved and merged to `lab4-staging`; Issue #53 complete |
+| #54 | Final Ticket Workflow & Resolution Rules | PR #64 approved and merged to `lab4-staging`; Issue #54 complete |
+| #55 | IT Staff Dashboard | PR #65 approved by `Tanaboonnnnn` and merged to `lab4-staging` as `947a729`; Issue #55 closed |
+| #56 | Requester Dashboard | PR #66 approved by `Tanaboonnnnn` and merged to `lab4-staging` as `d57956d`; Issue #56 closed |
+| #67 | Resolution Gate & Follow-Up Workflow (inserted Issue 8) | PR #68 approved by `Tanaboonnnnn` and merged to `lab4-staging` as `fd6ef11`; Issue #67 closed |
+| #57 | Security, Regression & End-to-End Verification (Issue 9) | PR #69 approved by `Tanaboonnnnn` and merged to `lab4-staging` as `56a825a`; Issue #57 closed |
+| #58 | Accessibility, Responsive & Visual QA (Issue 10) | PR #70 approved by `Tanaboonnnnn` and merged to `lab4-staging` as `4c12262`; Issue #58 closed |
+| #59 | Final Evidence & Release Readiness (Issue 11) | PR #71 approved at exact head `bb22818` and merged by `Tanaboonnnnn` into `lab4-staging` as `a8c9400`; hosted CI Run #65 passed; Issue #59 closed |
+
+> Numbering note: #67 is the inserted Resolution Gate GitHub Issue. PR #68 implements it. #60 is PR #60, not GitHub Issue #60.
+
+Expected branch flow:
+
+```text
+lab4-staging
+  <- feature/1-sprint4-engineering-contract
+  <- feature branches for later approved issues
+
+final release:
+lab4-staging -> main
+```
+
+## 2. Issue #50 — Sprint 4 Engineering Contract & Test Plan
+
+### Issue
+
+- GitHub Issue: `#50 — [Lab 4] Issue_1: Sprint 4 Engineering Contract & Test Plan`
+- Feature branch: `feature/1-sprint4-engineering-contract`
+- Base branch: `lab4-staging`
+- Baseline: Lab 3 release commit `6c9c2f7b47e7bedf777b6ccd5bd4eaafeb56d11a`
+- Current state: PR #60 received review/fix/re-review, was **Approved**, and was merged into `lab4-staging` as merge commit `6a36d265aff8ef159b437bb85bee1de0f22aa99f`; Issue #50 is closed.
+
+### Contract Files Prepared in the Working Tree
+
+- `docs/lab-04/specification.md`
+- `docs/lab-04/tests.md`
+- `docs/lab-04/ui-spec.md`
+- `docs/lab-04/api-spec.md`
+- `docs/lab-04/reviewer.md`
+- `docs/lab-04/ai-use.md`
+
+### Baseline Reconnaissance Completed Before Drafting
+
+The Issue #50 work reviewed the released Lab 3 contract and implementation before defining Sprint 4. Areas inspected include:
+
+- Lab 3 `specification.md`, `api-spec.md`, `ui-spec.md`, `tests.md`, and prior review record.
+- Prisma schema, Lab 3 migration, and idempotent seed behavior.
+- Authentication/session/Origin/role/ownership rules.
+- Staff Queue and Ticket Detail owner/priority/status behavior.
+- Public Comments, Internal Notes, Attachments, and Requester resolution indication.
+- Current React application shell/navigation and Zen Green responsive behavior.
+- Server/client test structure, Playwright architecture, test-database guard, and hosted CI configuration.
+
+### Baseline Verification Observed During Issue #50
+
+- Client Vitest: **76/76 passing (11/11 files)**.
+- Client production build: **Pass**.
+- Server pure Lab 3 unit subset that does not require PostgreSQL: **22/22 passing (6/6 files)**.
+- Server TypeScript build: **Pass**.
+- Prisma schema validation: **Pass**.
+- Full Server API/integration and Playwright suites were **not rerun** during this reconnaissance because Docker/Test PostgreSQL was unavailable and no safe `TEST_DATABASE_URL` was configured. The development database was intentionally not used.
+
+These observations were made while the working tree still matched exact baseline SHA `6c9c2f7b47e7bedf777b6ccd5bd4eaafeb56d11a`. `tests.md` records the actual baseline commands and observed Vitest timestamps. The released Lab 3 documentation records the historical full release results separately; they are not represented here as a fresh Issue #50 rerun. Post-review verification is recorded separately against the exact fix head rather than being mixed into this baseline block.
+
+### Pull Request
+
+- PR: [#60 — `[Lab 4] Issue 1: Sprint 4 Engineering Contract & Test Plan`](https://github.com/thananun-7203/toktickit/pull/60)
+- Head: `feature/1-sprint4-engineering-contract`
+- Base: `lab4-staging`
+- Initial contract commit: `67015c7` (`docs(lab4): define sprint 4 engineering contract`)
+- PR opened after the student reviewed the working-tree draft and explicitly approved commit/PR creation.
+- Issue #50 is referenced without a closing keyword because the PR targets the staging branch; close Issue #50 only after approved merge according to the staged workflow.
+
+### Reviewer
+
+- Reviewer: `Tanaboonnnnn` (collaborator)
+- Review submitted: `2026-09-29T10:38:08Z`
+- Exact reviewed head: `2dc560453b0d581c4ee9003b4fc9277f52d0c1ff`
+- Verdict: **Changes Requested**
+
+### Reviewer Feedback / Response Log
+
+#### Round 1 — `Tanaboonnnnn` — Changes Requested
+
+Reviewed head: `2dc560453b0d581c4ee9003b4fc9277f52d0c1ff`
+
+The reviewer found the overall contract detailed and well connected to the Lab 3 baseline, but requested contract-level changes before it becomes the source of truth for Issues #51–#59. Blocking/important points were:
+
+1. Clarify assignee/completion/`performedBy` semantics and cover reassign-vs-complete race.
+2. Add backend idempotency for Action create; UI busy state/version checks alone cannot prevent duplicate rows after a lost response and retry.
+3. Define Ticket aggregate concurrency beyond current-status checking because owner/priority/Action changes can make a snapshot stale without changing status.
+4. Prevent prior-cycle Completed Actions from satisfying a new Resolve after Reopen.
+5. Make `Recently Resolved` use actual resolution time rather than generic `updatedAt`.
+6. Split or rename the combined Staff `Recent / Urgent` list so its predicate/order matches its name.
+7. Define `actionDateTime` clearly as business time versus server audit time, including timezone/future boundaries.
+8. Record cancellation provenance rather than leaving Cancelled without actor/time.
+9. Synchronize this reviewer record with the real reviewer/head/verdict.
+10. Tie verification evidence to an exact SHA/command/timestamp and distinguish baseline reconnaissance from later implementation verification.
+11. Add explicit tests for lost-response create retry, Reopen->Resolve with only old-cycle work, and reassign-vs-complete race.
+12. Clearly label student/project decisions separately from handout-fixed requirements.
+
+#### Response to Round 1
+
+The revision addresses the requested contract gaps across `specification.md`, `api-spec.md`, `ui-spec.md`, `tests.md`, and this review record:
+
+- Completion is now **assignee-only**; `performedBy` is the authoritative current assignee who completes, with explicit reassign-vs-complete race behavior.
+- Action create now requires per-Ticket UUID `clientRequestId`; exact lost-response retry returns the existing row while conflicting key reuse returns `409 IDEMPOTENCY_KEY_REUSE`.
+- Ticket now has parent aggregate `version`; owner/IT Priority/status/Requester resolution indication/Action mutations increment it, and Resolve uses parent row lock/revalidation plus current child re-read.
+- Ticket now has `workflowCycle`; Reopen increments it and only current-cycle Completed work qualifies the next Resolve.
+- Ticket now has `resolvedAt`; Recently Resolved is ordered by real resolution time, survives Resolved->Closed, and is cleared on Reopen; legacy times are not fabricated.
+- Staff Dashboard now separates `Recently Updated` from High-IT-Priority `Urgent Tickets`.
+- `actionDateTime` is explicitly business occurrence time; server audit timestamps are separate; backdating/UTC normalization/future-skew rule and tests are defined.
+- Completion/cancellation provenance adds `completedAt`, `cancelledById`, and `cancelledAt`.
+- Baseline verification is explicitly tied to Lab 3 baseline SHA `6c9c2f7b47e7bedf777b6ccd5bd4eaafeb56d11a`, with commands/timestamps where observed; future review-fix verification will be reported against its exact head separately.
+- Dedicated tests were added for lost-response create retry, old-cycle Resolve rejection, and reassign-vs-complete race.
+- `Assumptions and Project Decisions` now explicitly distinguishes choices made by this project from handout-fixed requirements.
+
+Response/fix commit: `5a904b3f2514ede8a34014fbec1eab06043dab30` (`docs(lab4): resolve issue 1 review blockers`).
+
+Re-review result: **Approved in Round 2 at head `9f623b974c32a7905094e1b8f1bb18fbb99e3a8f`.**
+
+#### Round 2 — `Tanaboonnnnn` — Approved
+
+- Reviewed head: `9f623b974c32a7905094e1b8f1bb18fbb99e3a8f`
+- Review submitted: `2026-09-29T11:27:24Z`
+- Verdict: **Approved**
+- Reviewer confirmed the Round 1 contract-level blockers were closed and that the contract was ready to serve as the implementation baseline for Issues #51–#59.
+- One **non-blocking cleanup** remained: the Stakeholder Request Interpretation paragraph still contained older wording implying one support user could be assigned while another could perform/complete the Action. That wording did not match the updated BR-02/BR-05 assignee-only completion semantics.
+
+#### Response to Round 2 Non-Blocking Cleanup
+
+- Synchronized the Stakeholder Request Interpretation wording with the approved contract: an Action may be assigned to an eligible support user different from the Ticket Owner, but **only the current Action assignee may Complete**, and that authenticated assignee is recorded as `Performed by`.
+- No schema/API/UI/test behavior was changed by this cleanup; it removes factual drift in the explanatory paragraph only.
+
+Cleanup commit: `39e15b5ed737d2cf0e834cdde23b1cb75f6335bf` (`docs(lab4): align assignee completion wording`).
+
+Re-review after cleanup: **Approved** at final reviewed head `48dbae6744f0bfae008a102b5616e45ea1da8d75`; PR #60 was merged by `Tanaboonnnnn` at `2026-09-29T11:43:40Z`.
+
+## 3. Issue #51 — Actions Taken Data Model, Migration & Seed
+
+### Issue
+
+- GitHub Issue: `#51 — [Lab 4] Issue_2: Actions Taken Data Model, Migration & Seed`
+- Feature branch: `feature/2-actions-data-foundation`
+- Base branch: `lab4-staging`
+- Baseline: Issue #50 merge commit `6a36d265aff8ef159b437bb85bee1de0f22aa99f`
+- Implementation commit: `065da7ccab7f79db50d7c4f108e3e7dfe74958ce` (`feat(lab4): add actions data foundation`)
+- Current state: PR #61 was re-reviewed **Approved** at head `899b7f0d657d8672eea30af0fc08f820c9517566`, merged to `lab4-staging` as `d3a06acbf257b25fa893d4ea1fc1a83ddca89b78`, and Issue #51 is closed.
+
+### Implemented Data Foundation
+
+- Added Prisma `ActionTakenStatus` and one-to-many `Ticket -> ActionTaken` model.
+- Added creator/assignee/performer/canceller relations plus completion/cancellation provenance.
+- Added per-Action `version`, per-Ticket `version`, `workflowCycle`, and nullable `resolvedAt`.
+- Added per-Ticket `clientRequestId` uniqueness for later idempotent Action creation.
+- Added migration-level checks for positive versions/cycles, text/follow-up consistency, and terminal lifecycle provenance.
+- Preserved legacy rows with default Ticket `version=1`, `workflowCycle=1`, `resolvedAt=NULL`, and zero synthetic Actions.
+- Extended create-only/idempotent seed coverage to all eight Ticket statuses, High/Medium/Low/null IT Priority, assigned/unassigned Tickets, zero/one/multiple Actions, all four Action statuses, prior/current workflow cycles, and zero/non-zero dashboard cases.
+
+### Migration / Seed Verification
+
+Verification was performed on a disposable PostgreSQL 16 database named `toktickit_lab4_test`, separate from the development database.
+
+- Prisma format/generate/validate: **Pass**.
+- Full migration deploy including Lab 4 migration: **Pass**.
+- Targeted Lab 4 migration + seed tests: **5/5 passing (2/2 files)**.
+- Full Server regression: **170/170 passing (23/23 files)**.
+- Server TypeScript build: **Pass**.
+- Client regression: **76/76 passing (11/11 files)**.
+- Client production build: **Pass**.
+- Development DB reset/destructive verification: **not used**.
+
+### Pull Request / Review
+
+- PR: [#61 — `[Lab 4] Issue 2: Actions Taken Data Model, Migration & Seed`](https://github.com/thananun-7203/toktickit/pull/61)
+- Head: `feature/2-actions-data-foundation`
+- Base: `lab4-staging`
+- PR opened after implementation commit `065da7c` and evidence/docs commit `49904b8` were pushed.
+- Reviewer requested: `Tanaboonnnnn`.
+- Initial peer-review verdict: **Changes Requested** at head `899b7f0`; reviewer later rechecked the merged source of truth and confirmed the `ActionEvent` / `cancellationSource` blockers were not part of the approved contract.
+- Final peer-review verdict: **Approved** by `Tanaboonnnnn` at head `899b7f0d657d8672eea30af0fc08f820c9517566`, submitted `2026-09-29T17:21:26Z`.
+- PR #61 merged by `Tanaboonnnnn` at `2026-09-29T17:21:45Z`; merge commit `d3a06acbf257b25fa893d4ea1fc1a83ddca89b78`.
+- Issue #51: **Closed**.
+
+## 4. Issue #52 — Actions Taken API & Authorization
+
+### Issue
+
+- GitHub Issue: `#52 — [Lab 4] Issue_3: Actions Taken API & Authorization`
+- Feature branch: `feature/3-actions-api-authorization`
+- Base branch: `lab4-staging`
+- Baseline: Issue #51 merge commit `d3a06acbf257b25fa893d4ea1fc1a83ddca89b78`
+- Implementation commit: `6abc6c7f9f0e64fa0ba8367f1d77dfee0253e383` (`feat(lab4): implement actions taken api`)
+- Test follow-up: `98b527412b4f4ca3686493ea1560c26592c645c6` (`test(lab4): strengthen actions api coverage`)
+- Review-fix commit: `1d62aa0a0be4dc8330d1beff6f516610fc17f2da` (`fix(lab4): harden action idempotency and ticket versions`)
+- Current state: PR #62 received Round 1 Changes Requested, was fixed/re-reviewed **Approved**, and merged into `lab4-staging` as `6b77a33eb199623a1d83db770bd6ec4ebf686cf4`; Issue #52 is closed.
+
+### Implemented Backend
+
+- Added role/ownership-safe `GET /api/v1/tickets/:id/actions-taken` with deterministic `actionDateTime DESC, id DESC` ordering.
+- Added Staff/Admin `POST /api/v1/staff/tickets/:id/actions-taken` with approved-Origin/auth/password/role gates, active assignee locking, parent Ticket version locking, server-owned creator identity, workflow-cycle copy, and per-Ticket `clientRequestId` idempotency.
+- Added active Action edit/reassign `PATCH /api/v1/staff/actions-taken/:id` with Action + Ticket optimistic versions, follow-up normalization, assignee revalidation, and atomic parent activity/version update.
+- Added lifecycle `PATCH /api/v1/staff/actions-taken/:id/status` for the approved transition matrix, assignee-only completion, backend performer/completion timestamps, cancellation provenance, terminal immutability, and stale conflict handling.
+- Extended Administrator user eligibility mutation so active assigned Actions must be reassigned before deactivate/demote; serializable retries revalidate rather than leaving an invalid assignee relation after a race.
+- Exposed Staff Ticket Detail `version`, `workflowCycle`, and `resolvedAt` needed by the approved aggregate/API contract.
+- Preserved existing Lab 3 owner behavior under concurrent test load by retrying serialization conflicts and revalidating Claim semantics on retry.
+- PR #62 review fix persists immutable original-create intent as an internal SHA-256 fingerprint so a lost-response retry remains idempotent even after the Action has later been edited/reassigned.
+- Owner, IT Priority, Ticket Status, and Requester `problem appears resolved` mutations now require `expectedVersion`, increment `Ticket.version` on success, and return `409 STALE_TICKET_STATE` for stale aggregate writes as defined by the approved contract.
+- Existing clients were updated only to carry the Ticket version token through these mutation calls; no Issue #53 visual/Actions UI work was introduced.
+- Aggregate/Action operations use Ticket-first row locking where applicable; account-eligibility changes keep User-first locking under Serializable retry/revalidation. Concurrency tests verify Owner-vs-Action and Action-assignment-vs-account-state races fail safely rather than producing deadlock-derived `500`s or invalid final assignees.
+
+### Verification
+
+Verification used disposable PostgreSQL 16 database `toktickit_lab4_issue52_test` on port `5545`, separate from the normal development database.
+
+- Disposable migration reset/application of all six migrations: **Pass**.
+- Lab 4 seed: **Pass**.
+- Targeted Issue #52 + directly affected Lab 3 regression: **56/56 passing (5/5 files)**.
+- Issue #52-specific tests in that run: **21/21 passing**.
+- Full Server regression: **191/191 passing (26/26 files)**.
+- Prisma validate: **Pass**.
+- Server TypeScript build: **Pass**.
+- Client regression: **76/76 passing (11/11 files)**.
+- Client production build: **Pass**.
+- Development DB destructive verification: **not used**.
+
+Review-fix verification at `1d62aa0`:
+
+- Disposable PostgreSQL 16 `toktickit_lab4_pr62_fix_test` on test-only port `5546`: **Pass**; seven migrations applied including immutable create-fingerprint migration.
+- Targeted review-fix suite: **81/81 passing (7/7 files)**.
+- Full Server regression: **196/196 passing (26/26 files)**.
+- Server build / Prisma validate: **Pass**.
+- Client regression: **76/76 passing (11/11 files)**.
+- Client production build: **Pass**.
+- Development DB destructive verification: **not used**.
+
+### Pull Request / Review
+
+- PR: [#62 — `[Lab 4] Issue 3: Actions Taken API & Authorization`](https://github.com/thananun-7203/toktickit/pull/62)
+- Head: `feature/3-actions-api-authorization`
+- Base: `lab4-staging`
+- PR opened after implementation commit `6abc6c7`, strengthened test commit `98b5274`, and evidence/docs commit `6593135` were pushed.
+- Reviewer requested: `Tanaboonnnnn`.
+- Round 1 reviewer: `Tanaboonnnnn`.
+- Round 1 reviewed head: `0290b66b5a1685e379593bc2cdca8001d379fb85`.
+- Round 1 submitted: `2026-09-30T08:59:42Z`.
+- Round 1 verdict: **Changes Requested**.
+- Blocking feedback: (1) create idempotency must compare immutable original create intent rather than mutable Action columns; (2) existing Owner/IT Priority and the rest of the approved workflow-affecting Ticket writes must participate in `Ticket.version` so Action writes cannot accept stale aggregate snapshots.
+- Additional review focus: document/verify lock ordering and concurrent race safety; synchronize this reviewer record with the actual PR state.
+- Response commit: `1d62aa0a0be4dc8330d1beff6f516610fc17f2da` addresses both blockers plus lock-order/race coverage.
+- Re-review reviewed head: `a4d13767163ff024890f49f5cba9a700c8192048`.
+- Re-review submitted: `2026-09-30T16:51:09Z`.
+- Re-review verdict: **Approved** by `Tanaboonnnnn`.
+- Reviewer confirmed the immutable original-create idempotency fix, authoritative aggregate `Ticket.version` protocol, Claim retry semantics, lock/race strategy, authorization boundaries, and exact review-fix evidence; remaining route/service refactoring suggestions were explicitly non-blocking.
+- PR #62 merged by `Tanaboonnnnn` at `2026-09-30T16:51:23Z`; merge commit `6b77a33eb199623a1d83db770bd6ec4ebf686cf4`.
+- Issue #52: **Closed** (`2026-09-30T17:51:10Z`).
+
+## 5. Issue #53 — Actions Taken Ticket Detail UI
+
+### Issue
+
+- GitHub Issue: `#53 — [Lab 4] Issue_4: Actions Taken Ticket Detail UI`
+- Feature branch: `feature/4-actions-ticket-detail-ui`
+- Base branch: `lab4-staging`
+- Baseline: Issue #52 merge commit `6b77a33eb199623a1d83db770bd6ec4ebf686cf4`
+- Implementation commit: `6d60a9336c55b6318978f332bcc9a43bae3ffae0` (`feat(lab4): add actions taken ticket detail ui`); Round 1 fix commit `2f5087031efbc72b67903c1da56218b5cffe6a5c`.
+- Current state: PR #63 was approved after Round 1 fixes and merged to `lab4-staging`; Issue #53 is complete.
+
+### Human-Approved Mockup Checkpoint
+
+- Desktop and mobile mockups were reviewed by the student before frontend implementation.
+- The student explicitly approved both mockups and authorized implementation while instructing the agent **not to open a PR yet**.
+- The implemented UI keeps the established TokTickIT Zen Green visual language instead of introducing a separate Lab 4 theme.
+
+### Implemented UI
+
+- Added reusable `ActionsTakenPanel` to Staff Ticket Detail and Requester Ticket Detail.
+- Staff/Admin view supports Add, Edit, Reassign, Planned -> In Progress, Complete, and Cancel flows using the existing Issue #52 API contract.
+- Create/Edit forms include Action Date/Time, Description, Assignee, Follow-Up Required/Note, and text-only Attachment Notes; create status is not user-selectable and starts as Planned.
+- Complete requires Result plus valid follow-up state; only the current assignee is offered Complete, while other Staff are directed to Reassign first.
+- Completed/Cancelled Actions render read-only audit/provenance details with no edit/delete controls.
+- Requester view reuses the Action list in read-only mode with no Staff mutation controls.
+- Added loading, empty, API failure/Retry, field validation, stale Action/Ticket, ineligible-assignee, busy-submit, idempotent retry/recovery, and safe terminal-Ticket states.
+- Unknown-response create retries preserve one `clientRequestId`; a recovered `200` replay refreshes authoritative Ticket state instead of guessing the parent version.
+- Added modal focus entry/trap/restore, Escape handling, first-invalid focus, text labels that do not rely on color alone, and responsive rules for desktop/tablet/mobile stacking.
+- Actions Taken appears before Public Comments/Internal Notes on Staff Ticket Detail and before Public Comments on Requester Ticket Detail, preserving the approved information hierarchy.
+
+### Verification
+
+Issue #53 implementation commit `6d60a93` was verified before evidence synchronization:
+
+- Targeted Client Actions/Staff/Requester Ticket Detail regression: **31/31 passing (3/3 files)**; Vitest start `2026-10-01 14:33:53 +07`.
+- Full Client regression: **90/90 passing (12/12 files)**; Vitest start `2026-10-01 14:34:25 +07`.
+- Client production build: **Pass**.
+- Disposable PostgreSQL 16 `toktickit_lab4_issue53_test` on test-only port `5548`: **Pass**; seven migrations applied and Lab 4 seed completed with 8 Tickets / 7 Actions Taken.
+- Backend endpoints exercised by the UI: **53/53 passing (4/4 files)** across Actions API, Lab 4 authorization, Staff Ticket Detail, and Comments/Requester resolution indication; Vitest start `2026-10-01 14:40:09 +07`.
+- Prisma validate / Server TypeScript build: **Pass**.
+- Development DB destructive verification: **not used**.
+- Manual browser QA verified the implemented desktop and tablet Actions panel/modal layout without page horizontal overflow. Mobile-specific `<=420px` stacking rules are implemented; final exact 390px real-browser/Playwright evidence remains part of the dedicated Issue #58 accessibility/responsive/visual gate rather than being overstated here.
+- Temporary visual-QA harness/data were not included in the implementation commit.
+
+### Pull Request / Review
+
+- PR: [#63 — `[Lab 4] Issue 4: Actions Taken Ticket Detail UI`](https://github.com/thananun-7203/toktickit/pull/63)
+- Reviewer requested: `Tanaboonnnnn`.
+- Round 1 review: **Changes Requested** at head `075429c69812bf4c4010781d4e443e9d24fe61d8` on `2026-10-01T09:07:33Z`.
+- Blockers recorded: authoritative parent Ticket-version refresh between consecutive mutations; terminal Ticket must suppress active Action mutation controls; Refresh must surface parent Ticket refresh failure without closing/clearing the current dialog/draft.
+- Non-blocking cleanup recorded: synchronize this reviewer evidence with PR #63 state and do not describe exact ~390px browser verification as complete; final exact 390px browser evidence remains deferred to Issue #58.
+- After human authorization, Round 1 fixes were implemented in the working branch and verified. `Tanaboonnnnn` approved exact head `2f5087031efbc72b67903c1da56218b5cffe6a5c`; PR #63 was subsequently merged to `lab4-staging` as `0b636c2d55d3ee849882061de6a38184228d5926`.
+- Issue #53 is **complete**; exact 390px browser evidence remains deferred to Issue #58 as documented above.
+
+## 6. Issue #55 — IT Staff Dashboard
+
+### Issue
+
+- GitHub Issue: `#55 — [Lab 4] Issue_6: IT Staff Dashboard`
+- Feature branch: `feature/6-staff-dashboard`
+- Base: `lab4-staging`
+- Baseline: PR #64 merge commit `1a4c72d`
+- PR #65 was approved after reviewer-requested regression/evidence fixes and merged to `lab4-staging` as `947a729aaf90cb63507219aa39498d33980486f4` on `2026-10-03T14:44:52Z`.
+
+### Human-Approved Mockup Checkpoint
+
+- The Staff Dashboard mockup was reviewed against the existing TokTickIT shell, Staff Ticket Queue, Staff Ticket Detail, and Zen Green styling.
+- The student explicitly approved the mockup before real frontend/API implementation.
+- Preview-only state controls are not part of the production Dashboard UI.
+
+### Implemented Dashboard
+
+- Added `GET /api/v1/staff/dashboard` for IT Staff and Administrator roles.
+- Dashboard metrics are calculated server-side from authoritative PostgreSQL data: Unassigned Active Tickets, My Active Tickets, all eight Ticket statuses, and active IT Priority groups including `Not recorded`.
+- Added current-user Active Actions with current `workflowCycle`, active parent Ticket, `Planned`/`In Progress` status, and deterministic top-5 ordering.
+- Added separate `Recently Updated` active Ticket list and `Urgent Tickets` list restricted to active High IT Priority Tickets, both deterministic top-5 summaries.
+- Added safe loading, zero/empty, forbidden, and failure/Retry states.
+- Dashboard actionable metrics and rows drill into the existing Ticket Queue or Ticket Detail rather than duplicating full Ticket-edit controls.
+- Extended the existing Ticket Queue with the documented `status=active` filter so Dashboard drill-down can reuse the existing Queue implementation.
+- Updated role navigation so IT Staff and Administrator land on Dashboard while Ticket Queue/User Management remain reachable.
+- Updated the authenticated-shell regression tests to preserve the Lab 3 role navigation contract with the new Dashboard landing behavior.
+
+### Verification
+
+- Client full Vitest regression: **100/100 passing (13/13 files)**.
+- Staff Dashboard UI + authenticated-shell targeted run: **10/10 passing (2/2 files)**; the new Administrator Dashboard → Ticket Detail → Back regression is included.
+- Server Staff Dashboard API: **4/4 passing (1/1 file)** against a fresh disposable PostgreSQL database; the targeted run is isolated because the broader multi-file invocation can interfere through shared test fixtures.
+- Lab 4 seed regression on the same disposable database: **6/6 passing (2/2 files)**.
+- Server TypeScript build: **Pass**.
+- Prisma validate: **Pass**.
+- Client production build: **Pass**.
+- `git diff --check`: **Pass**.
+- Playwright real-browser responsive verification: **1/1 passing** at exact **1280×900, 820×1000, and 390×844** CSS viewport sizes; no horizontal overflow and expected dashboard stacking/button sizing verified.
+- A broader server multi-file invocation was attempted but showed cross-file interference on a shared test database; those failures were not used as Issue #55 acceptance evidence. Issue #55 evidence above uses the isolated Staff Dashboard suite on a fresh disposable test database.
+- Development database was not reset for verification.
+
+### Browser Verification
+
+- Added `e2e/lab-04/staff-dashboard-responsive.spec.ts` with a dedicated UI-only Playwright configuration so responsive verification can run in a real Chromium browser without changing the development database.
+- Verified exact viewport widths **1280, 820, and 390 CSS pixels**, including no horizontal overflow, two-column desktop metrics, single-column tablet/mobile grids, and full-width mobile work buttons.
+- No authentication bypass was added to the application; the responsive test mocks only the authenticated user and Staff Dashboard read response at the browser-test boundary.
+
+### Pull Request / Review
+
+- PR: [#65 — `[Lab 4] Issue 6: IT Staff Dashboard`](https://github.com/thananun-7203/toktickit/pull/65); base `lab4-staging`; branch `feature/6-staff-dashboard`.
+- Round 1 by `Tanaboonnnnn`: **Changes Requested** at head `afda1f34c533`, submitted `2026-10-03T10:00:47Z`. Requested Admin Dashboard → Ticket Detail → Back regression; correct Recently Updated expected-result domain and deterministic ordering; negative/limit/order coverage for Urgent Tickets and My Active Actions; centralized active-status predicate; safe-failure API regression; and exact responsive evidence.
+- Response: added the Admin navigation regression, corrected the Recently Updated predicate/order assertion, expanded Urgent/My Active Actions negative and current-cycle coverage, centralized the active status predicate, added safe-500 envelope checks, and added the required responsive browser evidence.
+- Re-review by `Tanaboonnnnn`: **Approved** at exact head `895286ea9f5fee2f1595e6b49efe8309fbe40cbe`, submitted `2026-10-03T14:44:40Z`. Reviewer confirmed the requested items were closed and exact-head CI run #37 passed.
+- PR #65 was merged by `Tanaboonnnnn` as `947a729aaf90cb63507219aa39498d33980486f4`; Issue #55 is closed.
+
+## 7. Issue #54 — Final Ticket Workflow & Resolution Rules
+
+### Issue
+
+- GitHub Issue: `#54 — [Lab 4] Issue_5: Final Ticket Workflow & Resolution Rules`
+- Feature branch: `feature/5-final-ticket-workflow-resolution`
+- Base: `lab4-staging`
+- Baseline: Issue #53 merge commit `0b636c2d55d3ee849882061de6a38184228d5926`
+- PR: **#64**; final reviewed HEAD `6fe1db27af293dc4849a50fae516985967a2b100`; `Tanaboonnnnn` approved the final re-review and the PR was merged to `lab4-staging` as `1a4c72d`.
+
+### Human-Approved Mockup Checkpoint
+
+- The Issue #54 frontend mockup was reviewed against the actual `StaffTicketDetail.tsx`, `ActionsTakenPanel.tsx`, and Zen Green CSS structure before implementation.
+- The student explicitly approved the final mockup and requested a production-like UI without preview-only scenario controls.
+- Public Comments and Internal Notes remain in their existing two-column structure and wording; Issue #54 changes are limited to the existing Ticket workflow/status behavior and its safe feedback states.
+
+### Implemented Workflow
+
+- Formal `Resolved` transition now requires at least one current-cycle `Completed` Action with a non-blank `Result`, zero current-cycle `Planned`/`In Progress` Actions, and zero current-cycle non-cancelled Actions with outstanding follow-up.
+- Prior-cycle Actions do not satisfy a later Resolve after Reopen; current-cycle `Cancelled` Actions do not block resolution when the Completed requirement is satisfied.
+- Resolve is evaluated inside the same serializable/locked transaction as the Ticket status write, using the authoritative current-cycle Actions and parent `Ticket.version`.
+- Successful Resolve records server-owned `resolvedAt` and increments `Ticket.version`.
+- `Resolved -> Closed` preserves `resolvedAt`.
+- `Reopened` clears `problemAppearsResolvedAt` and `resolvedAt`, increments `workflowCycle` and `Ticket.version`, and preserves historical Actions.
+- Stale status writes return `409 STALE_TICKET_STATE`; failed Resolution Gate checks return `409 RESOLUTION_GATE_NOT_MET` without Ticket mutation.
+- Staff Ticket Detail now consumes the authoritative `resolvedAt`/`workflowCycle` response fields and maps the Resolution Gate conflict to safe user feedback while retaining the existing Refresh path.
+
+### Verification
+
+- `server/tests/lab-04/workflow.api.test.ts`: **10/10 passing** after adding the outstanding-follow-up Resolution Gate regression.
+- Directly affected Lab 3 Staff Ticket Detail API regression: **16/16 passing**.
+- Combined targeted workflow/detail Server run: **26/26 passing**.
+- Post-fix Lab 4 Server verification: **41/41 passing tests across all 6/6 files**. The six files were verified individually against the disposable PostgreSQL test database; this avoids claiming a single full-suite invocation that timed out while running all files together.
+- Client targeted Staff Ticket Detail regression: **12/12 passing**. The pre-review full Client baseline was **95/95 (12/12 files)**; the current fix does not change client source.
+- Server TypeScript build: **Pass**.
+- Client production build: **Pass**.
+- Test verification used isolated PostgreSQL database `toktickit_lab4_test`; no development database reset was used for the test suite.
+- `git diff --check`: **Pass** before final local verification.
+- No hosted CI status was claimed for the review-fix commit; the evidence above is local exact-head verification.
+
+### Final Review / Merge State
+
+- `Tanaboonnnnn` final re-review at exact head `6fe1db27af293dc4849a50fae516985967a2b100`: **Approved**.
+- PR #64 was merged into `lab4-staging` as `1a4c72d`.
+- Issue #54 is complete; final exact 390px browser evidence remains deferred to Issue #58.
+
+## 8. Issue #56 — Requester Dashboard
+
+### Pull Request / Review
+
+- PR: [#66 — `[Lab 4] Issue 7: Requester Dashboard`](https://github.com/thananun-7203/toktickit/pull/66); branch `feature/7-requester-dashboard`; base `lab4-staging`.
+- Round 1 by `Tanaboonnnnn`: **Changes Requested** at `1e0f0bf52d47a70e051d831b4091276983fdc1d9`, submitted `2026-10-04T09:32:20Z`. The main blocker was an out-of-scope change to the approved Resolution Gate follow-up semantics; the review also required the Requester metric/list contract and traceability to remain aligned.
+- Round 2: **Changes Requested** at `c1bdf262ae1e`, submitted `2026-10-04T12:40:13Z`. The reviewer found `specification.md` BR-25/BR-26 still contradicted `api-spec.md`, AC-11, backend behavior, and WF-10 tests regarding outstanding follow-up.
+- Round 3: **Changes Requested** at `073dca698288`, submitted `2026-10-04T13:43:17Z`. The remaining blockers included stale `Waiting for Requester` filter state when navigating back to primary My Tickets while the component remained mounted, and incomplete/misaligned authorization/test traceability.
+- Responses: the Resolution Gate behavior was returned to the approved contract and moved to the separately approved Issue #67; the specification/API/implementation/tests were synchronized; Requester navigation now synchronizes the status filter when context changes; regression coverage verifies Dashboard → Waiting for You → filtered My Tickets → primary My Tickets → unfiltered list; and `PASSWORD_CHANGE_REQUIRED` / RD-API-07 evidence was reconciled.
+- Final re-review by `Tanaboonnnnn`: **Approved** at exact head `061454046a26ba63b03f85edf9dddf83cb730046`, submitted `2026-10-04T14:24:54Z`. Hosted CI run #44 passed on that exact head.
+- PR #66 was merged by `Tanaboonnnnn` as `d57956d79c9aa3f11fb3d6d07de60d583d91ee1c` at `2026-10-04T14:27:41Z`; Issue #56 is closed.
+
+## 9. Issue #67 — Resolution Gate & Follow-Up Workflow
+
+### Pull Request / Review
+
+- PR: [#68 — `[Lab 4] Issue_8: Resolution Gate & Follow-Up Workflow`](https://github.com/thananun-7203/toktickit/pull/68); branch `feature/8-resolution-gate-follow-up`; base `lab4-staging`.
+- Round 1 by `Tanaboonnnnn`: **Changes Requested** at `599abd275d8e4a7c9eead09b1d0cb713215123e4`, submitted `2026-10-04T16:34:46Z`. The blocker was that the UI inferred the current workflow cycle from the maximum `Action.workflowCycle`, rather than the authoritative `Ticket.workflowCycle`; after Reopen, historical Actions could make the UI falsely display Ready.
+- Response: Staff and Requester Resolution Gate calculations now use `ticket.workflowCycle`; regression `FU-UI-03` covers a cycle-2 Ticket with only historical cycle-1 Actions and outstanding follow-up, proving old-cycle work cannot satisfy the new cycle.
+- Re-review by `Tanaboonnnnn`: **Approved** at exact head `3424a2c93827e0aa8083f0f68cd0e995057eb943`, submitted `2026-10-04T17:13:49Z`. Hosted CI run #48 passed on the exact head.
+- PR #68 was merged by `Tanaboonnnnn` as `fd6ef11cc171c74378a6d73f2eebb8bc4d5431ee` at `2026-10-04T17:33:25Z`; Issue #67 is closed.
+
+## 10. Issue #57 — Security, Regression & End-to-End Verification
+
+### Pull Request / Review
+
+- PR: [#69 — `[Lab 4] Issue_9: Security, Regression & End-to-End Verification`](https://github.com/thananun-7203/toktickit/pull/69); branch `feature/9-security-regression-e2e`; base `lab4-staging`.
+- Round 1 by `Tanaboonnnnn`: **Changes Requested** at `cc0566c4ca87`, submitted `2026-10-05T08:53:24Z`. The reviewer found an evidence/acceptance mismatch: representative Lab 3 regression was described too broadly, E2E-AT-02 lacked the promised controlled PostgreSQL full-stack proof, and regression/performance wording did not match the assertions actually executed.
+- Response: representative Lab 3 results are explicitly labelled as representative; fresh full release regression is deferred to the release-final gate; E2E-AT-02 adds a controlled PostgreSQL integration scenario for inactive assignee, stale Action/Ticket, idempotent retry, reassign-vs-complete, cancellation provenance/retention, and Requester direct-write restriction; PERF-01..03 and REG-01..09 wording was reconciled to actual evidence; Section 18 separates release-final gates from Issue #57 completion.
+- Re-review by `Tanaboonnnnn`: **Approved** at exact head `63e1e51df5e723c5fd0b978cca22eb2119436a3e`, submitted `2026-10-05T10:11:01Z`. Hosted CI run #51 passed on that exact head.
+- PR #69 was merged by `Tanaboonnnnn` as `56a825adf5bdda65f264a6fb731b351a2a2d2b9f` at `2026-10-05T10:55:55Z`; Issue #57 is closed.
+
+## 11. Issue #58 — Accessibility, Responsive & Visual QA
+
+### Pull Request / Review
+
+- PR: [#70 — `[Lab 4] Issue_10: Accessibility, Responsive & Visual QA`](https://github.com/thananun-7203/toktickit/pull/70); branch `feature/issue-58-accessibility-responsive-visual-qa`; base `lab4-staging`.
+- Round 1 by `Tanaboonnnnn`: **Changes Requested** at `ee060cbba5b3`, submitted `2026-10-30T19:11:46Z`. The review found that the initial responsive evidence focused too heavily on Administrator workspace and did not prove the full Staff/Requester Dashboard, Ticket Detail, Actions Taken, and workflow scope required by Issue #58.
+- Round 2 by `Tanaboonnnnn`: **Changes Requested** at `f3fda99a`, submitted `2026-10-31T18:03:02Z`. The reviewer additionally requested an explanation or removal of transitive dependency updates in `server/package-lock.json`, plus confirmation of final human visual review and live-Development-DB screenshots.
+- Response: cross-role Playwright coverage was added for Requester Dashboard, Staff Dashboard, Administrator workspace, and Staff/Requester Ticket Detail/Actions Taken at 1280/820/390; 16 deterministic fixture screenshots and 12 separate live-Development-DB screenshots were recorded; final human visual review was added to `tests.md`. The lockfile updates to `body-parser`, `multer`, `proxy-addr`, `qs`, and `source-map-js` were documented as intentional security updates from commits `a053d40`/`c19eb52`, not unexplained visual-QA churn.
+- Re-review by `Tanaboonnnnn`: **Approved** at exact head `34b30f10215a7c0ec92ad7a773e0affa7bb27b53`, submitted `2026-10-31T19:21:30Z`. Hosted CI run #58 (run ID `41233412441`) passed on the exact reviewed head.
+- PR #70 was merged by `Tanaboonnnnn` as `4c1226246856a5df95f11984f063c9ff1a42d287` at `2026-10-31T19:22:36Z`; Issue #58 is closed.
+- Evidence limitation preserved: live Development DB screenshots are desktop-only. The 16 responsive screenshots use deterministic browser fixtures and are not represented as live database evidence.
+
+## 12. Pull Requests I Authored — Lab 4
+
+The table below records actual Lab 4 feature PRs and excludes GitHub Issue #67, which is not a PR.
+
+| PR | Branch | Base | Reviewer verdict | Merge state |
+|---|---|---|---|---|
+| [#60](https://github.com/thananun-7203/toktickit/pull/60) | `feature/1-sprint4-engineering-contract` | `lab4-staging` | Approved by `Tanaboonnnnn` at final reviewed head `48dbae6` | Merged (`6a36d26`) |
+| [#61](https://github.com/thananun-7203/toktickit/pull/61) | `feature/2-actions-data-foundation` | `lab4-staging` | Approved by `Tanaboonnnnn` at `899b7f0` after source-of-truth clarification | Merged (`d3a06ac`) |
+| [#62](https://github.com/thananun-7203/toktickit/pull/62) | `feature/3-actions-api-authorization` | `lab4-staging` | Approved by `Tanaboonnnnn` at `a4d1376` after Round 1 fixes | Merged (`6b77a33`) |
+| [#63](https://github.com/thananun-7203/toktickit/pull/63) | `feature/4-actions-ticket-detail-ui` | `lab4-staging` | Approved by `Tanaboonnnnn` after Round 1 fixes | Merged (`0b636c2`) |
+| [#64](https://github.com/thananun-7203/toktickit/pull/64) | `feature/5-final-ticket-workflow-resolution` | `lab4-staging` | Approved by `Tanaboonnnnn` at final reviewed head `6fe1db2` | Merged (`1a4c72d`) |
+| [#65](https://github.com/thananun-7203/toktickit/pull/65) | `feature/6-staff-dashboard` | `lab4-staging` | Approved at `895286e`; CI #37 | Merged (`947a729`) |
+| [#66](https://github.com/thananun-7203/toktickit/pull/66) | `feature/7-requester-dashboard` | `lab4-staging` | Approved at `0614540`; CI #44 | Merged (`d57956d`) |
+| [#68](https://github.com/thananun-7203/toktickit/pull/68) | `feature/8-resolution-gate-follow-up` | `lab4-staging` | Approved at `3424a2c`; CI #48 | Merged (`fd6ef11`) |
+| [#69](https://github.com/thananun-7203/toktickit/pull/69) | `feature/9-security-regression-e2e` | `lab4-staging` | Approved at `63e1e51`; CI #51 | Merged (`56a825a`) |
+| [#70](https://github.com/thananun-7203/toktickit/pull/70) | `feature/issue-58-accessibility-responsive-visual-qa` | `lab4-staging` | Approved at `34b30f1`; CI #58 | Merged (`4c12262`) |
+| [#71](https://github.com/thananun-7203/toktickit/pull/71) | `feature/11-final-evidence-release-readiness` | `lab4-staging` | `Tanaboonnnnn` approved at `bb22818`; CI #65 passed on exact head | **Merged (`a8c9400`)** |
+
+
+## 13. Review Standard
+
+Each Lab 4 implementation PR should be reviewed against:
+
+1. `docs/lab-04/specification.md` numbered FR/BR/AC and Product Definition of Done.
+2. Exact endpoint/security/conflict behavior in `api-spec.md`.
+3. UI states, role behavior, responsive/accessibility rules in `ui-spec.md`.
+4. Planned/actual test traceability in `tests.md`.
+5. The corresponding GitHub Issue Scope/Completion Checklist.
+6. Regression risk to approved Labs 1–3 behavior.
+7. Backend authorization; hidden UI controls are not accepted as the only security mechanism.
+8. Migration preservation and safe test-database evidence for database-changing PRs.
+9. Concurrency/stale-update/duplicate-action behavior where relevant.
+10. Actual hosted/local checks from the exact reviewed PR head; stale evidence must not be presented as current.
+
+Requested changes remain blocking until fixed or the reviewer explicitly marks them non-blocking.
+
+## 14. Kanban / Project Evidence
+
+The existing workflow convention remains:
+
+```text
+Backlog -> Specified -> Started -> PR Review -> Fixing -> Done
+```
+
+Issue states and Project columns are recorded separately: GitHub Issue state comes from the Issue record, while Project columns come from the student-provided screenshot of the actual Project board.
+
+The student supplied a screenshot of the actual GitHub Project **Tok TickIT Individual Sprints**. In the visible board area, Lab 4 Issues #53, #54, #55, #56, #67 (Issue 8), #57, #58, and #59 appear in the `Done` column. The screenshot is the source for the displayed Project column; this record does not infer a Project status from closed Issue states. Preserve the original screenshot in the final PDF evidence bundle.
+
+## 15. Final Release Review
+
+Current state as of `2026-11-01`:
+
+- `lab4-staging` head after PR #71 merge: `a8c94002bee0dc73d7dcfc48eb4cedbba16c5c15`.
+- Latest GitHub compare: `lab4-staging` is 63 commits ahead of `main` and 0 behind.
+- Issue #59 is closed; [PR #71 — `[Lab 4] Issue_11: Final Evidence & Release Readiness`](https://github.com/thananun-7203/toktickit/pull/71) is merged into `lab4-staging`.
+- `Tanaboonnnnn` approved exact head `bb22818b8b593ebdd1b067d932987e0519136c80` at `2026-11-01T12:19:03Z`; PR #71 was merged by the same reviewer at `2026-11-01T12:20:21Z` as `a8c94002bee0dc73d7dcfc48eb4cedbba16c5c15`.
+- Hosted CI Run #65 (`41303962915`) completed successfully for exact PR head `bb22818` (client/server/e2e).
+- The separate release PR `lab4-staging -> main` is not yet opened. Only the reviewer may merge it.
+- Local release-final checks are recorded in `tests.md` Section 18 (including Server/Client suites, builds, migration/seed, PostgreSQL dashboard aggregates, audits, and combined Playwright).
+- Remaining pre-release follow-ups: open a separate reviewed `lab4-staging -> main` Release PR, obtain exact-head hosted CI and peer approval, then allow the reviewer to merge. The E2E guard must receive the configured Development DB URL in every local test runner; CI supplies its reserved reference identity.
+
+To be completed only after Issue #59 and all release gates have real evidence:
+
+- Release PR: `lab4-staging -> main`.
+- Exact release head SHA.
+- Exact-head hosted CI run.
+- Reviewer identity and submitted verdict.
+- Required changes and response commits, if any.
+- Final approval and merge commit.
+- Final `main` regression/evidence synchronization.
+
+### PR #71 — Issue #59 Peer Review
+
+- Reviewed PR: [#71 — Final Evidence & Release Readiness](https://github.com/thananun-7203/toktickit/pull/71).
+- Reviewer: `Tanaboonnnnn`.
+- Initial approval: exact head `7105286f4c957fd231a5d781a2f1cb693a18d6ee`, followed by a second re-review.
+- Final re-review submitted: `2026-11-01T12:19:03Z`.
+- Final verdict: **APPROVED** at exact head `bb22818b8b593ebdd1b067d932987e0519136c80`. No confirmed blockers remained.
+- Hosted CI: Run #65 (`41303962915`) completed successfully on that exact head (client/server/e2e).
+- PR #71 was merged by `Tanaboonnnnn` into `lab4-staging` at `2026-11-01T12:20:21Z`; merge commit `a8c94002bee0dc73d7dcfc48eb4cedbba16c5c15`.
+- Non-blocking follow-ups: separate exact-head review/CI for the `lab4-staging -> main` Release PR and ensure the E2E guard receives the configured Development DB URL in local test runners.
+
+## Pull Requests I reviewed for my partners
+
+Record actual Lab 4 peer-review activity here. The entries below are based on GitHub review submissions made by `thananun-7203`; they are reviews on a partner's repository, not the feature PRs in this author's repository.
+
+| Repository / PR | Review focus | Review result |
+|---|---|---|
+| `Tanaboonnnnn/toktickit` [#81](https://github.com/Tanaboonnnnn/toktickit/pull/81) | Sprint 4 engineering contract: actor/assignee/performedBy semantics, nine source-reconciliation decisions, required deliverables, and AC-to-Test-ID-to-rubric traceability | **Changes Requested** on `bc39d486c0d4b8717d68d0ae04d145d2c473c832` on 2026-09-29; subsequent approval was submitted by another reviewer, not attributed to this author; [my review](https://github.com/Tanaboonnnnn/toktickit/pull/81#pullrequestreview-5348833150) |
+| `Tanaboonnnnn/toktickit` [#82](https://github.com/Tanaboonnnnn/toktickit/pull/82) | Isolated Lab 4 verification and CI: Lab 3 evidence-path isolation, release-manifest identity validation, scenario/Test ID/rubric registry, and exact-head CI | **Changes Requested → Approved**; both verification-safety findings were fixed and approved on `2852a720df6ded45e614d6ca9bf391f2b2b85207` on 2026-09-29; [final approval](https://github.com/Tanaboonnnnn/toktickit/pull/82#pullrequestreview-5351975592) |
+| `Tanaboonnnnn/toktickit` [#83](https://github.com/Tanaboonnnnn/toktickit/pull/83) | Lab 4 data foundation and migration safety: additive migrations, legacy-data/Attachment preservation, workflow-cycle/audit model, seed idempotency, and active-role assignee safety | **Changes Requested → Approved**; seed-safety regression and local-only credential output were corrected, then approved on `0162e802c331634fe7ecc9ca7e7a525922e5d7a0` on 2026-09-29; [final approval](https://github.com/Tanaboonnnnn/toktickit/pull/83#pullrequestreview-5356637472) |
+| `Tanaboonnnnn/toktickit` [#84](https://github.com/Tanaboonnnnn/toktickit/pull/84) | Actions Taken APIs and concurrency: authorization, lifecycle/audit, immutable provenance, idempotent replay, locking/races, Administrator safety, and exact-head CI | **Approved** on `bdacb67cd42ea06b797215dbbc70dc0597d25614` on 2026-09-30; [review submission](https://github.com/Tanaboonnnnn/toktickit/pull/84#pullrequestreview-5362699645) |
+| `Tanaboonnnnn/toktickit` [#87](https://github.com/Tanaboonnnnn/toktickit/pull/87) | Requester / Staff Dashboard API authorization and ownership, My Actions attribution/deduplication, drill-down query validation, PostgreSQL snapshot consistency, privacy, performance smoke, and exact-head CI | **Approved** at `05da626d8e8cc70dbbec215c305b205c7189ebd6` on 2026-10-01; [review submission](https://github.com/Tanaboonnnnn/toktickit/pull/87#pullrequestreview-5377717299) |
+| `Tanaboonnnnn/toktickit` [#91](https://github.com/Tanaboonnnnn/toktickit/pull/91) | Lab 4 release-evidence documentation, reviewer/AI-use/specification/tests synchronization, review provenance, exact-head CI, and pending release gates | **Approved** at `094e527d93536d3087f1259fccfb09399af54d2e` on 2026-10-02; [review submission](https://github.com/Tanaboonnnnn/toktickit/pull/91#pullrequestreview-5395987757) |

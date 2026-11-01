@@ -8,6 +8,7 @@ export const STAFF_QUEUE_STATUSES = [
   "Reopened",
   "Cancelled",
 ] as const;
+export const STAFF_QUEUE_ACTIVE_STATUS = "active" as const;
 
 export const STAFF_QUEUE_PRIORITIES = ["Low", "Medium", "High"] as const;
 export const STAFF_QUEUE_SORTS = [
@@ -74,8 +75,8 @@ export function validateStaffQueueQuery(raw: Record<string, unknown>): {
 
   const statusRaw = single(raw.status, "status", errors);
   const status = statusRaw || undefined;
-  if (status && !(STAFF_QUEUE_STATUSES as readonly string[]).includes(status)) {
-    errors.status = "status is not a supported Ticket status";
+  if (status && status !== STAFF_QUEUE_ACTIVE_STATUS && !(STAFF_QUEUE_STATUSES as readonly string[]).includes(status)) {
+    errors.status = "status must be a supported Ticket status or active";
   }
 
   const requestedRaw = single(raw.requestedPriority, "requestedPriority", errors);

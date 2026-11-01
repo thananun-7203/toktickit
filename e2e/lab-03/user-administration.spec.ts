@@ -52,6 +52,17 @@ async function installAdminFlowApi(page: Page) {
       return;
     }
 
+    if (path === "/api/v1/admin/users/summary" && method === "GET") {
+      const byRole: Record<"ADMINISTRATOR" | "IT_STAFF" | "REQUESTER", number> = {
+        ADMINISTRATOR: 0,
+        IT_STAFF: 0,
+        REQUESTER: 0,
+      };
+      for (const user of users) byRole[user.role as keyof typeof byRole] += 1;
+      await fulfillJson(route, { totalUsers: users.length, byRole });
+      return;
+    }
+
     if (path === "/api/v1/admin/users" && method === "GET") {
       const search = (url.searchParams.get("search") ?? "").toLowerCase();
       const role = url.searchParams.get("role");
@@ -119,6 +130,8 @@ test("Administrator browser UI flow covers create, edit, initial password, and s
   await page.locator("#login-password").fill("ValidPassword123!");
   await page.getByRole("button", { name: "Sign In" }).click();
 
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await page.getByRole("button", { name: "User Management" }).click();
   await expect(page.getByRole("heading", { name: "User Management" })).toBeVisible();
   await page.getByLabel("Search").fill("Narin");
   await page.getByRole("button", { name: "Search" }).click();
@@ -158,8 +171,9 @@ test("Administrator browser UI flow covers create, edit, initial password, and s
   await dialog.getByRole("button", { name: "Save Changes" }).click();
   const confirm = page.getByRole("dialog", { name: "Deactivate User" });
   await confirm.getByRole("button", { name: "Deactivate User", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText("Reassign this user's tickets");
-  await expect(page.getByRole("dialog", { name: "Edit User" })).toBeVisible();
+  const editDialog = page.getByRole("dialog", { name: "Edit User" });
+  await expect(editDialog.getByRole("alert")).toContainText("Reassign this user's tickets");
+  await expect(editDialog).toBeVisible();
 });
 
 test("E2E-ADMIN-01/02 full-stack Administrator workflow and safety boundaries", async ({ page }, testInfo) => {
@@ -177,8 +191,11 @@ test("E2E-ADMIN-01/02 full-stack Administrator workflow and safety boundaries", 
     users.adminEmail,
     users.initialPassword,
     adminPassword,
-    "User Management",
+    "Dashboard",
   );
+
+  await page.getByRole("button", { name: "User Management" }).click();
+  await expect(page.getByRole("heading", { name: "User Management" })).toBeVisible();
 
   await page.getByLabel("Search").fill(users.staffOneEmail);
   await page.getByRole("button", { name: "Search" }).click();
@@ -227,11 +244,17 @@ test("E2E-ADMIN-01/02 full-stack Administrator workflow and safety boundaries", 
     const ticket = queueBody.items[0];
     if (!ticket) throw new Error("No unassigned Ticket available for assigned-owner safety E2E");
 
+    const detailResponse = await fetch(`${apiUrl}/api/v1/staff/tickets/${ticket.id}`, {
+      credentials: "include",
+    });
+    if (!detailResponse.ok) throw new Error(`Unable to resolve safety Ticket version: ${detailResponse.status}`);
+    const ticketDetail = await detailResponse.json() as { version: number };
+
     const assignResponse = await fetch(`${apiUrl}/api/v1/staff/tickets/${ticket.id}/owner`, {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "assign", ownerId: managed.id }),
+      body: JSON.stringify({ action: "assign", ownerId: managed.id, expectedVersion: ticketDetail.version }),
     });
     if (!assignResponse.ok) throw new Error(`Unable to assign E2E safety Ticket: ${assignResponse.status}`);
     return { actorId: actor.id, managedId: managed.id };
@@ -243,7 +266,7 @@ test("E2E-ADMIN-01/02 full-stack Administrator workflow and safety boundaries", 
   await dialog.getByRole("button", { name: "Save Changes" }).click();
   const confirm = page.getByRole("dialog", { name: "Deactivate User" });
   await confirm.getByRole("button", { name: "Deactivate User", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText("Reassign this user's tickets");
+  await expect(page.getByRole("dialog", { name: "Edit User" }).getByRole("alert")).toContainText("Reassign this user's tickets");
   await captureEvidence(page, "13-admin-assigned-owner-conflict.png");
   await page.getByRole("dialog", { name: "Edit User" }).getByRole("button", { name: "Cancel" }).click();
 
@@ -282,7 +305,7 @@ test("E2E-ADMIN-01/02 full-stack Administrator workflow and safety boundaries", 
 
   await logoutFromUserMenu(page, "E2E Administrator");
   await signIn(page, managedEmail, resetManagedPassword);
-  await completeMandatoryPasswordChange(page, resetManagedPassword, `ManagedFinal${Date.now()}7C`, "Ticket Queue");
+  await completeMandatoryPasswordChange(page, resetManagedPassword, `ManagedFinal${Date.now()}7C`, "Dashboard");
 
   const forbiddenAdmin = await page.evaluate(async (apiUrl) => {
     const response = await fetch(`${apiUrl}/api/v1/admin/users`, { credentials: "include" });

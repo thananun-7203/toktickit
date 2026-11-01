@@ -38,6 +38,9 @@ export interface Ticket {
   itPriority?: RequestedPriority | null;
   status: string;
   problemAppearsResolvedAt?: string | null;
+  version?: number;
+  workflowCycle?: number;
+  resolvedAt?: string | null;
   createdAt: string;
   requester: { id: number; name: string };
   category: { id: number; name: string };
@@ -54,6 +57,9 @@ export interface Attachment {
 }
 
 export interface TicketDetail extends Ticket {
+  version: number;
+  workflowCycle: number;
+  resolvedAt?: string | null;
   attachments: Attachment[];
 }
 
@@ -120,7 +126,7 @@ export interface StaffQueueTicket {
 
 export interface StaffQueueParams {
   search?: string;
-  status?: TicketStatus;
+  status?: TicketStatus | "active";
   requestedPriority?: RequestedPriority;
   itPriority?: RequestedPriority | "not_recorded";
   owner?: "unassigned" | "mine" | number;
@@ -142,6 +148,9 @@ export interface StaffQueueResponse {
 export interface StaffTicketDetail extends StaffQueueTicket {
   description: string;
   problemAppearsResolvedAt: string | null;
+  version: number;
+  workflowCycle: number;
+  resolvedAt: string | null;
   attachments: Attachment[];
 }
 
@@ -160,6 +169,124 @@ export interface InternalNotesResponse {
   totalPages: number;
 }
 
+export interface StaffDashboardTicketSummary {
+  id: number;
+  ticketNumber: string;
+  summary: string;
+  status: TicketStatus;
+  itPriority: RequestedPriority | null;
+  updatedAt: string;
+}
+
+export interface StaffDashboardActionSummary {
+  id: number;
+  ticketId: number;
+  description: string;
+  status: ActionTakenStatus;
+  updatedAt: string;
+  assignee: { id: number; name: string };
+  ticket: { ticketNumber: string; summary: string };
+}
+
+export interface StaffDashboardResponse {
+  metrics: {
+    unassignedActiveTickets: number;
+    myActiveTickets: number;
+    byStatus: Record<TicketStatus, number>;
+    activeByItPriority: Record<RequestedPriority | "Not recorded", number>;
+  };
+  myActiveActions: StaffDashboardActionSummary[];
+  recentlyUpdatedTickets: StaffDashboardTicketSummary[];
+  urgentTickets: StaffDashboardTicketSummary[];
+}
+
+export interface RequesterDashboardTicketSummary {
+  id: number;
+  ticketNumber: string;
+  summary: string;
+  status: TicketStatus;
+  itPriority: RequestedPriority | null;
+  updatedAt: string;
+  resolvedAt: string | null;
+}
+
+export interface RequesterDashboardResponse {
+  metrics: {
+    openTickets: number;
+    waitingForYou: number;
+  };
+  recentlyUpdatedTickets: RequesterDashboardTicketSummary[];
+  recentlyResolvedTickets: RequesterDashboardTicketSummary[];
+}
+
+export const ACTION_TAKEN_STATUSES = ["Planned", "In Progress", "Completed", "Cancelled"] as const;
+export type ActionTakenStatus = (typeof ACTION_TAKEN_STATUSES)[number];
+export const ACTION_FOLLOW_UP_STATUSES = ["NOT_REQUIRED", "OUTSTANDING", "COMPLETED"] as const;
+export type ActionFollowUpStatus = (typeof ACTION_FOLLOW_UP_STATUSES)[number];
+
+export interface ActionActor {
+  id: number;
+  name: string;
+  role: UserRole;
+}
+
+export interface ActionTaken {
+  id: number;
+  ticketId: number;
+  clientRequestId: string;
+  workflowCycle: number;
+  actionDateTime: string;
+  description: string;
+  result: string | null;
+  followUpRequired: boolean;
+  followUpNote: string | null;
+  followUpStatus: ActionFollowUpStatus;
+  followUpCompletedBy: ActionActor | null;
+  followUpCompletedAt: string | null;
+  attachmentNotes: string | null;
+  status: ActionTakenStatus;
+  createdBy: ActionActor;
+  assignee: ActionActor;
+  performedBy: ActionActor | null;
+  completedAt: string | null;
+  cancelledBy: ActionActor | null;
+  cancelledAt: string | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateActionTakenInput {
+  clientRequestId: string;
+  expectedTicketVersion: number;
+  actionDateTime: string;
+  description: string;
+  assigneeId: number;
+  followUpRequired: boolean;
+  followUpNote: string | null;
+  attachmentNotes: string | null;
+}
+
+export interface UpdateActionTakenInput {
+  expectedVersion: number;
+  expectedTicketVersion: number;
+  actionDateTime?: string;
+  description?: string;
+  assigneeId?: number;
+  followUpRequired?: boolean;
+  followUpNote?: string | null;
+  attachmentNotes?: string | null;
+}
+
+export interface UpdateActionStatusInput {
+  status: ActionTakenStatus;
+  expectedVersion: number;
+  expectedTicketVersion: number;
+  result?: string;
+  followUpRequired?: boolean;
+  followUpNote?: string | null;
+}
+
 export interface AdminUser {
   id: number;
   name: string;
@@ -174,6 +301,11 @@ export interface AdminUser {
 export interface AdminUserListParams {
   search?: string;
   role?: UserRole;
+}
+
+export interface AdminUserSummary {
+  totalUsers: number;
+  byRole: Record<UserRole, number>;
 }
 
 export interface CreateAdminUserInput {
@@ -319,6 +451,7 @@ export interface GetTicketsParams {
   search?: string;
   categoryId?: number;
   relatedSystemId?: number;
+  status?: TicketStatus;
   sort?: "newest" | "oldest" | "summary_asc";
   page?: number;
   pageSize?: number;
@@ -339,6 +472,7 @@ export async function getTickets(
   if (params.search) qs.set("search", params.search);
   if (params.categoryId) qs.set("categoryId", String(params.categoryId));
   if (params.relatedSystemId) qs.set("relatedSystemId", String(params.relatedSystemId));
+  if (params.status) qs.set("status", params.status);
   if (params.sort) qs.set("sort", params.sort);
   if (params.page) qs.set("page", String(params.page));
   if (params.pageSize) qs.set("pageSize", String(params.pageSize));
@@ -418,13 +552,15 @@ export async function postPublicComment(ticketId: number, content: string): Prom
   return res.json();
 }
 
-export async function indicateProblemAppearsResolved(ticketId: number): Promise<{
+export async function indicateProblemAppearsResolved(ticketId: number, expectedVersion: number): Promise<{
   ticketId: number;
   problemAppearsResolvedAt: string;
   status: string;
+  version: number;
 }> {
   const res = await apiFetch(`/api/v1/tickets/${ticketId}/problem-appears-resolved`, {
     method: "POST",
+    body: JSON.stringify({ expectedVersion }),
   });
   if (!res.ok) throw await responseError(res, "Unable to record resolution indication");
   return res.json();
@@ -462,8 +598,8 @@ export async function getStaffTicketDetail(id: number): Promise<StaffTicketDetai
 
 export async function updateStaffTicketOwner(
   ticketId: number,
-  input: { action: "claim" } | { action: "assign"; ownerId: number },
-): Promise<Pick<StaffTicketDetail, "id" | "owner" | "updatedAt">> {
+  input: ({ action: "claim" } | { action: "assign"; ownerId: number }) & { expectedVersion: number },
+): Promise<Pick<StaffTicketDetail, "id" | "owner" | "version" | "updatedAt">> {
   const res = await apiFetch(`/api/v1/staff/tickets/${ticketId}/owner`, {
     method: "PATCH",
     body: JSON.stringify(input),
@@ -475,10 +611,11 @@ export async function updateStaffTicketOwner(
 export async function updateStaffTicketItPriority(
   ticketId: number,
   itPriority: RequestedPriority,
-): Promise<Pick<StaffTicketDetail, "id" | "requestedPriority" | "itPriority" | "updatedAt">> {
+  expectedVersion: number,
+): Promise<Pick<StaffTicketDetail, "id" | "requestedPriority" | "itPriority" | "version" | "updatedAt">> {
   const res = await apiFetch(`/api/v1/staff/tickets/${ticketId}/it-priority`, {
     method: "PATCH",
-    body: JSON.stringify({ itPriority }),
+    body: JSON.stringify({ itPriority, expectedVersion }),
   });
   if (!res.ok) throw await responseError(res, "Unable to update IT Priority");
   return res.json();
@@ -487,10 +624,11 @@ export async function updateStaffTicketItPriority(
 export async function updateStaffTicketStatus(
   ticketId: number,
   status: TicketStatus,
-): Promise<Pick<StaffTicketDetail, "id" | "status" | "problemAppearsResolvedAt" | "updatedAt">> {
+  expectedVersion: number,
+): Promise<Pick<StaffTicketDetail, "id" | "status" | "problemAppearsResolvedAt" | "resolvedAt" | "workflowCycle" | "version" | "updatedAt">> {
   const res = await apiFetch(`/api/v1/staff/tickets/${ticketId}/status`, {
     method: "PATCH",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, expectedVersion }),
   });
   if (!res.ok) throw await responseError(res, "Unable to update Ticket status");
   return res.json();
@@ -516,6 +654,74 @@ export async function postInternalNote(ticketId: number, content: string): Promi
   return res.json();
 }
 
+export async function getStaffDashboard(): Promise<StaffDashboardResponse> {
+  const res = await apiFetch("/api/v1/staff/dashboard");
+  if (!res.ok) throw await responseError(res, "Unable to load Staff Dashboard");
+  return res.json();
+}
+
+export async function getRequesterDashboard(): Promise<RequesterDashboardResponse> {
+  const res = await apiFetch("/api/v1/requester/dashboard");
+  if (!res.ok) throw await responseError(res, "Unable to load Requester Dashboard");
+  return res.json();
+}
+
+export async function getActionsTaken(ticketId: number): Promise<ActionTaken[]> {
+  const res = await apiFetch(`/api/v1/tickets/${ticketId}/actions-taken`);
+  if (!res.ok) throw await responseError(res, "Unable to load Actions Taken");
+  const data = await res.json();
+  return data.items as ActionTaken[];
+}
+
+export async function createStaffActionTaken(
+  ticketId: number,
+  input: CreateActionTakenInput,
+): Promise<{ action: ActionTaken; created: boolean }> {
+  const res = await apiFetch(`/api/v1/staff/tickets/${ticketId}/actions-taken`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw await responseError(res, "Unable to create Action Taken");
+  return { action: await res.json() as ActionTaken, created: res.status === 201 };
+}
+
+export async function updateStaffActionTaken(
+  actionId: number,
+  input: UpdateActionTakenInput,
+): Promise<ActionTaken> {
+  const res = await apiFetch(`/api/v1/staff/actions-taken/${actionId}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw await responseError(res, "Unable to update Action Taken");
+  return res.json();
+}
+
+export async function updateStaffActionStatus(
+  actionId: number,
+  input: UpdateActionStatusInput,
+): Promise<ActionTaken> {
+  const res = await apiFetch(`/api/v1/staff/actions-taken/${actionId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw await responseError(res, "Unable to update Action status");
+  return res.json();
+}
+
+export async function completeStaffActionFollowUp(
+  actionId: number,
+  expectedVersion: number,
+  expectedTicketVersion: number,
+): Promise<ActionTaken> {
+  const res = await apiFetch(`/api/v1/staff/actions-taken/${actionId}/follow-up`, {
+    method: "PATCH",
+    body: JSON.stringify({ expectedVersion, expectedTicketVersion }),
+  });
+  if (!res.ok) throw await responseError(res, "Unable to complete Action follow-up");
+  return res.json();
+}
+
 export async function getAdminUsers(params: AdminUserListParams = {}): Promise<AdminUser[]> {
   const qs = new URLSearchParams();
   if (params.search) qs.set("search", params.search);
@@ -525,6 +731,12 @@ export async function getAdminUsers(params: AdminUserListParams = {}): Promise<A
   if (!res.ok) throw await responseError(res, "Unable to load users");
   const data = await res.json();
   return data.items as AdminUser[];
+}
+
+export async function getAdminUserSummary(): Promise<AdminUserSummary> {
+  const res = await apiFetch("/api/v1/admin/users/summary");
+  if (!res.ok) throw await responseError(res, "Unable to load user summary");
+  return res.json() as Promise<AdminUserSummary>;
 }
 
 export async function createAdminUser(input: CreateAdminUserInput): Promise<AdminUser> {

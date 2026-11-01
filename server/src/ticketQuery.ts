@@ -5,6 +5,18 @@
 export const SORT_OPTIONS = ["newest", "oldest", "summary_asc"] as const;
 export type SortOption = (typeof SORT_OPTIONS)[number];
 
+export const TICKET_STATUS_OPTIONS = [
+  "New",
+  "Open",
+  "In Progress",
+  "Waiting for Requester",
+  "Resolved",
+  "Closed",
+  "Reopened",
+  "Cancelled",
+] as const;
+export type TicketStatusOption = (typeof TICKET_STATUS_OPTIONS)[number];
+
 export const DEFAULT_SORT: SortOption = "newest";
 export const DEFAULT_PAGE = 1;
 export const DEFAULT_PAGE_SIZE = 10;
@@ -14,6 +26,7 @@ export interface ParsedTicketQuery {
   search?: string;
   categoryId?: number;
   relatedSystemId?: number;
+  status?: TicketStatusOption;
   sort: SortOption;
   page: number;
   pageSize: number;
@@ -65,6 +78,17 @@ export function validateTicketQuery(raw: Record<string, unknown>): {
     }
   }
 
+  // status: optional, must be one of the supported Ticket statuses if provided
+  let status: TicketStatusOption | undefined;
+  const rawStatus = toSingle(raw.status);
+  if (rawStatus !== undefined && rawStatus !== "") {
+    if ((TICKET_STATUS_OPTIONS as readonly string[]).includes(rawStatus)) {
+      status = rawStatus as TicketStatusOption;
+    } else {
+      errors.status = `status must be one of ${TICKET_STATUS_OPTIONS.join(", ")}`;
+    }
+  }
+
   // sort: must be one of SORT_OPTIONS
   let sort: SortOption = DEFAULT_SORT;
   const rawSort = toSingle(raw.sort);
@@ -106,7 +130,7 @@ export function validateTicketQuery(raw: Record<string, unknown>): {
 
   return {
     errors: {},
-    parsed: { search, categoryId, relatedSystemId, sort, page, pageSize },
+    parsed: { search, categoryId, relatedSystemId, status, sort, page, pageSize },
   };
 }
 

@@ -193,6 +193,8 @@ test("Staff browser UI flow smoke covers the Ticket Detail operational workflow"
   await page.locator("#login-password").fill("ValidPassword123!");
   await page.getByRole("button", { name: "Sign In" }).click();
 
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await page.getByRole("button", { name: "Ticket Queue" }).click();
   await expect(page.getByRole("heading", { name: "Ticket Queue" })).toBeVisible();
   await page.getByLabel("Search").fill("internal system");
   await page.getByRole("button", { name: "Search" }).click();
@@ -242,7 +244,7 @@ test("E2E-STAFF-01/02 full-stack Staff workflow and authorization boundaries", a
     users.requesterOneEmail,
     users.initialPassword,
     requesterPassword,
-    "My Tickets",
+    "Dashboard",
   );
   await page.getByRole("button", { name: "Create Ticket" }).first().click();
   await page.getByLabel(/Category/).selectOption({ label: "Software" });
@@ -274,8 +276,11 @@ test("E2E-STAFF-01/02 full-stack Staff workflow and authorization boundaries", a
     users.staffOneEmail,
     users.initialPassword,
     staffPassword,
-    "Ticket Queue",
+    "Dashboard",
   );
+
+  await page.getByRole("button", { name: "Ticket Queue" }).click();
+  await expect(page.getByRole("heading", { name: "Ticket Queue" })).toBeVisible();
 
   await page.getByLabel("Search").fill(summary);
   await page.getByRole("button", { name: "Search" }).click();
@@ -316,11 +321,16 @@ test("E2E-STAFF-01/02 full-stack Staff workflow and authorization boundaries", a
   expect(download.suggestedFilename()).toBe(attachmentName);
 
   const invalidTransition = await page.evaluate(async ({ apiUrl, id }) => {
+    const detailResponse = await fetch(`${apiUrl}/api/v1/staff/tickets/${id}`, {
+      credentials: "include",
+    });
+    if (!detailResponse.ok) throw new Error(`Unable to resolve current Ticket version: ${detailResponse.status}`);
+    const detail = await detailResponse.json() as { version: number };
     const response = await fetch(`${apiUrl}/api/v1/staff/tickets/${id}/status`, {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "New" }),
+      body: JSON.stringify({ status: "New", expectedVersion: detail.version }),
     });
     return { status: response.status, body: await response.json() };
   }, { apiUrl: API_URL, id: ticketId });
@@ -329,6 +339,8 @@ test("E2E-STAFF-01/02 full-stack Staff workflow and authorization boundaries", a
 
   await logoutFromUserMenu(page, "E2E Staff One");
   await signIn(page, users.requesterOneEmail, requesterPassword);
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await page.getByRole("button", { name: "My Tickets" }).last().click();
   await expect(page.getByRole("heading", { name: "My Tickets" })).toBeVisible();
   const forbiddenNotes = await page.evaluate(async ({ apiUrl, id }) => {
     const response = await fetch(`${apiUrl}/api/v1/staff/tickets/${id}/internal-notes`, { credentials: "include" });

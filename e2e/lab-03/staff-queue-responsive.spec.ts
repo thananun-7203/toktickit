@@ -47,6 +47,7 @@ const queueItems = [
 
 async function mockQueueApis(page: Page) {
   await page.route("**/api/v1/auth/me", async (route) => route.fulfill({ json: staffUser }));
+  await page.route("**/api/v1/staff/dashboard", async (route) => route.fulfill({ json: { metrics: { unassignedActiveTickets: 0, myActiveTickets: 0, byStatus: {}, activeByItPriority: {} }, myActiveActions: [], recentlyUpdatedTickets: [], urgentTickets: [] } }));
   await page.route("**/api/v1/categories", async (route) => route.fulfill({ json: [
     { id: 1, name: "Software" }, { id: 3, name: "Hardware" },
   ] }));
@@ -75,6 +76,7 @@ test("V-03 Staff Queue adapts at desktop, tablet, and mobile widths", async ({ p
   await mockQueueApis(page);
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/");
+  await page.getByRole("button", { name: "Ticket Queue" }).click();
   await expect(page.getByRole("heading", { name: "Ticket Queue" })).toBeVisible();
   await expect(page.locator(".staff-queue-table-wrap")).toBeVisible();
   await expect(page.locator(".staff-queue-cards")).toBeHidden();

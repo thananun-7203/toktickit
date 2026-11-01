@@ -2,7 +2,7 @@ import { Router } from "express";
 import { Prisma, UserRole } from "@prisma/client";
 import { requireAuth, requirePasswordChanged, requireRole } from "./auth.js";
 import { getPrisma } from "./prisma.js";
-import { validateStaffQueueQuery, type StaffQueueSort } from "./staffQueueQuery.js";
+import { STAFF_QUEUE_ACTIVE_STATUS, validateStaffQueueQuery, type StaffQueueSort } from "./staffQueueQuery.js";
 
 export const staffQueueRouter = Router();
 
@@ -128,7 +128,11 @@ staffQueueRouter.get(
           { requester: { email: { contains: parsed.search, mode: "insensitive" } } },
         ];
       }
-      if (parsed.status) where.status = parsed.status;
+      if (parsed.status === STAFF_QUEUE_ACTIVE_STATUS) {
+        where.status = { in: ["New", "Open", "In Progress", "Waiting for Requester", "Reopened"] };
+      } else if (parsed.status) {
+        where.status = parsed.status;
+      }
       if (parsed.requestedPriority) where.requestedPriority = parsed.requestedPriority;
       if (parsed.itPriority !== undefined) where.itPriority = parsed.itPriority;
       if (parsed.owner === "unassigned") where.ownerId = null;

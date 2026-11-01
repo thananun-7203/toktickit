@@ -1,9 +1,11 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   AdminUser,
+  AdminUserSummary,
   ApiError,
   createAdminUser,
   getAdminUsers,
+  getAdminUserSummary,
   setAdminInitialPassword,
   updateAdminUser,
   UserRole,
@@ -168,6 +170,8 @@ function UserFields({
 
 export default function UserManagement({ currentUserId }: Props) {
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [summary, setSummary] = useState<AdminUserSummary | null>(null);
+  const [summaryState, setSummaryState] = useState<LoadState>("loading");
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchDraft, setSearchDraft] = useState("");
@@ -214,6 +218,23 @@ export default function UserManagement({ currentUserId }: Props) {
       });
     return () => { active = false; };
   }, [search, role, reloadKey]);
+
+  useEffect(() => {
+    let active = true;
+    setSummaryState("loading");
+    getAdminUserSummary()
+      .then((result) => {
+        if (!active) return;
+        setSummary(result);
+        setSummaryState("success");
+      })
+      .catch(() => {
+        if (!active) return;
+        setSummary(null);
+        setSummaryState("error");
+      });
+    return () => { active = false; };
+  }, [reloadKey]);
 
   const hasFilters = useMemo(() => Boolean(search || role), [search, role]);
 
@@ -378,6 +399,19 @@ export default function UserManagement({ currentUserId }: Props) {
           <button type="button" className="btn btn-success" onClick={openCreate}>+ Create User</button>
         </div>
       </div>
+
+      <section className="admin-user-summary" aria-label="User account totals" aria-live="polite">
+        {summaryState === "loading" && <p className="admin-user-summary-state" role="status">Loading account totals…</p>}
+        {summaryState === "error" && <div className="admin-user-summary-state" role="alert">Unable to load account totals. <button type="button" className="btn btn-sm btn-outline-success" onClick={() => setReloadKey((value) => value + 1)}>Retry</button></div>}
+        {summaryState === "success" && summary && (
+          <>
+            <article className="admin-user-summary-card"><span>Total Users</span><strong>{summary.totalUsers}</strong></article>
+            <article className="admin-user-summary-card"><span>Administrators</span><strong>{summary.byRole.ADMINISTRATOR}</strong></article>
+            <article className="admin-user-summary-card"><span>IT Staff</span><strong>{summary.byRole.IT_STAFF}</strong></article>
+            <article className="admin-user-summary-card"><span>Requesters</span><strong>{summary.byRole.REQUESTER}</strong></article>
+          </>
+        )}
+      </section>
 
       {success && <div className="alert alert-success" role="status">{success}<button type="button" className="btn-close" aria-label="Dismiss success message" onClick={() => setSuccess(null)} /></div>}
 
