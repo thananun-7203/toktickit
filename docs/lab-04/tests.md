@@ -178,7 +178,7 @@ The Issue #54 frontend was implemented only after the student approved the final
 | Disposable PostgreSQL test database | **Pass** — `toktickit_lab4_test`; migrations + seed applied; development DB was not used as the test target |
 | `git diff --check` | **Pass** |
 
-The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + active Action blocking; Completed without a non-blank Result; Completed with an outstanding follow-up; current-cycle qualification; prior-cycle rejection after Reopen; server-owned `resolvedAt`; Resolved -> Closed preservation; Reopen timestamp/cycle/version changes; stale workflow conflicts; Requester authorization; and Cancelled Actions not blocking a valid Resolve. Client tests cover safe Resolution Gate feedback and authoritative Reopen state updates. Full cycle-2 Add Action browser/E2E verification remains part of the later E2E/accessibility gates.
+The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + active Action blocking; Completed without a non-blank Result; Completed with an outstanding follow-up; current-cycle qualification; prior-cycle rejection after Reopen; server-owned `resolvedAt`; Resolved -> Closed preservation; Reopen timestamp/cycle/version changes; stale workflow conflicts; Requester authorization; and Cancelled Actions not blocking a valid Resolve. The later full-stack E2E also verifies Reopen -> cycle-2 Add Action -> Complete -> Resolve. Client tests cover safe Resolution Gate feedback and authoritative Reopen state updates.
 
 ## 4. Unit Tests
 
@@ -191,7 +191,7 @@ The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + act
 | AT-U-05 | AC-28 | Immutable original-create fingerprint | same normalized create intent hashes identically; materially changed intent differs | `actions-taken.unit.test.ts` | **Pass — `1d62aa0`** |
 | WF-U-01 | Section 7 / AC-10 | Final Ticket transition matrix | Existing eight-status helper plus Staff Detail API coverage matches approved matrix; Resolve is additionally gate-protected | existing Staff operations + `workflow.api.test.ts` | **Pass — 25/25 targeted Server workflow/detail run** |
 | WF-U-02 | BR-24–BR-30 / AC-11 | Resolution-gate decision | Requires >=1 current-cycle Completed with non-blank Result, zero current-cycle Planned/In Progress, and zero current-cycle non-cancelled outstanding follow-ups | `workflow.api.test.ts` | **Pass — 10/10 workflow tests** |
-| DASH-U-01 | BR-35–BR-41 / AC-16/17 | Staff Dashboard list predicates/order | Recently Updated uses updated-desc; Urgent is High IT Priority + updated-desc | `staff-dashboard.api.test.ts` or helper test | Planned |
+| DASH-U-01 | BR-35–BR-41 / AC-16/17 | Staff Dashboard list predicates/order | Recently Updated uses updated-desc; Urgent is High IT Priority + updated-desc | `staff-dashboard.api.test.ts` | **Pass — `SD-API-01..07/10` and `SD-API-11` verify exact predicates, top-5 limit, and deterministic order** |
 | TIME-U-01 | BR-08 / AC-27 | Action business-time parser/bounds | ISO offsets normalize to same UTC instant; backdate allowed; > server-now+5m rejected | `actions-taken.unit.test.ts` | **Pass — `98b5274`** |
 
 ## 5. Actions Taken API / Integration Tests
@@ -232,13 +232,13 @@ The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + act
 | AT-API-27R | AC-28 | **Create -> edit/reassign mutable Action -> retry original POST with same key/original payload** | `200` same id/current row; no duplicate; no second parent-version increment; changed original intent still conflicts | same | **Pass — `1d62aa0`** |
 | AT-API-32 | AC-13 | Owner or IT Priority changes after Action client loaded parent version | workflow mutation increments Ticket version; later Action write using old token -> `409 STALE_TICKET_STATE` | same | **Pass — `1d62aa0`** |
 | AT-API-33 | AC-13 | Concurrent Owner mutation vs Action edit on same Ticket version | exactly one commits; stale loser `409`; parent version increments once; no `500` | same | **Pass — `1d62aa0`** |
-| FU-API-01 | AC-29 | Complete Action with `followUpRequired=true` | Action completes with `followUpStatus=OUTSTANDING`; completion provenance is recorded | `actions-taken.api.test.ts` | Planned |
-| FU-API-02 | AC-29 | Mark outstanding follow-up complete | `200`; followUpStatus becomes `COMPLETED`; actor/time recorded; Action remains `Completed`; Action/Ticket versions each increment once | same | Planned |
-| FU-API-03 | AC-29 | Requester attempts follow-up completion | `403`; no mutation | `authorization.api.test.ts` / `actions-taken.api.test.ts` | Planned |
-| FU-API-04 | AC-29 | Follow-up completion with stale Action version | `409 STALE_ACTION_TAKEN`; no mutation | `actions-taken.api.test.ts` | Planned |
-| FU-API-05 | AC-29 | Follow-up completion with stale Ticket version | `409 STALE_TICKET_STATE`; no mutation | `actions-taken.api.test.ts` | Planned |
-| FU-API-06 | AC-30 | Resolve with outstanding follow-up | `409 RESOLUTION_GATE_NOT_MET`; Ticket unchanged | `workflow.api.test.ts` | Planned |
-| FU-API-07 | AC-30 | Complete all required follow-ups then Resolve | `Resolved` succeeds with current-cycle Completed work and no outstanding follow-up | `workflow.api.test.ts` | Planned |
+| FU-API-01 | AC-29 | Complete Action with `followUpRequired=true` | Action completes with `followUpStatus=OUTSTANDING`; completion provenance is recorded | `actions-taken.api.test.ts` | **Pass — `FU-API-01/02/04/05` combined integration test** |
+| FU-API-02 | AC-29 | Mark outstanding follow-up complete | `200`; followUpStatus becomes `COMPLETED`; actor/time recorded; Action remains `Completed`; Action/Ticket versions each increment once | same | **Pass — `FU-API-01/02/04/05` combined integration test** |
+| FU-API-03 | AC-29 | Requester attempts follow-up completion | `403`; no mutation | `authorization.api.test.ts` / `actions-taken.api.test.ts` | **Pass — `FU-API-03` authorization test** |
+| FU-API-04 | AC-29 | Follow-up completion with stale Action version | `409 STALE_ACTION_TAKEN`; no mutation | `actions-taken.api.test.ts` | **Pass — `FU-API-01/02/04/05` combined integration test** |
+| FU-API-05 | AC-29 | Follow-up completion with stale Ticket version | `409 STALE_TICKET_STATE`; no mutation | `actions-taken.api.test.ts` | **Pass — `FU-API-01/02/04/05` combined integration test** |
+| FU-API-06 | AC-30 | Resolve with outstanding follow-up | `409 RESOLUTION_GATE_NOT_MET`; Ticket unchanged | `workflow.api.test.ts` | **Pass — `WF-10` and `FU-API-06/07`** |
+| FU-API-07 | AC-30 | Complete all required follow-ups then Resolve | `Resolved` succeeds with current-cycle Completed work and no outstanding follow-up | `workflow.api.test.ts` | **Pass — `FU-API-06/07`** |
 
 ## 6. Final Ticket Workflow API Tests
 
@@ -253,11 +253,11 @@ The Issue #54 API tests cover Resolution Gate with zero Actions; Completed + act
 | WF-API-15 | AC-11 | Resolve with current-cycle Completed + non-blank Result but outstanding follow-up | `409 RESOLUTION_GATE_NOT_MET`; unchanged | `workflow.api.test.ts` | **Pass — WF-10** |
 | WF-API-07 | AC-11 | Requester directly calls Staff status endpoint | `403`; gate cannot be bypassed | `workflow.api.test.ts` | **Pass — WF-08** |
 | WF-API-08 | AC-12 | Requester advisory indication then formal Reopened | indication remains advisory; Reopened clears resolution timestamps and preserves historical Actions | `staff-ticket-detail.api.test.ts` + `workflow.api.test.ts` | **Pass — existing ST-13 + WF-06** |
-| WF-API-09 | AC-13 | Two concurrent valid transitions from same Ticket version | at most one commits; stale loser `409 STALE_TICKET_STATE` | same | Planned |
-| WF-API-10 | AC-11/13 | Action/owner/priority aggregate changes while Resolve is evaluated | parent version/row lock + child re-read prevent stale Resolve | same | Planned |
-| WF-API-11 | AC-19 | Pre-Lab-4 already Resolved/Closed zero-Action Ticket | remains readable/valid after migration; no retroactive mutation | `migration-regression.test.ts` | Planned |
+| WF-API-09 | AC-13 | Two concurrent valid transitions from same Ticket version | at most one commits; stale loser `409 STALE_TICKET_STATE` | `workflow.api.test.ts` | **Pass — `WF-API-09` concurrent Resolve vs Waiting-for-Requester test; one winner, one stale conflict, one parent-version increment** |
+| WF-API-10 | AC-11/13 | Action/owner/priority aggregate changes while Resolve is evaluated | parent version/row lock + child re-read prevent stale Resolve | `workflow.api.test.ts` | **Pass — `WF-API-10` races Resolve against Action create, Owner change, and IT Priority change; exactly one aggregate write wins in each scenario** |
+| WF-API-11 | AC-19 | Pre-Lab-4 already Resolved/Closed zero-Action Ticket | remains readable/valid after migration; no retroactive mutation | `migration-regression.test.ts` | **Pass — `MIG-01/02/03/05` Lab 3-shaped migration preservation test** |
 | WF-API-12 | AC-11/12 | **Resolve cycle 1 -> Reopen -> attempt Resolve cycle 2 with only cycle-1 Completed Action** | rejected `409 RESOLUTION_GATE_NOT_MET`; old Action remains historical but does not qualify cycle 2 | `workflow.api.test.ts` | **Pass — WF-03** |
-| WF-API-13 | AC-11/12 | Reopened cycle 2 creates/completes current-cycle Action then Resolve | succeeds; resolvedAt reset to new server time | `workflow.api.test.ts` | Planned — covered by future end-to-end cycle test |
+| WF-API-13 | AC-11/12 | Reopened cycle 2 creates/completes current-cycle Action then Resolve | succeeds; resolvedAt reset to new server time | `workflow.api.test.ts` + `e2e/lab-04/issue9-fullstack.spec.ts` | **Pass — `E2E-ISSUE9-AT-WF` full-stack cycle-2 Action and second Resolve** |
 | WF-API-14 | AC-14 | Resolved -> Closed | resolvedAt preserved so recently-resolved metric can still include it | `workflow.api.test.ts` | **Pass — WF-05** |
 
 ## 7. Requester Dashboard API Tests
@@ -312,14 +312,14 @@ These tests intentionally bypass normal UI controls.
 |---|---|---|---|---|
 | AZ4-01 | AC-01/18 | Requester POST/PATCH Action endpoints directly | `403`, no mutation | **Pass — `98b5274`** |
 | AZ4-02 | AC-08 | Requester GET another user's Actions | `404`, no Action content | **Pass — `98b5274`** |
-| AZ4-03 | AC-18 | Requester GET Staff dashboard | `403` | Planned |
-| AZ4-04 | AC-18 | Staff/Admin GET Requester dashboard | `403` under role-specific endpoint contract | Planned |
+| AZ4-03 | AC-18 | Requester GET Staff dashboard | `403` | **Pass — `SD-API-09` in `staff-dashboard.api.test.ts`** |
+| AZ4-04 | AC-18 | Staff/Admin GET Requester dashboard | `403` under role-specific endpoint contract | **Pass — `RD-API-06/07` in `requester-dashboard.api.test.ts`** |
 | AZ4-05 | AC-01/18 | No session on new protected endpoint | `401` | **Pass — `98b5274`** |
 | AZ4-06 | AC-01/18 | mustChangePassword on new normal endpoint | `403 PASSWORD_CHANGE_REQUIRED` | **Pass — `98b5274`** |
 | AZ4-07 | AC-01/18 | wrong/missing/null Origin for new write endpoints | `403`, no mutation | **Pass — `98b5274`** |
 | AZ4-08 | AC-06 | client sends/spoofs creator/performer id | rejected/ignored; backend actor wins | **Pass — `98b5274`** |
 | AZ4-09 | AC-02 | assignee role/activation changes concurrently | final Action never references ineligible assignee due to mutation race | **Pass — `98b5274`** |
-| AZ4-10 | AC-21 | Existing Internal Note Requester direct access | still `403`, no note leak | Planned |
+| AZ4-10 | AC-21 | Existing Internal Note Requester direct access | still `403`, no note leak | **Pass — `NOTE-04/05/AZ-08` in `comments-notes.api.test.ts`** |
 | AZ4-11 | AC-26 | Direct Admin deactivate/demote bypass with active Action assignment | backend returns `409`; no invalid final relation | **Pass — `98b5274`** |
 | AZ4-12 | AC-06 | Non-assignee Staff directly calls Complete endpoint | `409 ACTION_COMPLETION_REQUIRES_ASSIGNEE`; no performer spoof | **Pass — `98b5274`** |
 | AZ4-13 | AC-13 | Stale `expectedTicketVersion` on owner/priority/status/problem-resolved mutation | `409 STALE_TICKET_STATE`; no partial mutation | **Pass — `1d62aa0`** |
@@ -350,7 +350,7 @@ These tests intentionally bypass normal UI controls.
 | WF-UI-02 | AC-11 | Resolved path explains **current-cycle** resolution gate; prior-cycle Completed work does not appear as qualifying | **Pass — UI-ST-10 safe Resolution Gate feedback; current-cycle qualification is server-authoritative** |
 | WF-UI-03 | AC-12 | Requester indication visually advisory, not formal Resolved | **Pass — existing UI-ST-08** |
 | WF-UI-04 | AC-13 | stale Ticket conflict offers refresh and does not show false success | **Pass — existing UI-ST-09** |
-| WF-UI-05 | AC-12 | Reopened refresh clears advisory/resolvedAt context, starts new work cycle, preserves historical prior-cycle Actions, and re-enables Add Action | **Partial — status/resolvedAt/workflowCycle state update covered by UI-ST-11; full Add Action cycle-2 browser/E2E flow remains planned** |
+| WF-UI-05 | AC-12 | Reopened refresh clears advisory/resolvedAt context, starts new work cycle, preserves historical prior-cycle Actions, and re-enables Add Action | **Pass — UI-ST-11 plus `E2E-ISSUE9-AT-WF` in `e2e/lab-04/issue9-fullstack.spec.ts` creates and completes a cycle-2 Action before the second Resolve** |
 
 ### 11.3 Requester Dashboard — `client/tests/lab-04/RequesterDashboard.test.tsx`
 
@@ -380,13 +380,14 @@ Playwright evidence widths remain 1280x900, approximately 820x1000, and approxim
 |---|---|---|---|---|
 | V4-01 | AC-23 | Requester Dashboard at 1280/820/390 | no page horizontal overflow; cards/lists readable | **Pass — Playwright `requester-dashboard-responsive.spec.ts`** |
 | V4-02 | AC-23 | Staff Dashboard at 1280/820/390 | no clipping/overlap; lists stack safely | **Pass — Playwright real-browser test `e2e/lab-04/staff-dashboard-responsive.spec.ts` verifies 1280/820/390, grid stacking, action-button width, and no horizontal overflow** |
-| V4-03 | AC-23 | Staff Ticket Detail Actions Taken at 1280/820/390 | create/edit/read-only controls usable, long text wraps | **Pass — Playwright `ticket-detail-actions-accessibility.spec.ts` verifies rendered Staff Ticket Detail/Actions Taken, Resolution Gate, communication sections, Add Action keyboard entry, Escape and focus restore at 1280/820/390; six screenshots captured** |
+| V4-03 | AC-23 | Staff Ticket Detail Actions Taken at 1280/820/390 | create/edit/read-only controls usable, long text wraps, primary action remains within the mobile viewport | **Pass — Playwright `ticket-detail-actions-accessibility.spec.ts` verifies rendered Staff Ticket Detail/Actions Taken, Resolution Gate, communication sections, mobile Add Action visibility/horizontal bounds, long attachment-note wrapping, keyboard entry, Escape and focus restore at 1280/820/390; six screenshots captured** |
 | V4-04 | AC-23 | Requester Ticket Detail Actions Taken at 1280/820/390 | read-only Action list readable | **Pass — same Playwright spec verifies keyboard-only Ticket drill-down, read-only Actions (no mutation controls), long text and no page overflow at 1280/820/390; six screenshots captured** |
 | V4-05 | AC-23 | visible keyboard focus for Dashboard links/Action controls | focus style visible | **Pass — Playwright focuses the Requester Ticket open control and Staff Add Action control, activates by Enter, and verifies focus remains usable** |
 | V4-06 | AC-23 | modal/dialog keyboard behavior if modal is used | focus enters/traps/restores; Escape safe | **Pass — Issue #53 component regression `6d60a93` plus Issue #58 browser test verifies dialog entry, Escape close, and focus restore; modal Tab-cycle remains covered by component regression** |
 | V4-07 | AC-23 | status/priority/private/shared/terminal cues | understandable without color alone | **Pass — browser assertions verify literal `Completed` and `Outstanding` labels, Resolution Gate heading/checklist, and separate Public Comments/Internal Notes/Actions Taken sections** |
 | V4-08 | AC-23 | validation placement / first-invalid focus | adjacent errors and usable focus | **Pass in Issue #53 component regression — `6d60a93` (field-adjacent validation and first-invalid focus); Issue #58 browser audit confirms the create dialog exposes labelled controls** |
-| V4-09 | AC-23/25 | final visual inspection | no placeholder/debug/obsolete controls or broken layouts | **Partial — browser responsive/overflow checks and screenshots captured; final human visual review and real-Development-DB screenshot confirmation remain pending** |
+| V4-09 | AC-23/25 | final visual inspection | no placeholder/debug/obsolete controls or broken layouts | **Pass — final human visual review is recorded below; 16 fixture-backed screenshots were reviewed at 1280/820/390 and 12 separate live-Development-DB screenshots cover Staff, Requester, and Administrator. Live-DB inspection was desktop-only; no mobile live-DB claim is made.** |
+| V4-10 | AC-23 | mobile primary action / long attachment note | Add Action remains within the 390px viewport; attachment note wraps without horizontal overflow | **Pass — `ticket-detail-actions-accessibility.spec.ts` asserts Add Action visibility and horizontal bounds plus attachment-note visibility/internal text overflow at 1280/820/390** |
 
 ## 13. Performance-Smoke Tests
 
@@ -468,7 +469,7 @@ The first browser run exposed two test-fixture problems rather than application 
 
 ## 16. Hosted CI / Release Verification
 
-Issue 8/10 must update hosted CI so Lab 4 paths are actually checked. Final evidence must include the exact reviewed head, not only an earlier green run.
+Issue #59 updates hosted CI so Lab 4 paths are actually checked. Final evidence must include the exact reviewed head, not only an earlier green run.
 
 Required release-head gates:
 
@@ -503,7 +504,7 @@ Required release-head gates:
 | AC-20 | SEED-01..04 |
 | AC-21 | REG-01..09, E2E-REG-01 |
 | AC-22 | AT-UI-03/04/07, WF-UI-02/04, Dashboard safe-failure UI tests |
-| AC-23 | V4-01..09, responsive component tests |
+| AC-23 | V4-01..10, responsive component tests |
 | AC-24 | exact-head hosted Server/Client/E2E CI evidence |
 | AC-25 | final docs/reviewer/AI/evidence audit in Issue #59 |
 | AC-26 | AT-API-25/26, AZ4-11, Administrator User Management conflict UI regression |
@@ -518,21 +519,63 @@ These are the Lab 4 release-final gates and are intentionally **not** the Issue 
 
 | Check | Final result |
 |---|---|
-| Server unit/API/integration | Pending |
-| Client Vitest | Pending |
-| Lab 3 -> Lab 4 migration preservation/recovery | Pending |
-| Lab 4 seed idempotency | Pending |
-| Prisma validate/migrate | Pending |
-| Server build | Pending |
-| Client build | Pending |
-| Actions Taken E2E | Pending |
-| Ticket Resolution E2E | Pending |
-| Dashboard E2E | Pending |
-| Labs 1–3 regression E2E | Pending |
-| Desktop/tablet/mobile accessibility/visual QA | Pending |
-| Dashboard DB-query comparison | Pending |
-| Production dependency audits | Pending |
-| Hosted CI exact reviewed release head | Pending |
+| Server unit/API/integration | **Local Pass — 228/228 tests across 30/30 files**, isolated `toktickit_test`, single worker; 2026-11-01. Includes Lab 1–4 unit/API/integration and controlled migration/seed regressions. |
+| Client Vitest | **Local Pass — 112/112 tests across 14/14 files**, 2026-11-01. The Staff Dashboard shell test now waits for the Staff Dashboard API call before asserting the landing page. |
+| Lab 3 -> Lab 4 migration preservation/recovery | **Local Pass — 3/3 `migration-regression.test.ts` tests** inside the 228-test Server run; includes Lab 3-shaped upgrade/preservation and injected pre-COMMIT rollback. |
+| Lab 4 seed idempotency | **Local Pass — 3/3 `seed-regression.test.ts` tests** inside the 228-test Server run; verifies repeat seed, mutable state preservation, and dashboard fixture coverage. |
+| Prisma validate/migrate | **Local Pass — `prisma validate` passed; `migrate deploy` applied all 9 migrations** to isolated `toktickit_lab4_e2e`; migration regression also passed. |
+| Server build | **Local Pass — `npm run build` (TypeScript)**, 2026-11-01. |
+| Client build | **Local Pass — `npm run build` (TypeScript + Vite)**, 2026-11-01. |
+| Actions Taken E2E | **Local Pass — `E2E-ISSUE9-AT-WF`** in full-stack Playwright; real API/database create/start/complete/follow-up and cycle flow. |
+| Ticket Resolution E2E | **Local Pass — `E2E-ISSUE9-AT-WF`** verifies Resolution Gate, Resolve, Reopen, old-cycle isolation, cycle-2 Action, and second Resolve. |
+| Dashboard E2E | **Local Pass — `E2E-ISSUE9-DASH`** verifies Requester and Staff dashboard data through the real API/database. Dashboard API tests also compare returned metrics/lists with authoritative Prisma database queries. |
+| Labs 1–3 regression E2E | **Local Pass — 12 Lab 3 browser tests** included in the combined run; representative flows cover authentication, Requester, Staff, Administrator, and responsive/accessibility behavior. This is not a claim that every historical Lab 1–3 test is a browser E2E. |
+| Desktop/tablet/mobile accessibility/visual QA | **Automated Local Pass — 23/23 combined Playwright tests**, including all Lab 4 responsive specs at 1280/820/390; 16 responsive fixture screenshots, 12 live Development DB screenshots, and 4 new empty/error boundary screenshots are consolidated under `artifacts/lab-04/screenshots/`. Human visual review remains recorded under Issue #58. Live DB screenshots are desktop-only. |
+| Dashboard DB-query comparison | **Local Pass — `requester-dashboard.api.test.ts` and `staff-dashboard.api.test.ts` compare API metrics with direct PostgreSQL `COUNT(*) FILTER` aggregates, in addition to Prisma count/findMany comparisons for metrics and ordered lists. Both SQL-backed dashboard tests passed 9/9 together on the isolated test database.** |
+| Production dependency audits | **Local Pass — `npm audit --omit=dev`: 0 vulnerabilities (Server and Client)**, 2026-11-01. |
+| Hosted CI exact reviewed release head | **Pending — require a green run on the latest pushed PR #71 head after all test/documentation commits; peer approval is also pending.** |
+
+### Issue #59 integrated local verification — 1 November 2026
+
+The Issue #59 worktree is based on `lab4-staging` commit `4c1226246856a5df95f11984f063c9ff1a42d287`. Local verification used Node.js 20.20.2 and isolated Docker Compose project `toktickit-issue59-test`, with PostgreSQL exposed on `127.0.0.1:5433`. The normal Development PostgreSQL container on port `5432` was not used as a test target.
+
+| Command / gate | Result |
+|---|---|
+| `server`: `npm test -- --maxWorkers=1 --minWorkers=1` with `TEST_DATABASE_URL=toktickit_test` | **Pass — 230/230 tests, 30/30 files** |
+| `server`: `npm run build` | **Pass** |
+| `server`: `npx prisma validate` with isolated test URL | **Pass** |
+| `server`: `npx prisma migrate deploy` on `toktickit_lab4_e2e` | **Pass — all 9 migrations applied** |
+| `server`: `npx prisma db seed` on `toktickit_lab4_e2e` | **Pass — 4 active/1 inactive Requesters, 3 active/1 inactive Staff, 2 Admins, 8 Tickets, 7 Actions, 2 Public Comments, 1 Internal Note** |
+| `client`: `npm test` | **Pass — 112/112 tests, 14/14 files** |
+| `client`: `npm run build` | **Pass** |
+| `e2e`: `CAPTURE_EVIDENCE=1 npm run test:lab4` with `E2E_DATABASE_URL=toktickit_lab4_e2e` and SeaweedFS filer | **Pass — 23/23 tests** (12 Lab 3 regression + 11 Lab 4 full-stack/responsive/boundary); generated 16 responsive fixture and 4 empty/error screenshots |
+| E2E database guard negative path | **Pass — rejected both a non-test database name and an E2E URL resolving to the configured Development database.** The comparison is active only when `TOKTICKIT_DEVELOPMENT_DATABASE_URL` is supplied; local runners must set it to their actual Development DB URL, and CI supplies the reserved default Development DB identity while using only the dedicated E2E database. |
+| `server` and `client`: `npm audit --omit=dev` | **Pass — 0 vulnerabilities in each production dependency tree** |
+| `git diff --check` | **Pass** at the Issue #59 audit checkpoint |
+
+The first Client full-suite run exposed a timing-sensitive assertion in `AuthenticatedShell.test.tsx`: the IT Staff test checked the Dashboard heading immediately after navigation appeared, before the Staff Dashboard request was observed. The test was aligned with the Administrator test by waiting for `getStaffDashboard` before asserting the heading. The focused shell suite then passed 8/8 and the full Client suite passed 112/112. No application runtime behavior was changed for this test correction.
+
+The CI Server test step now uses the same single-worker arguments as the verified local run (`--maxWorkers=1 --minWorkers=1`) because the integration suite shares database fixtures across files. This avoids the parallel cross-file fixture races seen in local verification and keeps hosted CI aligned with the passing command.
+
+The dashboard metric verification was strengthened with parameterized PostgreSQL aggregate queries (`COUNT(*) FILTER`) in the Requester and Staff Dashboard API tests. The API responses are compared directly to these SQL results, while the same tests also compare ordered top lists against independent Prisma `findMany` queries. The focused SQL-backed dashboard suite passed 9/9 tests.
+
+The Issue #59 traceability audit also found several rows still marked Planned even though the corresponding follow-up lifecycle, migration, dashboard, and cycle-2 E2E tests already existed. Those rows are now linked to their actual test names. Two genuinely missing workflow race cases were added: concurrent valid Ticket transitions from one version, and Resolve racing with Action creation, Owner change, or IT Priority change. The focused workflow suite passed 13/13, and the complete Server suite was rerun successfully at 230/230 tests across 30/30 files.
+
+The combined Playwright run exercised the Lab 3 regression specs and Lab 4 Actions/Resolution Gate/Dashboard/responsive specs against the dedicated E2E database. Playwright created test users and Tickets only in that disposable database. The run did not use the Development database.
+
+### Issue #59 final screenshot collection
+
+The original 28 Issue #58 screenshots were copied into the Issue #59 submission folder without changing or deleting the originals. The four role-specific Dashboard boundary screenshots were newly captured by the browser during the 23-test combined run with `CAPTURE_EVIDENCE=1`.
+
+All 32 final evidence images are under `artifacts/lab-04/screenshots/`:
+
+- 16 responsive fixture screenshots: Administrator workspace (4), Requester Dashboard (3), Staff Dashboard (3), Requester Ticket Detail/Actions Taken (3), Staff Ticket Detail/Actions Taken (3).
+- 12 live Development DB screenshots: Staff (3), Requester (5), Administrator (4). These are read-only desktop captures and remain distinct from fixture screenshots.
+- 4 boundary screenshots: Requester Dashboard empty/error and Staff Dashboard empty/error states (`EV-01`–`EV-04`).
+
+The original Issue #58 evidence remains unchanged under `artifacts/lab-04/issue-58/` for PR #70 traceability.
+
+**Still pending:** exact-head hosted GitHub Actions CI and peer review on the latest Issue #59 PR head; final Project-board evidence; and the separate reviewed `lab4-staging -> main` Release PR. These items must remain pending until their own evidence exists.
 ## Issue #58 — Administrator Workspace / User Summary Verification
 
 | Test ID | Area | Verification | Current result |
@@ -560,7 +603,7 @@ $env:CAPTURE_EVIDENCE='1'
 npx playwright test --config playwright.lab4-ui.config.ts lab-04/admin-workspace-responsive.spec.ts lab-04/requester-dashboard-responsive.spec.ts lab-04/staff-dashboard-responsive.spec.ts lab-04/ticket-detail-actions-accessibility.spec.ts
 ```
 
-Result: **5 passed (11.4s)** on local feature branch `feature/issue-58-accessibility-responsive-visual-qa`. The screenshots are real browser renders of the current React application using deterministic Playwright API fixtures. They are valid for layout/interaction regression, but **they are not live-Development-DB evidence and must not be represented as real database records**. Final human visual review and confirmation against real seeded Development data remain separate checks.
+Result: **5 passed (11.4s)** on local feature branch `feature/issue-58-accessibility-responsive-visual-qa`. The screenshots are real browser renders of the current React application using deterministic Playwright API fixtures. They are valid for layout/interaction regression, but **they are not live-Development-DB evidence and must not be represented as real database records**. The separate final human visual review and live-Development-DB confirmation are recorded in the later Issue #58 QA sections.
 
 Captured files under `artifacts/lab-04/issue-58/`:
 

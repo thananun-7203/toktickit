@@ -1,6 +1,6 @@
 # TokTickIT — IT Service Desk
 
-TokTickIT is a full-stack IT service request application. Lab 2 delivered the requester-facing ticketing MVP and Zen Green UI foundation. Lab 3 extends it with real authentication, Requester session ownership, IT Staff queue/operations, Public Comments versus Internal Notes, Administrator User Management, migration/regression protection, and full role-based E2E/security verification.
+TokTickIT is a full-stack IT service request application. Lab 2 delivered the requester-facing ticketing MVP and Zen Green UI foundation. Lab 3 added authenticated Requester ownership, IT Staff operations, Public Comments versus Internal Notes, and Administrator User Management. Lab 4 adds Actions Taken, follow-up/Resolution Gate workflow, Staff and Requester Dashboards, Administrator account summaries, and expanded security, regression, responsive, accessibility, and visual verification.
 
 ## Tech Stack
 
@@ -20,15 +20,20 @@ toktickit/
 │   ├── prisma/                     # schema, migrations, seed
 │   ├── src/
 │   ├── tests/lab-02/
-│   └── tests/lab-03/
+│   ├── tests/lab-03/
+│   └── tests/lab-04/
 ├── e2e/
 │   ├── lab-02/                     # historical Lab 2 Playwright flow
-│   └── lab-03/                     # Lab 3 Auth/Requester/Staff/Admin E2E + visual QA
+│   ├── lab-03/                     # Lab 3 Auth/Requester/Staff/Admin E2E
+│   └── lab-04/                     # Lab 3 regression + Lab 4 full-stack E2E and UI QA
 ├── docs/lab-02/                    # historical Lab 2 documentation/evidence
 ├── docs/lab-03/                    # Lab 3 spec, API/UI/test/review/AI/evidence docs
+├── docs/lab-04/                    # Lab 4 spec, API/UI/test/review/AI/evidence docs
 ├── artifacts/lab-02/screenshots/   # historical Lab 2 visual evidence
 ├── artifacts/lab-03/screenshots/   # final Lab 3 visual evidence
-├── .github/workflows/ci.yml        # server/client/Lab 3 E2E CI
+├── artifacts/lab-04/screenshots/   # consolidated Lab 4 final evidence: responsive, live DB, empty/error states
+├── artifacts/lab-04/issue-58/      # Lab 4 responsive fixture + live-DB QA screenshots
+├── .github/workflows/ci.yml        # server/client/Lab 3 regression + Lab 4 full-stack E2E CI
 ├── compose.lab2.yml                # PostgreSQL + SeaweedFS
 └── README.md
 ```
@@ -39,7 +44,7 @@ toktickit/
 - Git
 - Docker Desktop (recommended for PostgreSQL + SeaweedFS)
 
-## Recommended Lab 2 Local Setup
+## Local Setup (Labs 2–4)
 
 ### 1. Start PostgreSQL and SeaweedFS
 
@@ -127,25 +132,51 @@ Lab 3 adds real `User` accounts and DB-backed sessions. The seed creates local-o
 | IT Staff | `narin.staff@toktick.it` | `StaffInit123` |
 | Administrator | `admin.one@toktick.it` | `AdminInit123` |
 
-The database stores only bcrypt hashes, never these plaintext values. Additional seeded users of the same role use the same local initial password for course testing. The Lab 2 `X-Dev-Requester-Id` compatibility path remains temporarily available during Lab 3 Issue 2 and is removed from the normal workflow in Issue 3.
+The database stores only bcrypt hashes, never these plaintext values. Additional seeded users of the same role use the same local initial password for course testing. Current Requester ownership is derived from the authenticated server session; the historical Lab 2 `X-Dev-Requester-Id` identity path is not part of the current workflow.
+
+## Lab 4 Features
+
+- **Actions Taken:** Staff/Admin create, edit, reassign, start, complete, and cancel Actions; Requesters see a read-only Action history.
+- **Follow-up and Resolution Gate:** current-workflow-cycle Action and follow-up requirements are enforced by the backend and reflected in Ticket Detail.
+- **Dashboards:** IT Staff/Administrator use the operational Staff Dashboard; Requesters receive an ownership-protected Requester Dashboard.
+- **Administrator summary:** User Management displays database-derived total/per-role counts independently of visible list filters.
+- **Evidence:** final submission screenshots are consolidated under `artifacts/lab-04/screenshots/`; the original Issue #58 source screenshots remain preserved under `artifacts/lab-04/issue-58/`. Fixture, live Development DB, and empty/error boundary screenshots are distinguished in `docs/lab-04/tests.md` and `docs/lab-04/evidence.md`.
 
 ## Running Tests
 
 ### Server unit/API regression
 
-Server tests are deliberately blocked from using the normal development database. Configure a separate test target in `server/.env` (see `.env.example`):
+Server tests are deliberately blocked from using the normal development database. Use a disposable PostgreSQL database whose name contains `test`. The example below uses a separate Compose project on port `5434`; the normal local Compose setup above uses port `5433`. Start the test service and create the test databases once:
 
 ```env
-TEST_DATABASE_URL="postgresql://toktickit:toktickit@localhost:5435/toktickit_test?schema=public"
+TEST_DATABASE_URL="postgresql://toktickit:toktickit@localhost:5434/toktickit_test?schema=public"
 ```
 
-`npm test` fails before Prisma opens a connection when `TEST_DATABASE_URL` is missing, its database name does not contain `test`, or it resolves to the same database/schema as `DATABASE_URL`. Migrate and seed that isolated test database before running the DB-backed suite.
+```powershell
+# Use a separate Compose project/volume so the test services do not reuse
+# the normal Development PostgreSQL container or its data volume.
+$env:TOKTICKIT_POSTGRES_PORT = "5434"
+docker compose -p toktickit-test -f compose.lab2.yml up -d --wait
+docker compose -p toktickit-test -f compose.lab2.yml exec -T postgres createdb -U toktickit toktickit_test
+docker compose -p toktickit-test -f compose.lab2.yml exec -T postgres createdb -U toktickit toktickit_lab4_e2e
+```
 
-```bash
+`npm test` fails before Prisma opens a connection when `TEST_DATABASE_URL` is missing, its database name does not contain `test`, or it resolves to the same database/schema as `DATABASE_URL`. Apply migrations and seed only the disposable test database before running the DB-backed suite. PowerShell example:
+
+```powershell
 cd server
-npm test
-npm run build
+$env:TEST_DATABASE_URL = "postgresql://toktickit:toktickit@localhost:5434/toktickit_test?schema=public"
+# Set this to the actual normal Development DATABASE_URL used on your machine.
+$env:TOKTICKIT_DEVELOPMENT_DATABASE_URL = "postgresql://toktickit:toktickit@localhost:5433/toktickit?schema=public"
+$env:DATABASE_URL = $env:TEST_DATABASE_URL
+npx prisma migrate deploy
+npx prisma db seed
 npx prisma validate
+Remove-Item Env:DATABASE_URL
+npm test -- --maxWorkers=1 --minWorkers=1
+npm run build
+Remove-Item Env:TEST_DATABASE_URL
+Remove-Item Env:TOKTICKIT_DEVELOPMENT_DATABASE_URL
 ```
 
 ### Client UI regression
@@ -166,7 +197,7 @@ npm install
 npx playwright install chromium
 ```
 
-The current Lab 3 Playwright configuration starts its own server on port `3001` and client on `5174`, but it expects a **fresh migrated/seeded E2E PostgreSQL database** and SeaweedFS to already be available. The E2E database must be separate from the normal development database because the flow changes seeded Requester passwords and creates test Tickets.
+The Lab 3 and Lab 4 full-stack Playwright configurations start their own API on port `3001` and client on `5174`, but expect a **separate migrated/seeded E2E PostgreSQL database** and SeaweedFS to be available. The E2E database must not be the normal Development database because the flows change seeded Requester passwords and create test Tickets and Actions.
 
 Run:
 
@@ -174,16 +205,32 @@ Run:
 npm test
 ```
 
-`npm test` runs the current Lab 3 suite through `playwright.lab3.config.ts`. The historical Lab 2 Playwright flow remains available explicitly as `npm run test:lab2` and is not the current default.
+`npm test` / `npm run test:lab3` run the Lab 3 suite through `playwright.lab3.config.ts`. `npm run test:lab4` runs the full-stack configuration containing both Lab 3 regression specs and all Lab 4 E2E/UI specs. The historical Lab 2 Playwright flow remains available explicitly as `npm run test:lab2`.
 
-Set `E2E_DATABASE_URL` to the fresh E2E database before running Playwright. Example PowerShell:
+The same isolated Compose project can host both disposable databases. Create each database only once; do not use `docker compose down -v`, because that deletes the project's persistent test volume. Example PowerShell (the database name must include `test`, `tests`, or `e2e`):
 
 ```powershell
-$env:E2E_DATABASE_URL="postgresql://toktickit:toktickit@127.0.0.1:5440/toktickit_issue7_e2e?schema=public"
-npm test
+# Run this once if the disposable E2E database has not been created yet.
+docker compose -p toktickit-test -f compose.lab2.yml exec -T postgres createdb -U toktickit toktickit_lab4_e2e
+$env:E2E_DATABASE_URL="postgresql://toktickit:toktickit@127.0.0.1:5434/toktickit_lab4_e2e?schema=public"
+$env:SEAWEEDFS_FILER_URL="http://127.0.0.1:8888"
+# Set this to the actual normal Development DATABASE_URL used on your machine.
+$env:TOKTICKIT_DEVELOPMENT_DATABASE_URL="postgresql://toktickit:toktickit@127.0.0.1:5433/toktickit?schema=public"
+cd server
+$env:DATABASE_URL=$env:E2E_DATABASE_URL
+npx prisma migrate deploy
+npx prisma db seed
+Remove-Item Env:DATABASE_URL
+cd ../e2e
+npm run test:lab4
+Remove-Item Env:E2E_DATABASE_URL
+Remove-Item Env:SEAWEEDFS_FILER_URL
+Remove-Item Env:TOKTICKIT_DEVELOPMENT_DATABASE_URL
 ```
 
-Lab 3 Playwright intentionally has no database fallback. If `E2E_DATABASE_URL` is missing, the suite fails before starting its web servers so it cannot silently reuse an older or development database.
+For the server regression, set `TEST_DATABASE_URL` to `toktickit_test`, set `DATABASE_URL` to that same isolated test URL only while applying migrations/seeding, remove `DATABASE_URL`, then run `npm test -- --maxWorkers=1 --minWorkers=1`. This keeps the test runner's explicit target guard active. The normal Development service remains separate on its own configured port/Compose project.
+
+Playwright intentionally has no database fallback. The E2E guard requires a database name containing a test/e2e marker and rejects a target matching `TOKTICKIT_DEVELOPMENT_DATABASE_URL`. **Always set `TOKTICKIT_DEVELOPMENT_DATABASE_URL` to the actual Development DB URL before running Playwright locally**; without it, the guard cannot compare the E2E target against Development. CI supplies the repository's reserved default Development DB identity for this comparison while creating and using only the dedicated E2E database. If `E2E_DATABASE_URL` is missing or unsafe, the suite fails before starting its web servers.
 
 ## Lab 2 Documentation
 
@@ -205,11 +252,24 @@ Lab 3 Playwright intentionally has no database fallback. If `E2E_DATABASE_URL` i
 - `docs/lab-03/ai-use.md` — GPT-5.6 Sol prompt selection, assistance log, debugging example, and reflection
 - `docs/lab-03/evidence.md` — final Answer Part 1–9 evidence index and screenshot mapping
 
+## Lab 4 Documentation
+
+- `docs/lab-04/specification.md` — approved Sprint 4 scope, business rules, acceptance criteria, and decisions
+- `docs/lab-04/api-spec.md` — Actions Taken, Dashboard, authorization, conflict, and workflow API contract
+- `docs/lab-04/ui-spec.md` — Actions Taken, Staff/Requester Dashboards, Administrator workspace, and responsive/accessibility contract
+- `docs/lab-04/tests.md` — test plan, acceptance traceability, actual feature evidence, and release-final gates
+- `docs/lab-04/reviewer.md` — peer-review history for Lab 4 PRs and final release-review record
+- `docs/lab-04/ai-use.md` — actual selected prompts, assistance log, verification corrections, and student reflection
+- `docs/lab-04/evidence.md` — Answer Part 1–9 evidence index and final PDF readiness map
+
 ## Git Workflow
 
 - `main` — stable/released code
 - `lab2-staging` — historical Lab 2 integration branch
 - `lab3-staging` — Lab 3 integration/release-candidate branch
+- `lab4-staging` — Lab 4 integration/release-candidate branch
 - `feature/<issue>-...` — one feature branch per GitHub Issue
 
-Lab 3 feature branches are peer-reviewed through PRs into `lab3-staging`. Issues #33–#39 and PRs #41–#47 contain the implemented Sprint 3 increment. Issue #40 performs the final evidence/release-readiness audit. The final release remains a separate reviewed PR from `lab3-staging` to `main`; it must not be merged until Issue #40 is approved and the student explicitly authorizes the release merge.
+Lab 3 feature branches are peer-reviewed through PRs into `lab3-staging`. Issues #33–#39 and PRs #41–#47 contain the implemented Sprint 3 increment; Issue #40 performs its final evidence/release-readiness audit.
+
+Lab 4 feature branches are peer-reviewed through PRs into `lab4-staging`. The implemented feature increments are tracked by Issues #50–#58 and PRs #60–#70. Issue #67 is the inserted Resolution Gate issue and is implemented by PR #68; PR numbers must not be mistaken for Issue numbers. Issue #59 performs the final evidence/release-readiness audit through PR #71, which is currently open for peer review. The final release is a separate reviewed PR from `lab4-staging` to `main`; it must not be merged until release evidence and exact-head CI/review gates are complete.

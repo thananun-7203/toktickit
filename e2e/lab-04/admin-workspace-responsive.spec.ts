@@ -3,7 +3,7 @@ import { mkdir } from "node:fs/promises";
 import path from "node:path";
 
 const CAPTURE_EVIDENCE = process.env.CAPTURE_EVIDENCE === "1";
-const EVIDENCE_DIR = path.resolve("../artifacts/lab-04/issue-58");
+const EVIDENCE_DIR = path.resolve("../artifacts/lab-04/screenshots");
 
 const adminUser = {
   id: 401,

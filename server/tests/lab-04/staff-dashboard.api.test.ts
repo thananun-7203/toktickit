@@ -248,6 +248,22 @@ describe("Lab 4 Staff Dashboard API", () => {
     expect(response.body.metrics.unassignedActiveTickets).toBe(expectedUnassigned);
     expect(response.body.metrics.myActiveTickets).toBe(expectedMine);
 
+    // Independently verify the public API metrics against PostgreSQL aggregates,
+    // rather than relying only on another Prisma model query.
+    const [sqlMetrics] = await prisma.$queryRaw<Array<{ unassignedActiveTickets: number; myActiveTickets: number }>>`
+      SELECT
+        COUNT(*) FILTER (
+          WHERE status IN ('New', 'Open', 'In Progress', 'Waiting for Requester', 'Reopened')
+            AND "ownerId" IS NULL
+        )::int AS "unassignedActiveTickets",
+        COUNT(*) FILTER (
+          WHERE status IN ('New', 'Open', 'In Progress', 'Waiting for Requester', 'Reopened')
+            AND "ownerId" = ${staffId}
+        )::int AS "myActiveTickets"
+      FROM "Ticket"
+    `;
+    expect(response.body.metrics).toMatchObject(sqlMetrics);
+
     for (const status of ALL_STATUSES) {
       const expected = await prisma.ticket.count({ where: { status } });
       expect(response.body.metrics.byStatus[status]).toBe(expected);

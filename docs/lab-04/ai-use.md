@@ -1,146 +1,31 @@
-# Lab 4 — AI Use and Reflection
+# Lab 4 AI Use — TokTickIT
 
-## 1. AI Tool Used
+This record summarizes how AI assistance was used during the TokTickIT Lab 4 work. The summaries below describe the main prompts and tasks; they are not presented as verbatim transcripts.
 
-- **Model:** GPT-5.6 Sol in ChatGPT.
-- **Primary role in Sprint 4 so far:** specification agent, repository reconnaissance assistant, mockup/UI implementation assistant, and implementation/test assistant for the approved data/API/UI increments.
-- **Repository interaction:** ComGu Core was used to inspect the real `C:\toktickit` repository, create/push Lab 4 feature branches, read source/tests/docs, implement Issues #51–#53, run isolated PostgreSQL verification, and maintain evidence records. ComGu Desktop/temporary browser harnesses were used for observable visual QA without committing authentication bypasses or QA-only files.
+## Models and tools
 
-This record includes only assistance that actually occurred. Later coding/debugging/review prompts must be appended from real Sprint 4 work rather than predicted in advance.
+- **Models:** ChatGPT (GPT-6) and Gemini Pro.
+- **Development and repository tools:** ComGu Core and ComGu Desktop were used to inspect and work with the local repository. Git and GitHub were used to manage branches, Issues, Pull Requests, reviews, and CI evidence.
+- **Verification tools:** Playwright, the project test/build commands, Prisma, and isolated PostgreSQL test databases were used to verify implementation and regression behavior. Development database data was treated as protected and was not used for test writes.
+- AI-generated suggestions and code were treated as proposals. Repository state, test output, CI results, and reviewer feedback were checked before recording a result as verified.
 
-## 2. Selected Key Prompts Used So Far
+## Selected key prompts (10)
 
-The final submission requires 6–10 selected key prompts. The following are real prompts from Sprint 4 planning/Issue #50 work and may be refined to the strongest 6–10 examples before release.
+| # | Prompt (summarised) | What I did with the result |
+| - | --- | --- |
+| 1 | "อ่านและทำความเข้าใจโจทย์ Lab 4 แล้ววางแผนการทำงานทั้งหมดอย่างละเอียด" — วิเคราะห์ข้อกำหนดและแบ่งงานออกเป็น Issues พร้อมวางลำดับการทำงาน | ใช้แผนเป็นกรอบจัดลำดับงานของ Sprint 4 และตรวจสอบว่างานแต่ละ Issue มีขอบเขตและเป้าหมายชัดเจน |
+| 2 | "ตรวจสอบ Lab 3 baseline และ Git history ก่อนเริ่มทำ Lab 4" — สำรวจโค้ด โครงสร้างฐานข้อมูล API, Auth, UI และ tests ที่มีอยู่ | ใช้ข้อมูลจาก repository จริงเพื่อให้การออกแบบ Lab 4 ต่อเนื่องกับระบบเดิม ไม่สร้างกฎหรือรูปแบบใหม่ที่ขัดแย้งกับ Lab 3 |
+| 3 | "เตรียม `lab4-staging` และสร้าง Issues ตามแผนก่อน โดยยังไม่เริ่มพัฒนา" — แยกการเตรียมงานออกจากการลงมือ implement | ตรวจสอบ branch, Issues และ baseline ก่อนเริ่มแต่ละงาน โดยไม่ให้ AI ข้ามขั้นตอนที่ยังไม่ได้รับอนุญาต |
+| 4 | "วางแผน Issue โดยเชื่อม Acceptance Criteria, Definition of Done, tests และ evidence ก่อนเขียนโค้ด" — กำหนดขอบเขตและวิธีตรวจสอบผลลัพธ์ | ใช้แผนเป็น checklist ระหว่างพัฒนาและตรวจสอบว่างานที่ทำตอบโจทย์และมีหลักฐานรองรับ |
+| 5 | "ทำ mockup สำหรับหน้าจอที่เกี่ยวข้อง โดยคงโครงสร้างและธีมเดิมของ TokTickIT แล้วรอให้ตรวจสอบก่อน implement" — เตรียม UI สำหรับตรวจทั้ง Desktop และ Mobile | ตรวจ mockup กับหน้าตาและรูปแบบเดิมของระบบก่อนอนุมัติให้เริ่มพัฒนา ลดความเสี่ยงจากการเปลี่ยน UX โดยไม่จำเป็น |
+| 6 | "ดำเนินการตาม Issue และ contract ที่อนุมัติ พร้อมตรวจ backend, frontend และ tests ที่เกี่ยวข้อง" — พัฒนางานตามขอบเขตของแต่ละ Issue | ใช้ AI ช่วย implement และเพิ่ม regression tests โดยตรวจผลกับ contract และพฤติกรรมเดิมของระบบ ไม่พิจารณาเฉพาะกรณีที่ทำงานสำเร็จ |
+| 7 | "ตรวจสอบผล tests, E2E, CI และหลักฐาน โดยแยกสิ่งที่ผ่านจริงออกจากสิ่งที่ยังไม่ยืนยัน" — ตรวจความน่าเชื่อถือของผลทดสอบและเอกสาร | ใช้ผลตรวจสอบแก้ไข test หรือ evidence ที่ไม่ครบถ้วน และไม่กล่าวอ้างว่า test หรือ release gate ผ่านหากไม่มีผลยืนยัน |
+| 8 | "วิเคราะห์ Review จาก Tanaboonnnnn แล้วแก้ไขตามข้อเสนอแนะ โดยหยุดรอก่อน Commit, Push หรือขอ Review รอบใหม่" — ประเมิน feedback เทียบกับ specification และหลักฐาน | ใช้ review comments เป็นรายการตรวจสอบและแก้ไข พร้อมรักษา Human Checkpoint ให้ฉันตรวจการเปลี่ยนแปลงก่อนทำ GitHub side effects สำคัญ |
+| 9 | "ตรวจสอบการทำงานของ Lab 4 E2E บนฐานข้อมูลทดสอบที่แยกจาก Development DB และยืนยันว่า test guard ป้องกันการเขียนข้อมูลผิดฐาน" — ตรวจการตั้งค่า PostgreSQL สำหรับ E2E, migration, seed และการทำงานของ database guard | ใช้ผลทดสอบกับฐานข้อมูล E2E ที่แยกไว้เพื่อยืนยัน regression โดยไม่เขียนหรือ reset ข้อมูลใน Development DB และบันทึกเฉพาะจำนวน test ที่รันผ่านจริง |
+| 10 | "ปรับ `evidence.md` และ `reviewer.md` ของ Lab 4 ให้มีโครงสร้างและระดับรายละเอียดตามตัวอย่าง Lab 3 โดยใช้เฉพาะหลักฐานที่ตรวจสอบได้" — จัดหมวดหลักฐานและบันทึก Peer Review โดยระบุ Tanaboonnnnn เป็น reviewer เพียงคนเดียว | ใช้รูปแบบ Lab 3 เป็นแนวทางในการจัดเอกสาร แต่คงสถานะ PR/CI ตามข้อเท็จจริง แยกงานที่ยังรอออกจากงานที่เสร็จแล้ว และไม่สร้างหลักฐานหรือผล Review ขึ้นเอง |
 
-### Prompt 1 — Read the Lab 4 handout and plan the work
+## Reflection
 
-> "อ่านทำความเข้าใจไฟล์ PDF นี้อย่างละเอียดและบอกแผนการทำงานมาให้ฉันดูอย่างละเอียดที"
+ในการใช้ AI มาช่วยเขียน Spec.md จะมีประโยชน์สูงสุดก็ต่อเมื่อเราตีกรอบให้มันทำงานโดยอ้างอิงจาก 2 แหล่งข้อมูลไปพร้อมๆกัน คือโจทย์ของ Lab 4 และโค้ด Lab 3 ที่ใช้งานอยู่ เพราะถ้าปล่อยให้มันอ่านแค่โจทย์ใหม่อย่างเดียว มันมีโอกาสสูงมากที่จะไปตั้งกฎที่ขัดแย้งกับของเดิม ทั้งเรื่อง Ownership, Auth, ระบบ Comment, ไฟล์แนบ หรือพฤติกรรมของ Response ต่างๆ ดังนั้น การให้ AI เข้าไปเช็กโค้ดใน Repo ก่อน จะช่วยให้ Contract ของ Sprint 4 ออกมาในรูปแบบที่ไปทางเดียวกันและใช้งานได้จริงมากขึ้น และะในส่วนของพวก API, Migration หรือ UI ที่มันเสนอมา ก็สามารถจับเอา Pattern เดิมที่เรามีอยู่แล้วไปใช้ซ้ำได้เลย ไม่ต้องมานั่งออกแบบระบบใหม่ให้ซ้ำซ้อน
 
-**Use:** Asked the specification agent to ground Sprint planning in the actual Lab 4 handout before implementation.
-
-### Prompt 2 — Confirm the staging/release workflow
-
-> "lab4-staging → main แลปอื่นๆก็เริ่มจากแบบนี้ใช่มั้ย"
-
-**Use:** Triggered a clarification of start-vs-release branch flow and comparison with Labs 2–3 rather than inventing a new Git process.
-
-### Prompt 3 — Choose an appropriate Issue decomposition
-
-> "ถ้าอยากให้แบ่งให้เหมาะสมที่สุดคุณคิดว่าควรแบ่งกี่ issue"
-
-**Use:** Led to a 10-Issue Sprint plan that separates database/migration, API/authorization, UI, workflow, two dashboards, regression/E2E, accessibility/visual QA, and final release evidence.
-
-### Prompt 4 — Prepare Lab 4 staging and Issues only
-
-> "โอเคงั้น ขั้นแรกสุดที่อยากให้คุณทำตอนนี้คือเตรียม `lab4-staging` และสร้าง 10 Issues ก่อนตามที่คุณบอกมา แต่อย่าพึ่งเริ่มทำ Issue 1 นะ"
-
-**Use:** Constrained the coding agent to initialization only and prevented premature feature work.
-
-### Prompt 5 — Verify the previous-lab baseline workflow
-
-> "ฉันมีคำถาม ตอนที่เราเริ่มทำแลป 3 เราก็ใช้ `main` ที่รวม Lab 2 เสร็จแล้วเป็น baseline มาทำหรอ ตรวจสอบให้หน่อย"
-
-**Use:** Required verification from real Git history before treating the Lab 4 baseline approach as established practice.
-
-### Prompt 6 — Begin Issue #50 with reconnaissance first
-
-> "เริ่มทำ Issue #50 ตั้งแต่สร้าง feature branch แล้วสำรวจ Lab 3 baseline ก่อนเขียนเอกสาร อย่างละเอียดได้เลย"
-
-**Use:** Caused the agent to create `feature/1-sprint4-engineering-contract`, inspect the real Lab 3 docs/schema/backend/frontend/tests/CI, and avoid writing the Sprint 4 contract until the baseline was understood.
-
-### Prompt 7 — Draft the contract but stop before commit/PR
-
-> "เริ่มทำขั้นต่อไปได้เลย และรอฉันตรวจสอบก่อนค่อยคอมมิดและเปิด PR"
-
-**Use:** Authorized drafting of `docs/lab-04/*` while preserving a human review checkpoint before irreversible Git/PR workflow actions.
-
-### Prompt 8 — Implement Issue #51 data foundation
-
-> "โอเคงั้นลงมือทำ Issue #51 — Actions Taken Data Model, Migration & Seed ตามแผนที่วางไว้ได้เลย"
-
-**Use:** Authorized the coding agent to branch from the reviewed `lab4-staging` baseline, implement the approved Prisma model/migration/seed foundation, add migration/rollback/seed regression tests, and verify the change only against a disposable PostgreSQL test database before opening a PR.
-
-### Prompt 9 — Implement Issue #52 Actions API and authorization
-
-> "โอเคลงมือทำตามแผนได้เลย"
-
-**Use:** Authorized implementation of the previously reviewed Issue #52 plan: Actions Taken GET/create/edit/status endpoints, backend-only authorization, idempotency, optimistic concurrency, assignee eligibility races, targeted API/security tests, disposable-PostgreSQL verification, full regression, and PR preparation while keeping Issue #53 UI out of scope.
-
-### Prompt 10 — Approve desktop/mobile mockups and implement Issue #53 without opening a PR
-
-> "โอเค mockup ผ่านทั้งคอมและมือถือแล้ว ลงมือทำได้เลย แต่อย่าพึ่งเปิด PR นะ"
-
-**Use:** Preserved a human UI checkpoint before coding. After both mockups were approved, the AI implemented the Actions Taken Ticket Detail UI on a dedicated branch, but stopped before PR creation exactly as requested.
-
-## 3. How AI Was Used in Issue #50
-
-### Specification Agent Work
-
-The AI was used to:
-
-- read the complete 11-page Lab 4 handout and keep its terminology/scope as the source of truth;
-- compare the handout with the released Lab 3 contract and actual implementation;
-- identify decisions the handout intentionally leaves to the student, including Action lifecycle/assignment, automatic performer semantics, dashboard calculations, migration strategy, concurrency handling, and resolution gate;
-- draft numbered Functional Requirements, Business Rules, Acceptance Criteria, API contracts, UI states, database decisions, test traceability, and Product Definition of Done;
-- preserve explicit out-of-scope items rather than expanding the product; and
-- maintain a human approval checkpoint before commit/PR.
-
-### Repository / Verification Work
-
-The AI inspected the actual repository rather than reasoning only from the handout. Important findings included:
-
-- the Lab 3 release baseline is commit `6c9c2f7`;
-- current Ticket status transition logic exists on both backend and UI and backend must remain authoritative;
-- owner assignment already has strong transactional/stale-state protections;
-- Actions Taken does not exist in the current Prisma schema;
-- Dashboard screens/routes do not yet exist in the React shell;
-- the current CI workflow still names Lab 2/Lab 3 branches and will need a later Lab 4 update;
-- client regression/build and safe server unit/build/Prisma checks were run where possible without risking the development database.
-
-## 4. Human Decisions / Guardrails
-
-The student retained control over:
-
-- choosing the 10-Issue decomposition;
-- requiring the same staged Git workflow as earlier labs;
-- requiring repository inspection before document drafting;
-- preventing the AI from committing/opening a PR before manual review;
-- approving/rejecting the proposed Sprint 4 engineering decisions before they become a committed contract; and
-- later deciding whether peer-review requested changes should modify the contract.
-
-## 4.1 Issue #51 Implementation Use
-
-For Issue #51, the AI was used to translate the approved contract into the real Prisma/PostgreSQL increment, while keeping API/UI work out of scope. It inspected the existing migration/seed conventions, added the Action Taken relations and Ticket concurrency fields, wrote an additive transaction-wrapped migration, extended seed data without resetting mutable rows, and added tests that reconstruct a Lab 3-shaped schema before applying the Lab 4 migration.
-
-One generated test-harness detail required correction during verification: JavaScript replacement-string handling converted PostgreSQL `DO $$` delimiters unexpectedly in the forced-rollback test. The implementation migration itself had already applied successfully; the harness was changed to a replacement callback, then the targeted tests passed **5/5** and the full Server regression passed **170/170** on the disposable test database. This is retained as an example of why generated test code was executed and corrected rather than assumed correct.
-
-## 4.2 Issue #52 Implementation Use
-
-For Issue #52, the AI mapped the approved API contract onto the existing Lab 3 authentication/Origin/RBAC and serializable-locking patterns rather than inventing a parallel security layer. It implemented Requester-owned read visibility, Staff/Admin write endpoints, server-authoritative creator/performer/canceller identity, per-Ticket create idempotency, Action/Ticket version conflicts, assignee eligibility locking, and the Admin invariant that a user with active assigned Actions cannot be deactivated or demoted until reassignment.
-
-Verification again changed the implementation process rather than merely confirming generated code. During a scope audit, the AI temporarily removed a serializable retry helper from the existing Staff owner flow because it looked unrelated to Actions Taken. The directly affected Lab 3 regression then produced `409` for a normal Claim that should remain `200` under concurrent database load. The helper was restored with explicit Claim revalidation, after which the affected five-file suite passed **56/56** and the final full Server suite passed **191/191**. This correction is recorded because it demonstrates that scope reduction must still preserve established concurrency behavior.
-
-The first peer review of PR #62 then found two implementation gaps against the already-approved contract. First, idempotency compared a retry with the Action's **current mutable fields**, which would incorrectly reject an original lost-response retry after a later edit/reassignment. Second, existing Owner/IT Priority mutations had not yet joined the parent `Ticket.version` protocol even though the contract also requires Status and Requester resolution-indication writes to participate. After human authorization to fix the review, the AI added immutable original-create fingerprint storage, extended the Ticket-version token across all four existing workflow-affecting mutation paths, updated existing clients to carry the token without changing visual UX, and added migration/concurrency regressions. The targeted review-fix suite passed **81/81**, full Server regression passed **196/196**, and Client regression remained **76/76** on disposable PostgreSQL-backed verification.
-
-## 4.3 Issue #53 UI / Mockup / Verification Use
-
-For Issue #53, the AI first produced Actions Taken desktop/mobile mockups and revised them after the student compared them with the existing TokTickIT Sign-in and Ticket Queue Zen Green theme. The mockup was also corrected against the Lab 4 contract before coding: Action Date/Time was added, Create no longer exposed a Status selector, file upload was replaced with text-only Attachment Notes, completion/follow-up/audit states were made explicit, and Requester read-only behavior plus error/empty/loading/responsive states were included. Implementation started only after the student explicitly approved both desktop and mobile mockups.
-
-The UI implementation reused one `ActionsTakenPanel` for Staff interactive and Requester read-only contexts, wired the approved Issue #52 API instead of duplicating backend rules in the browser, and added focused component tests for create/edit/reassign/start/complete/cancel, stale conflicts, ineligible assignees, idempotent retry, draft preservation, terminal immutability, modal keyboard behavior, and audit provenance. Verification exposed one additional client-side consistency issue: when a lost-response create is recovered by a `200` idempotent replay, simply rendering the returned Action would leave the local parent Ticket version stale. The UI was changed to refresh authoritative Ticket state on recovered replay rather than guessing a version increment. Final Issue #53 Client regression passed **90/90**, targeted backend/API regression passed **53/53** on disposable PostgreSQL, and the production builds/Prisma validation passed.
-
-Visual QA used a temporary harness that rendered the real component and production CSS with representative Actions. That harness was intentionally removed before commit. Desktop/tablet layouts were inspected successfully; a limitation of the Windows Chrome headless runtime prevented trustworthy exact-390-CSS-pixel evidence because its inner viewport would not go below roughly 499–500 pixels. Rather than record a false pass, exact 390px browser/Playwright evidence remains assigned to the planned Issue #58 visual/accessibility gate; the `<=420px` production CSS rules themselves were implemented during Issue #53.
-
-## 5. My Reflection — Draft for Finalization
-
-Using the AI as a specification agent was most useful when it was constrained by two sources at the same time: the Lab 4 handout and the real Lab 3 implementation. Reading only the new handout would have made it easy to define rules that conflict with existing ownership, authentication, comments, attachments, or responsive behavior. Inspecting the repository first made the Sprint 4 contract more concrete because the proposed API, migration, and UI decisions could reuse existing patterns instead of creating a parallel design.
-
-The most important control was keeping human checkpoints around scope and Git actions. I asked the AI to stop after planning, stop after branch/Issue setup, inspect the previous baseline before drafting, and now stop before commit/PR. This reduced the risk that generated assumptions would immediately become project history. The final reflection will be updated after implementation/review with concrete examples of where coding-agent suggestions were accepted, corrected, or rejected.
-
-## 6. Items to Add Before Final Submission
-
-- [ ] Keep only the strongest 6–10 real selected prompts after Sprint 4 is complete.
-- [ ] Add implementation/debugging prompts from Actions Taken, dashboards, workflow, regression, and visual QA only when they actually occur.
-- [ ] Add specific examples of AI mistakes/limitations and how they were verified or corrected.
-- [ ] Finalize `My Reflection` in the student's own wording after peer review/release.
-- [ ] Ensure no hidden chain-of-thought or secrets are included; record observable prompts, outputs, decisions, and verification only.
-
+ส่วนการควบคุมที่สำคัญที่สุด คือเราต้องมีจุดคอยเบรก (Human Checkpoint) เพื่อคุมสโคปและการจัดการ Git ซึ่งผมจะสั่งให้ AI หยุดรอการตัดสินใจจากผมเป็นระยะๆ เช่น หยุดหลังจากวางแผนเสร็จ หยุดหลังจากเซ็ต Branch/Issue ให้เช็ก Baseline เดิมก่อนเริ่มดราฟต์งาน และเบรกทุกครั้งก่อนจะสั่ง Commit หรือเปิด PR วิธีนี้ช่วยลดความเสี่ยงที่ AI จะมโนเขียนอะไรแปลกๆ แล้วถูกบันทึกกลายเป็นประวัติของโปรเจกต์ทันที ทำให้งานดูไม่เรียบร้อย

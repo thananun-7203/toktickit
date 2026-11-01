@@ -353,22 +353,22 @@ Preserve the existing Edit User flow. If account deactivation/demotion returns `
 
 The final evidence for all major Lab 4 screens must verify:
 
-- [ ] Desktop 1280 layout readable with sensible card/list density.
-- [ ] Tablet ~820 layout uses compact shell navigation and no horizontal page overflow.
-- [ ] Mobile ~390 layout stacks cards/forms/controls without clipping or overlap.
-- [ ] Dashboard metric labels/values remain readable at all widths.
+- [x] Desktop 1280 layout readable with sensible card/list density. (Issue #58 final visual review and fixture screenshots.)
+- [x] Tablet ~820 layout uses compact shell navigation and no horizontal page overflow. (V4-01..04 and Issue #58 Administrator browser coverage.)
+- [x] Mobile ~390 layout stacks cards/forms/controls without clipping or overlap. (V4-01..04 and Issue #58 Administrator browser coverage.)
+- [x] Dashboard metric labels/values remain readable at all widths. (Requester/Staff/Admin fixture screenshots and responsive browser assertions.)
 - [x] Actions Taken active/terminal/read-only meaning is not color-only. (Literal status/follow-up labels verified in Issue #58 browser QA.)
 - [x] Public Comments vs Internal Notes vs Actions Taken remain structurally and textually distinct. (Separate headings/sections verified in Staff Ticket Detail browser QA.)
-- [ ] All form inputs have labels/accessibility names.
-- [ ] Keyboard focus is visibly rendered.
-- [ ] Keyboard-only user can reach Dashboard drill-down and Action controls.
+- [x] All form inputs have labels/accessibility names. (Actions Taken and Administrator User Management component regressions plus browser label assertions.)
+- [x] Keyboard focus is visibly rendered. (V4-03/V4-04 assert `:focus-visible` on the Staff Add Action and Requester Ticket-open controls.)
+- [x] Keyboard-only user can reach Dashboard drill-down and Action controls. (V4-03/V4-04 keyboard activation and Ticket Detail drill-down.)
 - [x] Modal/dialog focus is contained/restored where a modal is used. (Issue #53 component regression and Issue #58 browser keyboard checks.)
 - [x] Validation is adjacent to the relevant field. (Issue #53 component regression.)
 - [x] Busy controls are disabled and communicate progress. (Issue #53 component regression.)
-- [ ] Long summary/description/attachment-note text wraps safely.
+- [x] Long summary/description/attachment-note text wraps safely. (V4-01/02/03/04 fixtures; V4-10 explicitly checks attachment-note text overflow.)
 - [x] No page-level horizontal overflow. (Requester/Staff/Admin and Ticket Detail browser checks at 1280/820/390.)
-- [ ] No off-screen primary action at mobile width.
-- [ ] No placeholder/debug/obsolete Lab 2/3 UI remains in final evidence.
+- [x] No off-screen primary action at mobile width. (V4-03/V4-10 checks Add Action is visible and horizontally within the 390px viewport.)
+- [x] No placeholder/debug/obsolete Lab 2/3 UI remains in final evidence. (Final human review of the fixture screenshots; live Development DB evidence is separately identified and limited to desktop.)
 
 ## 13. Existing Screen Regression Checklist
 
