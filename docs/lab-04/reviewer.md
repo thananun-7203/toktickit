@@ -2,7 +2,9 @@
 
 **Author:** ธนนันท์ ครังตุ้ย — 67070507203 — GitHub: `@thananun-7203`
 
-> This is a living Sprint 4 review record. Completed entries below reflect actual GitHub review/CI/merge activity. Future Issue #59 and release-review fields remain pending until the corresponding activity occurs; Project-board columns are not inferred from Issue state.
+**Peer reviewer:** แทนบุญ เตียวสวัสดิ์ — 67070507211 — GitHub: [@Tanaboonnnnn](https://github.com/Tanaboonnnnn)
+
+> This is a living Sprint 4 review record. It lists the single peer reviewer for Lab 4 and records only review, CI, and merge activity supported by the available evidence. PR #71 has been approved and its exact-head hosted CI passed, but the PR remains open until the reviewer performs the merge. Project-board columns are not inferred from Issue state.
 
 ## 1. Sprint 4 Workflow
 
@@ -22,7 +24,7 @@ Issue plan prepared before implementation:
 | #67 | Resolution Gate & Follow-Up Workflow (inserted Issue 8) | PR #68 approved by `Tanaboonnnnn` and merged to `lab4-staging` as `fd6ef11`; Issue #67 closed |
 | #57 | Security, Regression & End-to-End Verification (Issue 9) | PR #69 approved by `Tanaboonnnnn` and merged to `lab4-staging` as `56a825a`; Issue #57 closed |
 | #58 | Accessibility, Responsive & Visual QA (Issue 10) | PR #70 approved by `Tanaboonnnnn` and merged to `lab4-staging` as `4c12262`; Issue #58 closed |
-| #59 | Final Evidence & Release Readiness (Issue 11) | PR #71 is open against `lab4-staging`; review requested from `Tanaboonnnnn`; exact-head hosted CI and peer verdict pending |
+| #59 | Final Evidence & Release Readiness (Issue 11) | PR #71 is open against `lab4-staging`; the sole peer reviewer `Tanaboonnnnn` approved exact head `7105286f4c957fd231a5d781a2f1cb693a18d6ee`; hosted CI Run #63 passed; not merged |
 
 > Numbering note: #67 is the inserted Resolution Gate GitHub Issue. PR #68 implements it. #60 is PR #60, not GitHub Issue #60.
 
@@ -488,7 +490,7 @@ The table below records actual Lab 4 feature PRs and excludes GitHub Issue #67, 
 | [#68](https://github.com/thananun-7203/toktickit/pull/68) | `feature/8-resolution-gate-follow-up` | `lab4-staging` | Approved at `3424a2c`; CI #48 | Merged (`fd6ef11`) |
 | [#69](https://github.com/thananun-7203/toktickit/pull/69) | `feature/9-security-regression-e2e` | `lab4-staging` | Approved at `63e1e51`; CI #51 | Merged (`56a825a`) |
 | [#70](https://github.com/thananun-7203/toktickit/pull/70) | `feature/issue-58-accessibility-responsive-visual-qa` | `lab4-staging` | Approved at `34b30f1`; CI #58 | Merged (`4c12262`) |
-| [#71](https://github.com/thananun-7203/toktickit/pull/71) | `feature/11-final-evidence-release-readiness` | `lab4-staging` | `Tanaboonnnnn` requested; hosted CI must pass on latest head | **Open / not merged** |
+| [#71](https://github.com/thananun-7203/toktickit/pull/71) | `feature/11-final-evidence-release-readiness` | `lab4-staging` | `Tanaboonnnnn` approved at `7105286f4c957fd231a5d781a2f1cb693a18d6ee`; CI #63 passed on exact head | **Open / not merged** |
 
 
 ## 13. Review Standard
@@ -518,7 +520,7 @@ Backlog -> Specified -> Started -> PR Review -> Fixing -> Done
 
 Issue states/Project columns must be recorded from actual GitHub evidence. This file does not invent a current Project column when it has not been independently verified.
 
-As of the Issue #59 audit, GitHub Issues #50–#58 are closed and Issue #59 is open. The GitHub Project column for each Issue has **not** been independently verified through the available repository issue/PR data. Capture the actual Project board before recording `Done` for every card.
+As of the Issue #59 audit, GitHub Issues #50–#58 are closed and Issue #59 is open. The GitHub Project column for each Issue has **not** been independently verified through the available repository issue/PR data. Capture the actual Project board before recording `Done` for every card. The Project URL/screenshot is still needed to complete this check.
 
 ## 15. Final Release Review
 
@@ -526,10 +528,13 @@ Current state as of `2026-11-01`:
 
 - `lab4-staging` head: `4c1226246856a5df95f11984f063c9ff1a42d287`.
 - GitHub compare: `lab4-staging` is 56 commits ahead of `main` and 0 behind.
-- Issue #59 remains open while PR #71 is under review: [#71 — `[Lab 4] Issue_11: Final Evidence & Release Readiness`](https://github.com/thananun-7203/toktickit/pull/71).
-- PR #71 targets `lab4-staging`; reviewer `Tanaboonnnnn` has been requested. Its current exact-head hosted CI and review verdict must be rechecked before this record is finalized.
+- Issue #59 remains open while PR #71 awaits reviewer-controlled merge: [#71 — `[Lab 4] Issue_11: Final Evidence & Release Readiness`](https://github.com/thananun-7203/toktickit/pull/71).
+- PR #71 targets `lab4-staging`; `Tanaboonnnnn` approved exact head `7105286f4c957fd231a5d781a2f1cb693a18d6ee` on `2026-11-01T07:36:20Z`. No inline review threads or requested changes were returned.
+- Hosted CI Run #63 (`41249698473`) completed successfully for the exact PR head. The reviewer inspected the run status and did not independently rerun the tests.
+- PR #71 remains **Open / not merged**. Only the reviewer may merge it.
 - The separate release PR `lab4-staging -> main` is not opened.
-- Local release-final checks are recorded in `tests.md` Section 18 (including Server/Client suites, builds, migration/seed, PostgreSQL dashboard aggregates, audits, and combined Playwright). Exact-head hosted CI and peer review remain pending until the Issue #59 PR is opened.
+- Local release-final checks are recorded in `tests.md` Section 18 (including Server/Client suites, builds, migration/seed, PostgreSQL dashboard aggregates, audits, and combined Playwright).
+- Remaining pre-release follow-ups: verify actual Project-board columns; student finalizes the AI reflection; configure the E2E guard's Development URL in every test runner; then create a separate reviewed `lab4-staging -> main` Release PR after PR #71 is merged.
 
 To be completed only after Issue #59 and all release gates have real evidence:
 
@@ -540,3 +545,27 @@ To be completed only after Issue #59 and all release gates have real evidence:
 - Required changes and response commits, if any.
 - Final approval and merge commit.
 - Final `main` regression/evidence synchronization.
+
+### PR #71 — Issue #59 Peer Review
+
+- Reviewed PR: [#71 — Final Evidence & Release Readiness](https://github.com/thananun-7203/toktickit/pull/71).
+- Reviewer: `Tanaboonnnnn`.
+- Exact reviewed head: `7105286f4c957fd231a5d781a2f1cb693a18d6ee`.
+- Review submitted: `2026-11-01T07:36:20Z`.
+- Verdict: **APPROVED**. No inline comments, unresolved review threads, or requested changes were returned.
+- Hosted CI: Run #63 (`41249698473`) completed successfully on that exact head.
+- Reviewer follow-ups are non-blocking for staging merge: verify the actual GitHub Project board, have the student finalize the first-person AI reflection, ensure the E2E guard receives the configured Development DB URL, and perform a separate exact-head review for the eventual `lab4-staging -> main` Release PR.
+- PR state at this record update: **Open / not merged**. This record does not authorize or perform a merge.
+
+## Pull Requests I reviewed for my partners
+
+Record actual Lab 4 peer-review activity here. The entries below are based on GitHub review submissions made by `thananun-7203`; they are reviews on a partner's repository, not the feature PRs in this author's repository.
+
+| Repository / PR | Review focus | Review result |
+|---|---|---|
+| `Tanaboonnnnn/toktickit` [#81](https://github.com/Tanaboonnnnn/toktickit/pull/81) | Sprint 4 engineering contract: actor/assignee/performedBy semantics, nine source-reconciliation decisions, required deliverables, and AC-to-Test-ID-to-rubric traceability | **Changes Requested** on `bc39d486c0d4b8717d68d0ae04d145d2c473c832` on 2026-09-29; subsequent approval was submitted by another reviewer, not attributed to this author; [my review](https://github.com/Tanaboonnnnn/toktickit/pull/81#pullrequestreview-5348833150) |
+| `Tanaboonnnnn/toktickit` [#82](https://github.com/Tanaboonnnnn/toktickit/pull/82) | Isolated Lab 4 verification and CI: Lab 3 evidence-path isolation, release-manifest identity validation, scenario/Test ID/rubric registry, and exact-head CI | **Changes Requested → Approved**; both verification-safety findings were fixed and approved on `2852a720df6ded45e614d6ca9bf391f2b2b85207` on 2026-09-29; [final approval](https://github.com/Tanaboonnnnn/toktickit/pull/82#pullrequestreview-5351975592) |
+| `Tanaboonnnnn/toktickit` [#83](https://github.com/Tanaboonnnnn/toktickit/pull/83) | Lab 4 data foundation and migration safety: additive migrations, legacy-data/Attachment preservation, workflow-cycle/audit model, seed idempotency, and active-role assignee safety | **Changes Requested → Approved**; seed-safety regression and local-only credential output were corrected, then approved on `0162e802c331634fe7ecc9ca7e7a525922e5d7a0` on 2026-09-29; [final approval](https://github.com/Tanaboonnnnn/toktickit/pull/83#pullrequestreview-5356637472) |
+| `Tanaboonnnnn/toktickit` [#84](https://github.com/Tanaboonnnnn/toktickit/pull/84) | Actions Taken APIs and concurrency: authorization, lifecycle/audit, immutable provenance, idempotent replay, locking/races, Administrator safety, and exact-head CI | **Approved** on `bdacb67cd42ea06b797215dbbc70dc0597d25614` on 2026-09-30; [review submission](https://github.com/Tanaboonnnnn/toktickit/pull/84#pullrequestreview-5362699645) |
+| `Tanaboonnnnn/toktickit` [#87](https://github.com/Tanaboonnnnn/toktickit/pull/87) | Requester / Staff Dashboard API authorization and ownership, My Actions attribution/deduplication, drill-down query validation, PostgreSQL snapshot consistency, privacy, performance smoke, and exact-head CI | **Approved** at `05da626d8e8cc70dbbec215c305b205c7189ebd6` on 2026-10-01; [review submission](https://github.com/Tanaboonnnnn/toktickit/pull/87#pullrequestreview-5377717299) |
+| `Tanaboonnnnn/toktickit` [#91](https://github.com/Tanaboonnnnn/toktickit/pull/91) | Lab 4 release-evidence documentation, reviewer/AI-use/specification/tests synchronization, review provenance, exact-head CI, and pending release gates | **Approved** at `094e527d93536d3087f1259fccfb09399af54d2e` on 2026-10-02; [review submission](https://github.com/Tanaboonnnnn/toktickit/pull/91#pullrequestreview-5395987757) |

@@ -111,6 +111,9 @@ jobs:
 
     env:
       E2E_DATABASE_URL: postgresql://toktickit:toktickit@127.0.0.1:5433/toktickit_lab4_e2e?schema=public
+      # Reserved default Development target used only for the E2E guard's
+      # identity comparison. CI creates and uses only the dedicated E2E DB.
+      TOKTICKIT_DEVELOPMENT_DATABASE_URL: postgresql://toktickit:toktickit@127.0.0.1:5433/toktickit?schema=public
       SEAWEEDFS_FILER_URL: http://127.0.0.1:8888
 
     steps:

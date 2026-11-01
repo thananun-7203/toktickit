@@ -230,7 +230,7 @@ Remove-Item Env:TOKTICKIT_DEVELOPMENT_DATABASE_URL
 
 For the server regression, set `TEST_DATABASE_URL` to `toktickit_test`, set `DATABASE_URL` to that same isolated test URL only while applying migrations/seeding, remove `DATABASE_URL`, then run `npm test -- --maxWorkers=1 --minWorkers=1`. This keeps the test runner's explicit target guard active. The normal Development service remains separate on its own configured port/Compose project.
 
-Playwright intentionally has no database fallback. The E2E guard requires a database name containing a test/e2e marker and rejects a target matching `TOKTICKIT_DEVELOPMENT_DATABASE_URL`. If `E2E_DATABASE_URL` is missing or unsafe, the suite fails before starting its web servers.
+Playwright intentionally has no database fallback. The E2E guard requires a database name containing a test/e2e marker and rejects a target matching `TOKTICKIT_DEVELOPMENT_DATABASE_URL`. **Always set `TOKTICKIT_DEVELOPMENT_DATABASE_URL` to the actual Development DB URL before running Playwright locally**; without it, the guard cannot compare the E2E target against Development. CI supplies the repository's reserved default Development DB identity for this comparison while creating and using only the dedicated E2E database. If `E2E_DATABASE_URL` is missing or unsafe, the suite fails before starting its web servers.
 
 ## Lab 2 Documentation
 

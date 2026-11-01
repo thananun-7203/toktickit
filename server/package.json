@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts",
+    "seed:my-active-actions": "tsx scripts/seed-my-active-actions.ts",
     "test": "tsx scripts/run-tests.ts"
   },
   "prisma": {

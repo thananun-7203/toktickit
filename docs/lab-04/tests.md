@@ -549,7 +549,7 @@ The Issue #59 worktree is based on `lab4-staging` commit `4c1226246856a5df95f119
 | `client`: `npm test` | **Pass — 112/112 tests, 14/14 files** |
 | `client`: `npm run build` | **Pass** |
 | `e2e`: `CAPTURE_EVIDENCE=1 npm run test:lab4` with `E2E_DATABASE_URL=toktickit_lab4_e2e` and SeaweedFS filer | **Pass — 23/23 tests** (12 Lab 3 regression + 11 Lab 4 full-stack/responsive/boundary); generated 16 responsive fixture and 4 empty/error screenshots |
-| E2E database guard negative path | **Pass — rejected both a non-test Development database name and an E2E URL resolving to the configured Development database** |
+| E2E database guard negative path | **Pass — rejected both a non-test database name and an E2E URL resolving to the configured Development database.** The comparison is active only when `TOKTICKIT_DEVELOPMENT_DATABASE_URL` is supplied; local runners must set it to their actual Development DB URL, and CI supplies the reserved default Development DB identity while using only the dedicated E2E database. |
 | `server` and `client`: `npm audit --omit=dev` | **Pass — 0 vulnerabilities in each production dependency tree** |
 | `git diff --check` | **Pass** at the Issue #59 audit checkpoint |
 
